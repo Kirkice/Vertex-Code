@@ -1,0 +1,86 @@
+.follow-up-suggestions {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.suggestions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground, #999999);
+}
+
+.suggestions-icon {
+  font-size: 16px;
+}
+
+.suggestions-title {
+  font-weight: 500;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  border: 1px solid var(--vscode-button-secondaryBorder, #45494e);
+  border-radius: 6px;
+  color: var(--vscode-button-secondaryForeground, #ffffff);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+  border-color: var(--vscode-focusBorder, #007fd4);
+  transform: translateX(4px);
+}
+
+.suggestion-button:active {
+  transform: translateX(2px);
+}
+
+.suggestion-text {
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.suggestion-arrow {
+  margin-left: 12px;
+  color: var(--vscode-descriptionForeground, #999999);
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.suggestion-button:hover .suggestion-arrow {
+  transform: translateX(4px);
+  color: var(--vscode-focusBorder, #007fd4);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

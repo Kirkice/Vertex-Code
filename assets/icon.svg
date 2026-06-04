@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Vertex icon: A graph/network node representing game dev & graphics -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0e639c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1177bb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Central vertex node -->
+  <circle cx="12" cy="12" r="4" fill="url(#grad)" />
+  <!-- Connected nodes (graph edges) -->
+  <line x1="12" y1="12" x2="4" y2="6" stroke="#0e639c" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="12" x2="20" y2="6" stroke="#0e639c" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="12" x2="6" y2="18" stroke="#0e639c" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="12" x2="18" y2="18" stroke="#0e639c" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Outer nodes -->
+  <circle cx="4" cy="6" r="2.5" fill="#1177bb" />
+  <circle cx="20" cy="6" r="2.5" fill="#1177bb" />
+  <circle cx="6" cy="18" r="2.5" fill="#1177bb" />
+  <circle cx="18" cy="18" r="2.5" fill="#1177bb" />
+</svg>

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+webview-ui/node_modules/
+
+# Build output
+out/
+webview-ui/dist/
+
+# VS Code extension
+*.vsix
+.vscode-test/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Old static files (superseded by React/Vite)
+webview-ui/main.js
+webview-ui/style.css
+
+# OS files
+.DS_Store
+Thumbs.db

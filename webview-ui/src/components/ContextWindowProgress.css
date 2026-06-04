@@ -1,0 +1,99 @@
+.context-window-progress {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+}
+
+.context-window-progress.warning {
+  border-color: var(--vscode-editorWarning-border, rgba(204, 167, 0, 0.3));
+  background: rgba(204, 167, 0, 0.05);
+}
+
+.context-window-progress.danger {
+  border-color: var(--vscode-errorBorder, rgba(244, 135, 113, 0.3));
+  background: rgba(244, 135, 113, 0.05);
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.progress-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #999999);
+}
+
+.label-icon {
+  font-size: 14px;
+}
+
+.label-text {
+  font-weight: 500;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.stats-used {
+  color: var(--vscode-foreground, #cccccc);
+  font-weight: 500;
+}
+
+.stats-separator {
+  color: var(--vscode-descriptionForeground, #666666);
+}
+
+.stats-max {
+  color: var(--vscode-descriptionForeground, #999999);
+}
+
+.stats-percentage {
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  color: var(--vscode-foreground, #cccccc);
+  font-weight: 500;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.progress-warning {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(204, 167, 0, 0.1);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--vscode-editorWarning-foreground, #cca700);
+  line-height: 1.4;
+}
+
+.context-window-progress.danger .progress-warning {
+  background: rgba(244, 135, 113, 0.1);
+  color: var(--vscode-errorForeground, #f48771);
+}

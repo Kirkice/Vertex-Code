@@ -1,0 +1,182 @@
+{
+  "name": "vertex",
+  "displayName": "Vertex",
+  "description": "AI assistant focused on game development, graphics rendering, performance optimization, and graphics academia",
+  "version": "0.3.0",
+  "publisher": "learner",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "assets/icon.svg",
+  "activationEvents": [
+    "onView:vertex.sidebarView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vertex",
+          "title": "Vertex",
+          "icon": "assets/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vertex": [
+        {
+          "type": "webview",
+          "id": "vertex.sidebarView",
+          "name": "Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "vertex.openChat",
+        "title": "Vertex: Open Chat"
+      },
+      {
+        "command": "vertex.clearChat",
+        "title": "Vertex: Clear Chat",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "vertex.newChat",
+        "title": "Vertex: New Chat",
+        "icon": "$(add)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "vertex.newChat",
+          "when": "view == vertex.sidebarView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "vertex.clearChat",
+          "when": "view == vertex.sidebarView",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Vertex",
+      "properties": {
+        "vertex.customModes": {
+          "type": "array",
+          "default": [],
+          "description": "Custom mode definitions. Each mode can override or add to built-in modes.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "Unique identifier for the mode (e.g. 'shader-dev')"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name (e.g. 'Shader Dev')"
+              },
+              "roleDefinition": {
+                "type": "string",
+                "description": "Role definition for the system prompt"
+              },
+              "customInstructions": {
+                "type": "string",
+                "description": "Additional custom instructions"
+              },
+              "toolGroups": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "edit",
+                    "terminal",
+                    "search",
+                    "browser"
+                  ]
+                },
+                "description": "Tool groups available in this mode"
+              }
+            },
+            "required": [
+              "slug",
+              "name",
+              "roleDefinition",
+              "toolGroups"
+            ]
+          }
+        },
+        "vertex.apiProvider": {
+          "type": "string",
+          "enum": ["openai", "anthropic", "custom"],
+          "default": "openai",
+          "description": "API Provider type (openai, anthropic, or custom)"
+        },
+        "vertex.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API Key for the selected provider"
+        },
+        "vertex.apiModel": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "Model name to use"
+        },
+        "vertex.apiBase": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "API Base URL (auto-filled based on provider, can be customized)"
+        },
+        "vertex.apiProfiles": {
+          "type": "array",
+          "default": [],
+          "description": "Saved API profiles for quick switching between configurations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Profile name"
+              },
+              "provider": {
+                "type": "string",
+                "enum": ["openai", "anthropic", "custom"],
+                "description": "API Provider type"
+              },
+              "apiKey": {
+                "type": "string",
+                "description": "API Key"
+              },
+              "baseUrl": {
+                "type": "string",
+                "description": "API Base URL"
+              },
+              "model": {
+                "type": "string",
+                "description": "Model name"
+              }
+            },
+            "required": ["name", "provider", "apiKey", "baseUrl", "model"]
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}

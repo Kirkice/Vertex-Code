@@ -1,0 +1,233 @@
+.file-changes-panel {
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-panel-border, #2d2d2d);
+  border-radius: 6px;
+  margin: 12px 0;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--vscode-sideBarSectionHeader-background, #252526);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s;
+}
+
+.panel-header:hover {
+  background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground, #999999);
+  transition: transform 0.2s;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.header-title {
+  font-weight: 600;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 13px;
+}
+
+.file-count {
+  color: var(--vscode-descriptionForeground, #999999);
+  font-size: 12px;
+}
+
+.header-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.additions {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #81b88b);
+}
+
+.deletions {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vscode-panel-border, #2d2d2d);
+}
+
+.action-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+
+.approve-all {
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.approve-all:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.reject-all {
+  background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #ffffff);
+}
+
+.reject-all:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.file-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.file-item {
+  border-bottom: 1px solid var(--vscode-panel-border, #2d2d2d);
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  gap: 8px;
+}
+
+.file-header:hover {
+  background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.file-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.status-modified {
+  background-color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  color: #000;
+}
+
+.status-added {
+  background-color: var(--vscode-gitDecoration-addedResourceForeground, #81b88b);
+  color: #000;
+}
+
+.status-deleted {
+  background-color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  color: #fff;
+}
+
+.status-renamed {
+  background-color: var(--vscode-gitDecoration-renamedResourceForeground, #73c991);
+  color: #000;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--vscode-foreground, #cccccc);
+  font-family: 'Monaco', 'Consolas', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stats {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.file-additions {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #81b88b);
+}
+
+.file-deletions {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.file-diff {
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  border-top: 1px solid var(--vscode-panel-border, #2d2d2d);
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+.diff-content {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vscode-foreground, #cccccc);
+  margin: 0;
+  white-space: pre;
+}
+
+.file-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--vscode-panel-border, #2d2d2d);
+  background-color: var(--vscode-sideBarSectionHeader-background, #252526);
+}
+
+.file-action-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.file-action-btn.approve {
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.file-action-btn.approve:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.file-action-btn.reject {
+  background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #ffffff);
+}
+
+.file-action-btn.reject:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
