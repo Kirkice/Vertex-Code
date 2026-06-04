@@ -8,12 +8,10 @@ const badgeVariants = cva(
 	{
 		variants: {
 			variant: {
-				default:
-					"bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-background)]/80",
-				secondary:
-					"bg-[var(--vscode-button-secondaryBackground)] text-[var(--vscode-button-secondaryForeground)] hover:bg-[var(--vscode-button-secondaryBackground)]/80",
-				destructive: "bg-[var(--vscode-errorForeground)] text-white hover:opacity-80",
-				outline: "text-[var(--vscode-foreground)] border-[var(--vscode-input-border)]",
+				default: "bg-primary text-primary-foreground hover:bg-primary/80",
+				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+				destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/80",
+				outline: "text-muted-foreground border-vscode-input-border",
 			},
 		},
 		defaultVariants: {

@@ -1,0 +1,11 @@
+src/**
+webview-ui/src/**
+webview-ui/*.ts
+webview-ui/*.tsx
+webview-ui/*.js
+webview-ui/*.d.ts
+webview-ui/tsconfig*.json
+webview-ui/vite.config.ts
+webview-ui/package-lock.json
+webview-ui/node_modules/**
+**/*.map

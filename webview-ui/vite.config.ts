@@ -1,20 +1,30 @@
+import path, { resolve } from "path"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
-import path from "path"
 
+// https://vite.dev/config/
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [
+		react(),
+		tailwindcss(),
+	],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "./src"),
+			"@": resolve(__dirname, "./src"),
+			"@src": resolve(__dirname, "./src"),
+			"@roo-code/types": resolve(__dirname, "./src/types-shared/index.ts"),
+			"@roo": resolve(__dirname, "./src/shared"),
 		},
 	},
 	build: {
 		outDir: "dist",
 		emptyOutDir: true,
+		sourcemap: true,
+		minify: true,
 		cssCodeSplit: false,
 		rollupOptions: {
+			external: ["vscode"],
 			output: {
 				entryFileNames: "assets/[name].js",
 				chunkFileNames: "assets/[name]-[hash].js",
@@ -30,5 +40,20 @@ export default defineConfig({
 	},
 	define: {
 		"process.env.NODE_ENV": JSON.stringify("production"),
+	},
+	assetsInclude: ["**/*.wasm", "**/*.wav"],
+	server: {
+		hmr: {
+			host: "localhost",
+			protocol: "ws",
+		},
+		cors: {
+			origin: "*",
+			methods: "*",
+			allowedHeaders: "*",
+		},
+	},
+	optimizeDeps: {
+		exclude: ["@vscode/codicons", "vscode-oniguruma", "shiki"],
 	},
 })

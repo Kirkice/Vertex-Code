@@ -67,7 +67,7 @@ export class ChatPanel {
 			{
 				enableScripts: true,
 				localResourceRoots: [
-					vscode.Uri.file(path.join(extensionUri.fsPath, "webview-ui")),
+					vscode.Uri.file(path.join(extensionUri.fsPath, "webview-ui", "dist")),
 				],
 			},
 		)
@@ -276,35 +276,38 @@ export class ChatPanel {
 	// ─── 加载 WebView HTML 内容 ──────────────────────────
 
 	private _getWebviewContent(): string {
-		// HTML 文件路径
-		const webviewUiPath = path.join(this._extensionUri.fsPath, "webview-ui")
-		const htmlPath = path.join(webviewUiPath, "index.html")
+		// 构建产物路径
+		const webviewUiDistPath = path.join(this._extensionUri.fsPath, "webview-ui", "dist")
+		const htmlPath = path.join(webviewUiDistPath, "index.html")
 
-		// 读取 HTML 文件
+		// 读取 Vite 构建后的 HTML 文件
 		let html = fs.readFileSync(htmlPath, "utf8")
 
 		// WebView 安全 URI
 		const webview = this._panel.webview
-
-		const styleUri = webview.asWebviewUri(
-			vscode.Uri.file(path.join(webviewUiPath, "style.css")),
-		)
-		const mainJsUri = webview.asWebviewUri(
-			vscode.Uri.file(path.join(webviewUiPath, "main.js")),
-		)
 
 		// CSP 内容
 		const csp = [
 			"default-src 'none'",
 			`style-src ${webview.cspSource} 'unsafe-inline'`,
 			`script-src ${webview.cspSource}`,
-			`img-src ${webview.cspSource}`,
+			`img-src ${webview.cspSource} data:`,
+			`font-src ${webview.cspSource}`,
+			`connect-src ${webview.cspSource} https: http:`,
 		].join("; ")
 
-		// 替换模板变量
-		html = html.replace(/\$\{csp\}/g, csp)
-		html = html.replace(/\$\{styleUri\}/g, styleUri.toString())
-		html = html.replace(/\$\{mainJsUri\}/g, mainJsUri.toString())
+		// 注入 CSP 并把 Vite 构建产物中的静态资源路径转换为 WebView 安全 URI
+		html = html.replace(
+			"</head>",
+			`<meta http-equiv="Content-Security-Policy" content="${csp}" />\n</head>`,
+		)
+		html = html.replace(/(src|href)=(['"])(\/?(?:\.\/)?assets\/[^'"]+)\2/g, (_match, attr, quote, assetPath) => {
+			const normalizedAssetPath = String(assetPath).replace(/^\//, "")
+			const assetUri = webview.asWebviewUri(
+				vscode.Uri.file(path.join(webviewUiDistPath, normalizedAssetPath)),
+			)
+			return `${attr}=${quote}${assetUri.toString()}${quote}`
+		})
 
 		return html
 	}

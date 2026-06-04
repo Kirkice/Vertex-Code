@@ -10,7 +10,6 @@
   "categories": [
     "Other"
   ],
-  "icon": "assets/icon.svg",
   "activationEvents": [
     "onView:vertex.sidebarView"
   ],
@@ -115,7 +114,11 @@
         },
         "vertex.apiProvider": {
           "type": "string",
-          "enum": ["openai", "anthropic", "custom"],
+          "enum": [
+            "openai",
+            "anthropic",
+            "custom"
+          ],
           "default": "openai",
           "description": "API Provider type (openai, anthropic, or custom)"
         },
@@ -147,7 +150,11 @@
               },
               "provider": {
                 "type": "string",
-                "enum": ["openai", "anthropic", "custom"],
+                "enum": [
+                  "openai",
+                  "anthropic",
+                  "custom"
+                ],
                 "description": "API Provider type"
               },
               "apiKey": {
@@ -163,20 +170,29 @@
                 "description": "Model name"
               }
             },
-            "required": ["name", "provider", "apiKey", "baseUrl", "model"]
+            "required": [
+              "name",
+              "provider",
+              "apiKey",
+              "baseUrl",
+              "model"
+            ]
           }
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "build:webview": "npm --prefix webview-ui run build",
+    "build": "npm run compile && npm run build:webview",
+    "vscode:prepublish": "npm run build",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
   }
 }
