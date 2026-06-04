@@ -1,0 +1,130 @@
+"use strict";
+/**
+ * ============================================================
+ *  Mini Modes - 系统提示组装
+ *  对应 Roo-Code 的 src/core/prompts/ 目录
+ * ============================================================
+ *
+ *  核心逻辑：
+ *  将模式的 roleDefinition + customInstructions + 工具描述
+ *  组装成完整的 system prompt，供 LLM 使用。
+ *
+ *  在 Roo-Code 中，这个逻辑分散在多个文件中：
+ *  - src/core/prompts/sections/system.ts
+ *  - src/core/prompts/sections/custom-instructions.ts
+ *  - src/core/prompts/buildPrompts.ts
+ *
+ *  这里简化为单个文件，方便理解整体流程。
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildSystemPrompt = buildSystemPrompt;
+exports.buildUserMessage = buildUserMessage;
+exports.buildChatContext = buildChatContext;
+const tools_1 = require("./tools");
+// ─── 系统提示组装 ──────────────────────────────────────
+/**
+ * 组装完整的系统提示
+ *
+ * 结构：
+ *   1. 角色定义（roleDefinition）
+ *   2. 自定义指令（customInstructions）— 如果有
+ *   3. 工具描述（可用工具 + 禁用工具的说明）
+ *   4. 模式约束（基于工具权限自动生成）
+ */
+function buildSystemPrompt(mode) {
+    const sections = [];
+    // ── 1. 角色定义 ──
+    sections.push(`# Role\n\n${mode.roleDefinition}`);
+    // ── 2. 自定义指令 ──
+    if (mode.customInstructions?.trim()) {
+        sections.push(`# Custom Instructions\n\n${mode.customInstructions.trim()}`);
+    }
+    // ── 3. 工具描述 ──
+    const toolSection = buildToolSection(mode.toolGroups);
+    sections.push(toolSection);
+    // ── 4. 模式约束 ──
+    const constraintSection = buildConstraintSection(mode);
+    sections.push(constraintSection);
+    return sections.join("\n\n---\n\n");
+}
+// ─── 工具描述组装 ──────────────────────────────────────
+/** 生成工具描述段落 */
+function buildToolSection(groups) {
+    const enabledTools = (0, tools_1.getToolsForMode)(groups);
+    const enabledGroupNames = groups.map(tools_1.getGroupName);
+    const lines = ["# Available Tools\n"];
+    lines.push(`You have access to the following tools:\n`);
+    // 按工具组展示
+    enabledGroupNames.forEach((groupName) => {
+        const groupConfig = tools_1.TOOL_GROUPS[groupName];
+        if (groupConfig) {
+            lines.push(`## ${groupName}\n`);
+            lines.push(`${groupConfig.description}\n`);
+            groupConfig.tools.forEach((tool) => {
+                lines.push(`- **${tool}**`);
+            });
+            lines.push("");
+        }
+    });
+    // 常驻工具
+    if (tools_1.ALWAYS_AVAILABLE_TOOLS.length > 0) {
+        lines.push("## Always Available\n");
+        tools_1.ALWAYS_AVAILABLE_TOOLS.forEach((tool) => {
+            lines.push(`- **${tool}**`);
+        });
+        lines.push("");
+    }
+    // 禁用的工具组（明确告知 LLM 不能用）
+    const allGroupNames = Object.keys(tools_1.TOOL_GROUPS);
+    const disabledGroupNames = allGroupNames.filter((name) => !enabledGroupNames.includes(name));
+    if (disabledGroupNames.length > 0) {
+        lines.push("## Disabled Tools (DO NOT USE)\n");
+        lines.push("The following tools are NOT available in this mode. Do not attempt to use them:\n");
+        disabledGroupNames.forEach((groupName) => {
+            const groupConfig = tools_1.TOOL_GROUPS[groupName];
+            groupConfig.tools.forEach((tool) => {
+                lines.push(`- ❌ **${tool}**`);
+            });
+        });
+        lines.push("");
+    }
+    return lines.join("\n");
+}
+// ─── 模式约束组装 ──────────────────────────────────────
+/** 生成模式约束段落 */
+function buildConstraintSection(mode) {
+    const lines = [`# Mode Constraints\n`];
+    lines.push(`You are currently in **${mode.name}** mode (slug: "${mode.slug}").\n`);
+    if (mode.description) {
+        lines.push(`${mode.description}\n`);
+    }
+    // 根据工具权限自动生成约束提示
+    const enabledGroupNames = mode.toolGroups.map(tools_1.getGroupName);
+    if (!enabledGroupNames.includes("edit")) {
+        lines.push("**You cannot edit, create, or modify files.** Only provide analysis and suggestions.");
+    }
+    if (!enabledGroupNames.includes("terminal")) {
+        lines.push("**You cannot execute terminal commands.**");
+    }
+    if (!enabledGroupNames.includes("search")) {
+        lines.push("**You cannot search the codebase.** You can only read files that are explicitly mentioned or provided.");
+    }
+    if (!enabledGroupNames.includes("browser")) {
+        lines.push("**You cannot browse the web or fetch online content.**");
+    }
+    return lines.join("\n");
+}
+// ─── 用户消息组装 ──────────────────────────────────────
+/** 组装用户消息（简单拼接，不做 Agent 循环） */
+function buildUserMessage(userInput) {
+    return userInput;
+}
+// ─── 完整对话上下文 ──────────────────────────────────────
+/** 构建完整的对话上下文（system + user） */
+function buildChatContext(mode, userInput) {
+    return {
+        systemPrompt: buildSystemPrompt(mode),
+        userMessage: buildUserMessage(userInput),
+    };
+}
+//# sourceMappingURL=prompt.js.map

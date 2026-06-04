@@ -1,9 +1,7 @@
 # Dependencies
-node_modules/
 webview-ui/node_modules/
 
 # Build output
-out/
 webview-ui/dist/
 
 # VS Code extension
