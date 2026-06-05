@@ -1,4 +1,4 @@
-// pnpm --filter @roo-code/vscode-webview test src/components/chat/__tests__/ChatView.spec.tsx
+// pnpm --filter @vertex/vscode-webview test src/components/chat/__tests__/ChatView.spec.tsx
 
 import React from "react"
 import { render, waitFor, act, fireEvent } from "@/utils/test-utils"
@@ -126,16 +126,16 @@ vi.mock("../QueuedMessages", () => ({
 	},
 }))
 
-// Mock RooTips component
-vi.mock("@src/components/welcome/RooTips", () => ({
-	default: function MockRooTips() {
+// Mock VertexTips component
+vi.mock("@src/components/welcome/VertexTips", () => ({
+	default: function MockVertexTips() {
 		return <div data-testid="roo-tips">Tips content</div>
 	},
 }))
 
-// Mock RooHero component
-vi.mock("@src/components/welcome/RooHero", () => ({
-	default: function MockRooHero() {
+// Mock VertexHero component
+vi.mock("@src/components/welcome/VertexHero", () => ({
+	default: function MockVertexHero() {
 		return <div data-testid="roo-hero">Hero content</div>
 	},
 }))
@@ -666,7 +666,7 @@ describe("ChatView - Version Indicator Tests", () => {
 describe("ChatView - Welcome Screen Display Tests", () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it("shows RooTips on the welcome screen regardless of task history or cloud auth", async () => {
+	it("shows VertexTips on the welcome screen regardless of task history or cloud auth", async () => {
 		const { getByTestId, queryByTestId } = renderChatView()
 
 		mockPostMessage({

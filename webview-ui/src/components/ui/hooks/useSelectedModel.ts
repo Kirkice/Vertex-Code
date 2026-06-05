@@ -33,7 +33,7 @@ import {
 	isDynamicProvider,
 	isRetiredProvider,
 	getProviderDefaultModelId,
-} from "@roo-code/types"
+} from "@vertex-code/types"
 
 import { useRouterModels } from "./useRouterModels"
 import { useOpenRouterModelProviders } from "./useOpenRouterModelProviders"
@@ -358,13 +358,13 @@ function getSelectedModel({
 			const info = routerModels["opencode-go"]?.[id] ?? opencodeGoDefaultModelInfo
 			return { id, info }
 		}
-		case "zoo-gateway": {
+		case "vertex-gateway": {
 			const id = getValidatedModelId(
-				apiConfiguration.zooGatewayModelId,
-				routerModels["zoo-gateway"],
+				apiConfiguration.vertexGatewayModelId,
+				routerModels["vertex-gateway"],
 				defaultModelId,
 			)
-			const info = routerModels["zoo-gateway"]?.[id]
+			const info = routerModels["vertex-gateway"]?.[id]
 			return { id, info }
 		}
 		// case "anthropic":

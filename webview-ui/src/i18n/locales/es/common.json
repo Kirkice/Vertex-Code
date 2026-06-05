@@ -27,9 +27,9 @@
 		"loading": "Generando diagrama mermaid...",
 		"render_error": "No se puede renderizar el diagrama",
 		"buttons": {
-			"zoom": "Zoom",
-			"zoomIn": "Ampliar",
-			"zoomOut": "Reducir",
+			"vertexm": "Vertexm",
+			"vertexmIn": "Ampliar",
+			"vertexmOut": "Reducir",
 			"copy": "Copiar",
 			"save": "Guardar imagen",
 			"viewCode": "Ver código",

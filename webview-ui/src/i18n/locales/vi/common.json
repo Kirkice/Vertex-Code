@@ -27,9 +27,9 @@
 		"loading": "Đang tạo biểu đồ mermaid...",
 		"render_error": "Không thể hiển thị biểu đồ",
 		"buttons": {
-			"zoom": "Thu phóng",
-			"zoomIn": "Phóng to",
-			"zoomOut": "Thu nhỏ",
+			"vertexm": "Thu phóng",
+			"vertexmIn": "Phóng to",
+			"vertexmOut": "Thu nhỏ",
 			"copy": "Sao chép",
 			"save": "Lưu hình ảnh",
 			"viewCode": "Xem mã",

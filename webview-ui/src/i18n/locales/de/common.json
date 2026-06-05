@@ -27,9 +27,9 @@
 		"loading": "Mermaid-Diagramm wird generiert...",
 		"render_error": "Diagramm kann nicht gerendert werden",
 		"buttons": {
-			"zoom": "Zoom",
-			"zoomIn": "Vergrößern",
-			"zoomOut": "Verkleinern",
+			"vertexm": "Vertexm",
+			"vertexmIn": "Vergrößern",
+			"vertexmOut": "Verkleinern",
 			"copy": "Kopieren",
 			"save": "Bild speichern",
 			"viewCode": "Code anzeigen",

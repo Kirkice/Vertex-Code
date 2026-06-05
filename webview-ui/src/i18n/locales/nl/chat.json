@@ -1,5 +1,5 @@
 {
-	"greeting": "Welkom bij Zoo Code!",
+	"greeting": "Welkom bij Vertex AI!",
 	"task": {
 		"title": "Taak",
 		"expand": "Taak uitvouwen",
@@ -9,7 +9,7 @@
 		"tokens": "Tokens",
 		"cache": "Cache",
 		"apiCost": "API-kosten",
-		"size": "Grootte",
+		"size": "Gvertextte",
 		"contextWindow": "Contextlengte",
 		"closeAndStart": "Taak sluiten en een nieuwe starten",
 		"export": "Taakgeschiedenis exporteren",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Bericht aan de wachtrij toevoegen (wordt verzonden nadat de huidige taak is voltooid)",
 	"scrollToBottom": "Scroll naar onderaan de chat",
 	"scrollToLatestCheckpoint": "Scroll naar het vorige checkpoint",
-	"about": "Zoo Code is een heel AI-ontwikkelteam in je editor.",
+	"about": "Vertex AI is een heel AI-ontwikkelteam in je editor.",
 	"docs": "Bekijk onze <DocsLink>documentatie</DocsLink> voor meer informatie.",
 	"onboarding": "Je takenlijst in deze werkruimte is leeg.",
-	"rooTips": {
+	"vertexTips": {
 		"customizableModes": {
 			"title": "Aanpasbare modi",
 			"description": "Gespecialiseerde persona's die op schema blijven en presteren."
@@ -111,7 +111,7 @@
 		"title": "Modi",
 		"marketplace": "Modus Marktplaats",
 		"settings": "Modus Instellingen",
-		"description": "Gespecialiseerde persona's die het gedrag van Zoo aanpassen.",
+		"description": "Gespecialiseerde persona's die het gedrag van Vertex aanpassen.",
 		"searchPlaceholder": "Zoek modi...",
 		"noResults": "Geen resultaten gevonden"
 	},
@@ -147,7 +147,7 @@
 			"500": "Provider-serverfout. Er is iets mis aan de kant van de provider, er is niets mis met je verzoek.",
 			"docs": "Documentatie",
 			"goToSettings": "Instellingen",
-			"unknown": "Onbekende API-fout. Neem contact op met Zoo Code-support.",
+			"unknown": "Onbekende API-fout. Neem contact op met Vertex AI-support.",
 			"connection": "Verbindingsfout. Zorg ervoor dat je een werkende internetverbinding hebt.",
 			"claudeCodeNotAuthenticated": "Je moet inloggen om Claude Code te gebruiken. Ga naar Instellingen en klik op \"Inloggen bij Claude Code\" om te authenticeren."
 		}
@@ -172,43 +172,43 @@
 		"current": "Huidig"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo wil gedetailleerde instructies ophalen om te helpen met de huidige taak"
+		"wantsToFetch": "Vertex wil gedetailleerde instructies ophalen om te helpen met de huidige taak"
 	},
 	"fileOperations": {
-		"wantsToRead": "Zoo wil dit bestand lezen",
-		"wantsToReadOutsideWorkspace": "Zoo wil dit bestand buiten de werkruimte lezen",
-		"didRead": "Zoo heeft dit bestand gelezen",
-		"wantsToEdit": "Zoo wil dit bestand bewerken",
-		"wantsToEditOutsideWorkspace": "Zoo wil dit bestand buiten de werkruimte bewerken",
-		"wantsToEditProtected": "Zoo wil een beveiligd configuratiebestand bewerken",
-		"wantsToCreate": "Zoo wil een nieuw bestand aanmaken",
-		"wantsToSearchReplace": "Roo wil zoeken en vervangen in dit bestand",
-		"didSearchReplace": "Roo heeft zoeken en vervangen uitgevoerd op dit bestand",
-		"wantsToInsert": "Zoo wil inhoud invoegen in dit bestand",
-		"wantsToInsertWithLineNumber": "Zoo wil inhoud invoegen in dit bestand op regel {{lineNumber}}",
-		"wantsToInsertAtEnd": "Zoo wil inhoud toevoegen aan het einde van dit bestand",
-		"wantsToReadAndXMore": "Zoo wil dit bestand en nog {{count}} andere lezen",
-		"wantsToReadMultiple": "Zoo wil meerdere bestanden lezen",
-		"wantsToApplyBatchChanges": "Zoo wil wijzigingen toepassen op meerdere bestanden",
-		"wantsToGenerateImage": "Zoo wil een afbeelding genereren",
-		"wantsToGenerateImageOutsideWorkspace": "Zoo wil een afbeelding genereren buiten de werkruimte",
-		"wantsToGenerateImageProtected": "Zoo wil een afbeelding genereren op een beschermde locatie",
-		"didGenerateImage": "Zoo heeft een afbeelding gegenereerd"
+		"wantsToRead": "Vertex wil dit bestand lezen",
+		"wantsToReadOutsideWorkspace": "Vertex wil dit bestand buiten de werkruimte lezen",
+		"didRead": "Vertex heeft dit bestand gelezen",
+		"wantsToEdit": "Vertex wil dit bestand bewerken",
+		"wantsToEditOutsideWorkspace": "Vertex wil dit bestand buiten de werkruimte bewerken",
+		"wantsToEditProtected": "Vertex wil een beveiligd configuratiebestand bewerken",
+		"wantsToCreate": "Vertex wil een nieuw bestand aanmaken",
+		"wantsToSearchReplace": "Vertex wil zoeken en vervangen in dit bestand",
+		"didSearchReplace": "Vertex heeft zoeken en vervangen uitgevoerd op dit bestand",
+		"wantsToInsert": "Vertex wil inhoud invoegen in dit bestand",
+		"wantsToInsertWithLineNumber": "Vertex wil inhoud invoegen in dit bestand op regel {{lineNumber}}",
+		"wantsToInsertAtEnd": "Vertex wil inhoud toevoegen aan het einde van dit bestand",
+		"wantsToReadAndXMore": "Vertex wil dit bestand en nog {{count}} andere lezen",
+		"wantsToReadMultiple": "Vertex wil meerdere bestanden lezen",
+		"wantsToApplyBatchChanges": "Vertex wil wijzigingen toepassen op meerdere bestanden",
+		"wantsToGenerateImage": "Vertex wil een afbeelding genereren",
+		"wantsToGenerateImageOutsideWorkspace": "Vertex wil een afbeelding genereren buiten de werkruimte",
+		"wantsToGenerateImageProtected": "Vertex wil een afbeelding genereren op een beschermde locatie",
+		"didGenerateImage": "Vertex heeft een afbeelding gegenereerd"
 	},
 	"directoryOperations": {
-		"wantsToViewTopLevel": "Zoo wil de bovenliggende bestanden in deze map bekijken",
-		"didViewTopLevel": "Zoo heeft de bovenliggende bestanden in deze map bekeken",
-		"wantsToViewRecursive": "Zoo wil alle bestanden in deze map recursief bekijken",
-		"didViewRecursive": "Zoo heeft alle bestanden in deze map recursief bekeken",
-		"wantsToSearch": "Zoo wil deze map doorzoeken op <code>{{regex}}</code>",
-		"didSearch": "Zoo heeft deze map doorzocht op <code>{{regex}}</code>",
-		"wantsToSearchOutsideWorkspace": "Zoo wil deze map (buiten werkruimte) doorzoeken op <code>{{regex}}</code>",
-		"didSearchOutsideWorkspace": "Zoo heeft deze map (buiten werkruimte) doorzocht op <code>{{regex}}</code>",
-		"wantsToViewTopLevelOutsideWorkspace": "Zoo wil de bovenliggende bestanden in deze map (buiten werkruimte) bekijken",
-		"didViewTopLevelOutsideWorkspace": "Zoo heeft de bovenliggende bestanden in deze map (buiten werkruimte) bekeken",
-		"wantsToViewRecursiveOutsideWorkspace": "Zoo wil alle bestanden in deze map (buiten werkruimte) recursief bekijken",
-		"didViewRecursiveOutsideWorkspace": "Zoo heeft alle bestanden in deze map (buiten werkruimte) recursief bekeken",
-		"wantsToViewMultipleDirectories": "Zoo wil meerdere mappen bekijken"
+		"wantsToViewTopLevel": "Vertex wil de bovenliggende bestanden in deze map bekijken",
+		"didViewTopLevel": "Vertex heeft de bovenliggende bestanden in deze map bekeken",
+		"wantsToViewRecursive": "Vertex wil alle bestanden in deze map recursief bekijken",
+		"didViewRecursive": "Vertex heeft alle bestanden in deze map recursief bekeken",
+		"wantsToSearch": "Vertex wil deze map doorzoeken op <code>{{regex}}</code>",
+		"didSearch": "Vertex heeft deze map doorzocht op <code>{{regex}}</code>",
+		"wantsToSearchOutsideWorkspace": "Vertex wil deze map (buiten werkruimte) doorzoeken op <code>{{regex}}</code>",
+		"didSearchOutsideWorkspace": "Vertex heeft deze map (buiten werkruimte) doorzocht op <code>{{regex}}</code>",
+		"wantsToViewTopLevelOutsideWorkspace": "Vertex wil de bovenliggende bestanden in deze map (buiten werkruimte) bekijken",
+		"didViewTopLevelOutsideWorkspace": "Vertex heeft de bovenliggende bestanden in deze map (buiten werkruimte) bekeken",
+		"wantsToViewRecursiveOutsideWorkspace": "Vertex wil alle bestanden in deze map (buiten werkruimte) recursief bekijken",
+		"didViewRecursiveOutsideWorkspace": "Vertex heeft alle bestanden in deze map (buiten werkruimte) recursief bekeken",
+		"wantsToViewMultipleDirectories": "Vertex wil meerdere mappen bekijken"
 	},
 	"commandOutput": "Commando-uitvoer",
 	"commandExecution": {
@@ -230,24 +230,24 @@
 	"response": "Antwoord",
 	"arguments": "Argumenten",
 	"text": {
-		"rooSaid": "Zoo zei"
+		"vertexSaid": "Vertex zei"
 	},
 	"feedback": {
 		"youSaid": "Jij zei"
 	},
 	"mcp": {
-		"wantsToUseTool": "Zoo wil een tool gebruiken op de {{serverName}} MCP-server",
-		"wantsToAccessResource": "Zoo wil een bron benaderen op de {{serverName}} MCP-server"
+		"wantsToUseTool": "Vertex wil een tool gebruiken op de {{serverName}} MCP-server",
+		"wantsToAccessResource": "Vertex wil een bron benaderen op de {{serverName}} MCP-server"
 	},
 	"modes": {
-		"wantsToSwitch": "Zoo wil overschakelen naar {{mode}} modus",
-		"wantsToSwitchWithReason": "Zoo wil overschakelen naar {{mode}} modus omdat: {{reason}}",
-		"didSwitch": "Zoo is overgeschakeld naar {{mode}} modus",
-		"didSwitchWithReason": "Zoo is overgeschakeld naar {{mode}} modus omdat: {{reason}}"
+		"wantsToSwitch": "Vertex wil overschakelen naar {{mode}} modus",
+		"wantsToSwitchWithReason": "Vertex wil overschakelen naar {{mode}} modus omdat: {{reason}}",
+		"didSwitch": "Vertex is overgeschakeld naar {{mode}} modus",
+		"didSwitchWithReason": "Vertex is overgeschakeld naar {{mode}} modus omdat: {{reason}}"
 	},
 	"subtasks": {
-		"wantsToCreate": "Zoo wil een nieuwe subtaak aanmaken in {{mode}} modus",
-		"wantsToFinish": "Zoo wil deze subtaak voltooien",
+		"wantsToCreate": "Vertex wil een nieuwe subtaak aanmaken in {{mode}} modus",
+		"wantsToFinish": "Vertex wil deze subtaak voltooien",
 		"newTaskContent": "Subtaak-instructies",
 		"completionContent": "Subtaak voltooid",
 		"resultContent": "Subtaakresultaten",
@@ -256,7 +256,7 @@
 		"goToSubtask": "Taak weergeven"
 	},
 	"questions": {
-		"hasQuestion": "Zoo heeft een vraag"
+		"hasQuestion": "Vertex heeft een vraag"
 	},
 	"taskCompleted": "Taak voltooid",
 	"error": "Fout",
@@ -270,14 +270,14 @@
 	"diffError": {
 		"title": "Bewerking mislukt"
 	},
-	"troubleMessage": "Zoo ondervindt problemen...",
+	"troubleMessage": "Vertex ondervindt problemen...",
 	"errorDetails": {
 		"link": "Details",
 		"title": "Foutdetails",
 		"copyToClipboard": "Naar klembord kopiëren",
 		"copied": "Gekopieerd!",
 		"diagnostics": "Gedetailleerde foutinformatie ophalen",
-		"proxyProvider": "Je lijkt een proxy-gebaseerde provider te gebruiken. Zorg ervoor dat je de logs controleert en dat het geen Zoo-verzoeken herschrijft."
+		"proxyProvider": "Je lijkt een proxy-gebaseerde provider te gebruiken. Zorg ervoor dat je de logs controleert en dat het geen Vertex-verzoeken herschrijft."
 	},
 	"powershell": {
 		"issues": "Het lijkt erop dat je problemen hebt met Windows PowerShell, zie deze"
@@ -301,12 +301,12 @@
 		"triggerLabelAll": "BRRR"
 	},
 	"announcement": {
-		"title": "Zoo Code {{version}} uitgebracht",
-		"support": "Steun Zoo Code door ons een ster te geven op <githubLink>GitHub</githubLink>.",
+		"title": "Vertex AI {{version}} uitgebracht",
+		"support": "Steun Vertex AI door ons een ster te geven op <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Roo Code is terug! Nu als een door de community onderhouden plugin genaamd Zoo Code!!",
-			"description": "Als je het gemist hebt: het Roo Code-team heeft onlangs aangekondigd dat het de ontwikkeling van Roo Code afbouwt en het bestaande werk archiveert. Maar geen zorgen: de community is opgestaan om de erfenis van Roo Code voort te zetten met een nieuwe naam en een nieuw thuis. We zijn niet langer slechts één \"Roo\", maar een community — een \"Zoo\", zogezegd. Zoo Code is een door de community onderhouden plugin die verdergaat waar Roo Code ophield, en we zetten ons ervoor in om de geest van Roo levend te houden terwijl we ook nieuwe functies en verbeteringen introduceren. We willen het hele Roo Code-team enorm bedanken voor hun geweldige werk en voor het maken van zo'n fantastisch hulpmiddel voor ontwikkelaars. We kijken ernaar uit om verder te bouwen op hun fundament en te zien waar de community Zoo Code in de toekomst naartoe brengt!",
-			"readMore": "Bekijk de nieuwe homepage van Zoo Code en lees de volledige aankondiging"
+			"heading": "Vertex Code is terug! Nu als een door de community onderhouden plugin genaamd Vertex AI!!",
+			"description": "Als je het gemist hebt: het Vertex Code-team heeft onlangs aangekondigd dat het de ontwikkeling van Vertex Code afbouwt en het bestaande werk archiveert. Maar geen zorgen: de community is opgestaan om de erfenis van Vertex Code voort te zetten met een nieuwe naam en een nieuw thuis. We zijn niet langer slechts één \"Vertex\", maar een community — een \"Vertex\", zogezegd. Vertex AI is een door de community onderhouden plugin die verdergaat waar Vertex Code ophield, en we zetten ons ervoor in om de geest van Vertex levend te houden terwijl we ook nieuwe functies en verbeteringen introduceren. We willen het hele Vertex Code-team enorm bedanken voor hun geweldige werk en voor het maken van zo'n fantastisch hulpmiddel voor ontwikkelaars. We kijken ernaar uit om verder te bouwen op hun fundament en te zien waar de community Vertex AI in de toekomst naartoe brengt!",
+			"readMore": "Bekijk de nieuwe homepage van Vertex AI en lees de volledige aankondiging"
 		},
 		"release": {
 			"heading": "Wat is nieuw:",
@@ -341,8 +341,8 @@
 		}
 	},
 	"skill": {
-		"wantsToLoad": "Zoo wil een vaardigheid laden",
-		"didLoad": "Zoo heeft een vaardigheid geladen"
+		"wantsToLoad": "Vertex wil een vaardigheid laden",
+		"didLoad": "Vertex heeft een vaardigheid geladen"
 	},
 	"followUpSuggest": {
 		"copyToInput": "Kopiëren naar invoer (zelfde als shift + klik)",
@@ -363,24 +363,24 @@
 	"profileViolationWarning": "Het huidige profiel is niet compatibel met de instellingen van uw organisatie",
 	"shellIntegration": {
 		"title": "Waarschuwing commando-uitvoering",
-		"description": "Je commando wordt uitgevoerd zonder VSCode-terminal-shellintegratie. Om deze waarschuwing te onderdrukken kun je shellintegratie uitschakelen in de sectie <strong>Terminal</strong> van de <settingsLink>Zoo Code-instellingen</settingsLink> of de VSCode-terminalintegratie oplossen via de onderstaande link.",
+		"description": "Je commando wordt uitgevoerd zonder VSCode-terminal-shellintegratie. Om deze waarschuwing te onderdrukken kun je shellintegratie uitschakelen in de sectie <strong>Terminal</strong> van de <settingsLink>Vertex AI-instellingen</settingsLink> of de VSCode-terminalintegratie oplossen via de onderstaande link.",
 		"troubleshooting": "Klik hier voor shell-integratie documentatie."
 	},
 	"ask": {
 		"autoApprovedRequestLimitReached": {
 			"title": "Limiet voor automatisch goedgekeurde verzoeken bereikt",
-			"description": "Zoo heeft de automatisch goedgekeurde limiet van {{count}} API-verzoek(en) bereikt. Wil je de teller resetten en doorgaan met de taak?",
+			"description": "Vertex heeft de automatisch goedgekeurde limiet van {{count}} API-verzoek(en) bereikt. Wil je de teller resetten en doorgaan met de taak?",
 			"button": "Resetten en doorgaan"
 		},
 		"autoApprovedCostLimitReached": {
 			"title": "Limiet voor automatisch goedgekeurde kosten bereikt",
 			"button": "Resetten en doorgaan",
-			"description": "Zoo heeft de automatisch goedgekeurde kostenlimiet van ${{count}} bereikt. Wilt u de kosten resetten en doorgaan met de taak?"
+			"description": "Vertex heeft de automatisch goedgekeurde kostenlimiet van ${{count}} bereikt. Wilt u de kosten resetten en doorgaan met de taak?"
 		}
 	},
 	"codebaseSearch": {
-		"wantsToSearch": "Zoo wil de codebase doorzoeken op <code>{{query}}</code>",
-		"wantsToSearchWithPath": "Zoo wil de codebase doorzoeken op <code>{{query}}</code> in <code>{{path}}</code>",
+		"wantsToSearch": "Vertex wil de codebase doorzoeken op <code>{{query}}</code>",
+		"wantsToSearchWithPath": "Vertex wil de codebase doorzoeken op <code>{{query}}</code> in <code>{{path}}</code>",
 		"didSearch_one": "1 resultaat gevonden",
 		"didSearch_other": "{{count}} resultaten gevonden",
 		"resultTooltip": "Gelijkenisscore: {{score}} (klik om bestand te openen)"
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Versie {{version}} - Klik om release notes te bekijken"
 	},
-	"rooCloudCTA": {
-		"title": "Zoo Code Cloud evolueert!",
+	"vertexCloudCTA": {
+		"title": "Vertex AI Cloud evolueert!",
 		"description": "Voer externe agenten uit in de cloud, krijg overal toegang tot je taken, werk samen met anderen en nog veel meer.",
 		"joinWaitlist": "Meld je aan om de laatste updates te ontvangen."
 	},
@@ -462,8 +462,8 @@
 		"clickToEdit": "Klik om bericht te bewerken"
 	},
 	"slashCommand": {
-		"wantsToRun": "Zoo wil een slash commando uitvoeren",
-		"didRun": "Zoo heeft een slash commando uitgevoerd"
+		"wantsToRun": "Vertex wil een slash commando uitvoeren",
+		"didRun": "Vertex heeft een slash commando uitgevoerd"
 	},
 	"todo": {
 		"partial": "{{completed}} van {{total}} to-do's voltooid",
@@ -482,7 +482,7 @@
 		"openMcpSettings": "MCP-instellingen openen"
 	},
 	"readCommandOutput": {
-		"title": "Zoo read command output"
+		"title": "Vertex read command output"
 	},
 	"retiredProvider": {
 		"title": "Provider wordt niet meer ondersteund",

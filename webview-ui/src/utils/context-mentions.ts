@@ -1,8 +1,8 @@
 import { Fzf } from "fzf"
 
-import type { ModeConfig, Command } from "@roo-code/types"
+import type { ModeConfig, Command } from "@vertex-code/types"
 
-import { mentionRegex } from "@roo/context-mentions"
+import { mentionRegex } from "@vertex/context-mentions"
 
 import { escapeSpaces } from "./path-mentions"
 

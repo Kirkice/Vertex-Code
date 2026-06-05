@@ -85,7 +85,7 @@ const rawGroupEntryArraySchema = z.array(groupEntrySchema).refine(
  *
  * The type assertion to `z.ZodType<GroupEntry[], z.ZodTypeDef, GroupEntry[]>` is
  * required because `z.preprocess` erases the input type to `unknown`, which
- * propagates through `modeConfigSchema → rooCodeSettingsSchema → createRunSchema`
+ * propagates through `modeConfigSchema → vertexSettingsSchema → createRunSchema`
  * and breaks `zodResolver` generic inference in downstream consumers.
  */
 export const groupEntryArraySchema = z.preprocess((val) => {
@@ -202,7 +202,7 @@ export const DEFAULT_MODES: readonly ModeConfig[] = [
 	},
 	{
 		slug: "debug",
-		name: "🪲 Debug",
+		name: "🐛 Debug",
 		roleDefinition:
 			"You are Zoo, an expert software debugger specializing in systematic problem diagnosis and resolution.",
 		whenToUse:
@@ -214,7 +214,7 @@ export const DEFAULT_MODES: readonly ModeConfig[] = [
 	},
 	{
 		slug: "orchestrator",
-		name: "🪃 Orchestrator",
+		name: "🎭 Orchestrator",
 		roleDefinition:
 			"You are Zoo, a strategic workflow orchestrator who coordinates complex tasks by delegating them to appropriate specialized modes. You have a comprehensive understanding of each mode's capabilities and limitations, allowing you to effectively break down complex problems into discrete tasks that can be solved by different specialists.",
 		whenToUse:

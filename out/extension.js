@@ -2,7 +2,7 @@
 /**
  * ============================================================
  *  Vertex - 扩展入口
- *  对应 Roo-Code 的 src/extension.ts + src/activate/
+ *  对应 Vertex 的 src/extension.ts + src/activate/
  * ============================================================
  *
  *  核心职责：
@@ -53,7 +53,7 @@ function activate(context) {
     // 获取自定义模式
     const customModes = getCustomModesFromSettings();
     // 创建侧边栏 Provider
-    const sidebarProvider = new SidebarViewProvider_1.SidebarViewProvider(context.extensionUri, customModes);
+    const sidebarProvider = new SidebarViewProvider_1.SidebarViewProvider(context.extensionUri, customModes, context);
     // 注册侧边栏视图
     const sidebarRegistration = vscode.window.registerWebviewViewProvider(SidebarViewProvider_1.SidebarViewProvider.viewType, sidebarProvider, {
         webviewOptions: {
@@ -61,6 +61,18 @@ function activate(context) {
         },
     });
     context.subscriptions.push(sidebarRegistration);
+    // 初始化所有服务
+    sidebarProvider.initializeServices().catch((err) => {
+        console.error("[Vertex] Failed to initialize services:", err);
+    });
+    // 注册 dispose 清理
+    context.subscriptions.push({
+        dispose: () => {
+            sidebarProvider.dispose().catch((err) => {
+                console.error("[Vertex] Failed to dispose services:", err);
+            });
+        },
+    });
     // 注册 openChat 命令（聚焦到侧边栏）
     const openChatCommand = vscode.commands.registerCommand("vertex.openChat", () => {
         // 执行 workbench.action.focusAuxiliaryBar 聚焦到侧边栏
@@ -74,11 +86,27 @@ function activate(context) {
         sidebarProvider.clearChat();
     });
     context.subscriptions.push(clearChatCommand);
-    // 注册 newChat 命令
+    // 注册 newChat 命令 (NewTask button)
     const newChatCommand = vscode.commands.registerCommand("vertex.newChat", () => {
         sidebarProvider.clearChat();
     });
     context.subscriptions.push(newChatCommand);
+    // 注册 settingsButtonClicked 命令
+    const settingsCommand = vscode.commands.registerCommand("vertex.settingsButtonClicked", () => {
+        sidebarProvider.postMessage({ type: "action", action: "settingsButtonClicked" });
+    });
+    context.subscriptions.push(settingsCommand);
+    // 注册 historyButtonClicked 命令
+    const historyCommand = vscode.commands.registerCommand("vertex.historyButtonClicked", () => {
+        sidebarProvider.postMessage({ type: "action", action: "historyButtonClicked" });
+    });
+    context.subscriptions.push(historyCommand);
+    // 注册 popoutButtonClicked 命令
+    const popoutCommand = vscode.commands.registerCommand("vertex.popoutButtonClicked", () => {
+        // TODO: Implement popout to editor functionality
+        vscode.window.showInformationMessage("Popout functionality coming soon!");
+    });
+    context.subscriptions.push(popoutCommand);
     // 监听设置变更
     const settingsWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration("vertex.customModes")) {

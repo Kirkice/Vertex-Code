@@ -1,9 +1,9 @@
 import { HTMLAttributes } from "react"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 
-import type { Language } from "@roo-code/types"
+import type { Language } from "@vertex-code/types"
 
-import { LANGUAGES } from "@roo/language"
+import { LANGUAGES } from "@vertex/language"
 
 import { cn } from "@src/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui"

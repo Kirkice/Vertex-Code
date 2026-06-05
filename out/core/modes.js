@@ -2,7 +2,7 @@
 /**
  * ============================================================
  *  Mini Modes - 模式引擎
- *  对应 Roo-Code 的 src/shared/modes.ts
+ *  对应 Vertex 的 src/shared/modes.ts
  * ============================================================
  *
  *  核心逻辑：
@@ -10,7 +10,7 @@
  *  2. 模式合并 — 自定义模式可覆盖同名内置模式，或新增模式
  *  3. 模式配置 — 获取完整的模式详情（含 prompt 覆盖）
  *
- *  关键设计（与 Roo-Code 一致）：
+ *  关键设计（与 Vertex 一致）：
  *  - 自定义模式的 slug 如果与内置相同 → 覆盖（override）
  *  - 自定义模式的 slug 如果是全新的 → 新增（add）
  *  - 查找时始终自定义优先
@@ -100,6 +100,6 @@ function getModeSummary(slug, customModes) {
     };
 }
 // ─── 默认模式 ──────────────────────────────────────────
-/** 默认模式 slug（与 Roo-Code 一致，默认是 "code"） */
+/** 默认模式 slug（与 Vertex 一致，默认是 "code"） */
 exports.defaultModeSlug = modes_1.DEFAULT_MODES[0].slug;
 //# sourceMappingURL=modes.js.map

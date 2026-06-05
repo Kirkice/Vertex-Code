@@ -1,7 +1,7 @@
 /**
  * ============================================================
  *  Mini Modes - 类型定义
- *  对应 Roo-Code 的 packages/types/src/modes.ts
+ *  对应 Vertex 的 packages/types/src/modes.ts
  * ============================================================
  *
  *  核心概念：
@@ -12,7 +12,7 @@
  */
 
 // ─── 工具组 ───────────────────────────────────────────
-// 对应 Roo-Code 的 10 个工具组，这里简化为 5 个
+// 对应 Vertex 的 10 个工具组，这里简化为 5 个
 export type ToolGroup = "read" | "edit" | "terminal" | "search" | "browser"
 
 // ─── 工具组条目 ─────────────────────────────────────────
@@ -45,7 +45,7 @@ export interface ModeConfig {
 }
 
 // ─── 内置模式 ───────────────────────────────────────────
-// 对应 Roo-Code 的 DEFAULT_MODES（有 Code / Architect / Ask 等）
+// 对应 Vertex 的 DEFAULT_MODES（有 Code / Architect / Ask 等）
 export const DEFAULT_MODES: readonly ModeConfig[] = [
 	{
 		slug: "code",

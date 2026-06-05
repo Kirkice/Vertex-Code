@@ -1,4 +1,4 @@
-import type { ProviderSettings, OrganizationAllowList, RouterModels } from "@roo-code/types"
+import type { ProviderSettings, OrganizationAllowList, RouterModels } from "@vertex-code/types"
 
 // Mock i18next to return translation keys with interpolated values
 vi.mock("i18next", () => ({
@@ -52,7 +52,7 @@ describe("Model Validation Functions", () => {
 		poe: {},
 		deepseek: {},
 		"opencode-go": {},
-		"zoo-gateway": {},
+		"vertex-gateway": {},
 	}
 
 	const allowAllOrganization: OrganizationAllowList = {
@@ -217,22 +217,22 @@ describe("Model Validation Functions", () => {
 		})
 	})
 
-	describe("Zoo Gateway validation", () => {
+	describe("Vertex Gateway validation", () => {
 		describe("validateApiConfiguration (welcome-view entry point)", () => {
 			it("returns a sign-in error when neither profile token nor Zoo auth is present", () => {
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
 				}
 
 				const result = validateApiConfiguration(config, mockRouterModels, allowAllOrganization, false)
-				expect(result).toBe("settings:validation.zooGatewaySignIn")
+				expect(result).toBe("settings:validation.vertexGatewaySignIn")
 			})
 
-			it("returns undefined when Zoo Code auth is active without a profile token", () => {
+			it("returns undefined when Vertex AI auth is active without a profile token", () => {
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
 				}
 
 				const result = validateApiConfiguration(config, mockRouterModels, allowAllOrganization, true)
@@ -241,9 +241,9 @@ describe("Model Validation Functions", () => {
 
 			it("returns undefined when a profile session token is set", () => {
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
-					zooSessionToken: "zoo_ext_test_token",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
+					vertexSessionToken: "zoo_ext_test_token",
 				}
 
 				const result = validateApiConfiguration(config, mockRouterModels, allowAllOrganization, false)
@@ -252,13 +252,13 @@ describe("Model Validation Functions", () => {
 		})
 
 		describe("validateApiConfigurationExcludingModelErrors (settings form)", () => {
-			// The settings form short-circuits zoo-gateway and renders the sign-in
-			// error inline in `ZooGateway.tsx`, so this entry point must never
-			// surface a zoo-gateway-specific error regardless of auth state.
-			it("returns undefined for zoo-gateway when unauthenticated and no token", () => {
+			// The settings form short-circuits vertex-gateway and renders the sign-in
+			// error inline in `VertexGateway.tsx`, so this entry point must never
+			// surface a vertex-gateway-specific error regardless of auth state.
+			it("returns undefined for vertex-gateway when unauthenticated and no token", () => {
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
 				}
 
 				const result = validateApiConfigurationExcludingModelErrors(
@@ -269,11 +269,11 @@ describe("Model Validation Functions", () => {
 				expect(result).toBeUndefined()
 			})
 
-			it("returns undefined for zoo-gateway when a profile token is set", () => {
+			it("returns undefined for vertex-gateway when a profile token is set", () => {
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
-					zooSessionToken: "zoo_ext_test_token",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
+					vertexSessionToken: "zoo_ext_test_token",
 				}
 
 				const result = validateApiConfigurationExcludingModelErrors(
@@ -284,8 +284,8 @@ describe("Model Validation Functions", () => {
 				expect(result).toBeUndefined()
 			})
 
-			it("surfaces PROVIDER_NOT_ALLOWED for zoo-gateway when organization disallows it", () => {
-				const orgWithoutZooGateway: OrganizationAllowList = {
+			it("surfaces PROVIDER_NOT_ALLOWED for vertex-gateway when organization disallows it", () => {
+				const orgWithoutVertexGateway: OrganizationAllowList = {
 					allowAll: false,
 					providers: {
 						openrouter: { allowAll: true },
@@ -293,14 +293,14 @@ describe("Model Validation Functions", () => {
 				}
 
 				const config: ProviderSettings = {
-					apiProvider: "zoo-gateway",
-					zooGatewayModelId: "anthropic/claude-sonnet-4",
+					apiProvider: "vertex-gateway",
+					vertexGatewayModelId: "anthropic/claude-sonnet-4",
 				}
 
 				const result = validateApiConfigurationExcludingModelErrors(
 					config,
 					mockRouterModels,
-					orgWithoutZooGateway,
+					orgWithoutVertexGateway,
 				)
 				expect(result).toContain("settings:validation.providerNotAllowed")
 			})

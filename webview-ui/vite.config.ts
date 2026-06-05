@@ -13,8 +13,8 @@ export default defineConfig({
 		alias: {
 			"@": resolve(__dirname, "./src"),
 			"@src": resolve(__dirname, "./src"),
-			"@roo-code/types": resolve(__dirname, "./src/types-shared/index.ts"),
-			"@roo": resolve(__dirname, "./src/shared"),
+			"@vertex-code/types": resolve(__dirname, "./src/types-shared/index.ts"),
+			"@vertex": resolve(__dirname, "./src/shared"),
 		},
 	},
 	build: {

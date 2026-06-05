@@ -45,8 +45,23 @@
       },
       {
         "command": "vertex.newChat",
-        "title": "Vertex: New Chat",
-        "icon": "$(add)"
+        "title": "Vertex: New Task",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "vertex.settingsButtonClicked",
+        "title": "Vertex: Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "vertex.historyButtonClicked",
+        "title": "Vertex: History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "vertex.popoutButtonClicked",
+        "title": "Vertex: Open in Editor",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -57,9 +72,19 @@
           "group": "navigation@1"
         },
         {
-          "command": "vertex.clearChat",
+          "command": "vertex.settingsButtonClicked",
           "when": "view == vertex.sidebarView",
           "group": "navigation@2"
+        },
+        {
+          "command": "vertex.historyButtonClicked",
+          "when": "view == vertex.sidebarView",
+          "group": "overflow@1"
+        },
+        {
+          "command": "vertex.popoutButtonClicked",
+          "when": "view == vertex.sidebarView",
+          "group": "overflow@2"
         }
       ]
     },
@@ -194,5 +219,12 @@
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/uuid": "^10.0.0",
+    "playwright": "^1.60.0",
+    "simple-git": "^3.36.0",
+    "uuid": "^14.0.0"
   }
 }

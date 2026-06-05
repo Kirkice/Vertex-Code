@@ -1,8 +1,8 @@
-// Webview-safe version of @roo/modes
+// Webview-safe version of @vertex/modes
 // Only exports what the webview actually uses: Mode, defaultModeSlug, defaultPrompts
 
-import type { ModeConfig, CustomModePrompts, GroupEntry, ToolGroup, PromptComponent } from "@roo-code/types"
-import { DEFAULT_MODES } from "@roo-code/types"
+import type { ModeConfig, CustomModePrompts, GroupEntry, ToolGroup, PromptComponent } from "@vertex-code/types"
+import { DEFAULT_MODES } from "@vertex-code/types"
 
 export type Mode = string
 

@@ -40,14 +40,14 @@ import {
 	type ModelInfo,
 	type ReasoningEffortWithMinimal,
 	reasoningEfforts,
-} from "@roo-code/types"
+} from "@vertex-code/types"
 
 import {
 	DEFAULT_HYBRID_REASONING_MODEL_MAX_TOKENS,
 	DEFAULT_HYBRID_REASONING_MODEL_THINKING_TOKENS,
 	GEMINI_25_PRO_MIN_THINKING_TOKENS,
 	getModelMaxOutputTokens,
-} from "@roo/api"
+} from "@vertex/api"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { Slider, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui"

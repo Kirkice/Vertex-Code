@@ -8,9 +8,9 @@ import {
 	type ClineAskUseMcpServer,
 	type McpExecutionStatus,
 	mcpExecutionStatusSchema,
-} from "@roo-code/types"
+} from "@vertex-code/types"
 
-import { safeJsonParse } from "@roo/core"
+import { safeJsonParse } from "@vertex/core"
 
 import { cn } from "@src/lib/utils"
 import { Button } from "@src/components/ui"

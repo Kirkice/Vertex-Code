@@ -9,7 +9,7 @@ import {
 	type ProviderSettings,
 	isRetiredProvider,
 	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
-} from "@roo-code/types"
+} from "@vertex-code/types"
 
 import {
 	getProviderServiceConfig,
@@ -72,7 +72,7 @@ import {
 	Fireworks,
 	VercelAiGateway,
 	OpenCodeGo,
-	ZooGateway,
+	VertexGateway,
 	MiniMax,
 	Mimo,
 } from "./providers"
@@ -246,10 +246,10 @@ const ApiOptions = ({
 			return
 		}
 
-		// Zoo Gateway renders its own auth-state error inline (sign-in card in
-		// ZooGateway.tsx) so it can react to zooCodeIsAuthenticated changes
+		// Vertex Gateway renders its own auth-state error inline (sign-in card in
+		// VertexGateway.tsx) so it can react to vertexCodeIsAuthenticated changes
 		// without re-running this effect or threading auth state through validation.
-		if (apiConfiguration.apiProvider === "zoo-gateway") {
+		if (apiConfiguration.apiProvider === "vertex-gateway") {
 			setErrorMessage(undefined)
 			return
 		}
@@ -635,8 +635,8 @@ const ApiOptions = ({
 						/>
 					)}
 
-					{selectedProvider === "zoo-gateway" && (
-						<ZooGateway
+					{selectedProvider === "vertex-gateway" && (
+						<VertexGateway
 							apiConfiguration={apiConfiguration}
 							setApiConfigurationField={setApiConfigurationField}
 							routerModels={routerModels}

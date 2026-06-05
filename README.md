@@ -1,8 +1,8 @@
 # Mini Modes - 学习项目
 
-一个极简 VS Code 扩展，演示 Roo-Code 的自定义模式（Custom Modes）核心概念。
+一个极简 VS Code 扩展，演示 Vertex 的自定义模式（Custom Modes）核心概念。
 
-**对应 Roo-Code 的关键文件**：`packages/types/src/modes.ts`、`src/shared/tools.ts`、`src/shared/modes.ts`、`src/core/prompt.ts`、`src/extension.ts` — 每个部分都详细注释了对应关系和作用说明。
+**对应 Vertex 的关键文件**：`packages/types/src/modes.ts`、`src/shared/tools.ts`、`src/shared/modes.ts`、`src/core/prompt.ts`、`src/extension.ts` — 每个部分都详细注释了对应关系和作用说明。
 
 ## 功能特性
 
@@ -53,7 +53,7 @@
 }
 ```
 
-**模式合并规则（与 Roo-Code 一致）：**
+**模式合并规则（与 Vertex 一致）：**
 - 自定义模式 slug 与内置相同 → 覆盖（override）
 - 自定义模式 slug 是全新的 → 追加（add）
 - 查找时始终自定义优先

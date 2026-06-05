@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { Plus, Globe, Folder, Edit, Trash2, Settings } from "lucide-react"
 import { Trans } from "react-i18next"
 
-import type { SkillMetadata } from "@roo-code/types"
+import type { SkillMetadata } from "@vertex-code/types"
 
-import { getAllModes } from "@roo/modes"
+import { getAllModes } from "@vertex/modes"
 
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"
@@ -278,26 +278,7 @@ export const SkillsSettings: React.FC = () => {
 
 			{/* Fixed Footer */}
 			<div className="px-6 py-1 text-sm border-t border-vscode-panel-border text-muted-foreground">
-				<Trans
-					i18nKey="settings:skills.footer"
-					components={{
-						MarketplaceLink: (
-							<span
-								onClick={() => {
-									window.postMessage(
-										{
-											type: "action",
-											action: "marketplaceButtonClicked",
-											values: { marketplaceTab: "mode" },
-										},
-										"*",
-									)
-								}}
-								className="text-vscode-textLink-foreground hover:underline cursor-pointer"
-							/>
-						),
-					}}
-				/>
+				<Trans i18nKey="settings:skills.footer" />
 			</div>
 
 			{/* Delete Confirmation Dialog */}

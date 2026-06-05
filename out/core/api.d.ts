@@ -1,7 +1,7 @@
 /**
  * ============================================================
  *  Mini Modes - API Provider 抽象层
- *  参考 Roo-Code 的 src/api/providers/ 设计
+ *  参考 Vertex 的 src/api/providers/ 设计
  * ============================================================
  *
  *  核心概念：
@@ -34,8 +34,10 @@ export interface ApiProfile {
     temperature?: number;
 }
 export interface ChatMessage {
-    role: "system" | "user" | "assistant";
+    role: "system" | "user" | "assistant" | "tool";
     content: string;
+    tool_call_id?: string;
+    name?: string;
 }
 export interface ChatResponse {
     content: string;
@@ -45,9 +47,22 @@ export interface ChatResponse {
         totalTokens: number;
     };
 }
+export interface ToolCallInfo {
+    id: string;
+    type: "function";
+    function: {
+        name: string;
+        arguments: string;
+    };
+}
+export interface ChatResponseWithTools extends ChatResponse {
+    tool_calls?: ToolCallInfo[];
+}
 export interface ApiProvider {
     /** 发送聊天请求 */
     chat(messages: ChatMessage[]): Promise<ChatResponse>;
+    /** 发送带工具定义的聊天请求 */
+    chatWithTools(messages: ChatMessage[], tools: any[]): Promise<ChatResponseWithTools>;
     /** 获取当前模型 ID */
     getModelId(): string;
     /** 验证 API Key 是否有效 */
@@ -61,6 +76,7 @@ export declare class OpenAIProvider implements ApiProvider {
     private temperature;
     constructor(config: ApiConfig);
     chat(messages: ChatMessage[]): Promise<ChatResponse>;
+    chatWithTools(messages: ChatMessage[], tools: any[]): Promise<ChatResponseWithTools>;
     getModelId(): string;
     validateApiKey(): Promise<boolean>;
 }
@@ -72,6 +88,7 @@ export declare class AnthropicProvider implements ApiProvider {
     private temperature;
     constructor(config: ApiConfig);
     chat(messages: ChatMessage[]): Promise<ChatResponse>;
+    chatWithTools(messages: ChatMessage[], tools: any[]): Promise<ChatResponseWithTools>;
     getModelId(): string;
     validateApiKey(): Promise<boolean>;
 }

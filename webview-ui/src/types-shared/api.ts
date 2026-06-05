@@ -1,14 +1,14 @@
 import type { EventEmitter } from "events"
 import type { Socket } from "net"
 
-import type { RooCodeEvents } from "./events.js"
-import type { RooCodeSettings } from "./global-settings.js"
+import type { VertexEvents } from "./events.js"
+import type { VertexSettings } from "./global-settings.js"
 import type { ProviderSettingsEntry, ProviderSettings } from "./provider-settings.js"
 import type { IpcMessage, IpcServerEvents } from "./ipc.js"
 
-export type RooCodeAPIEvents = RooCodeEvents
+export type VertexAPIEvents = VertexEvents
 
-export interface RooCodeAPI extends EventEmitter<RooCodeAPIEvents> {
+export interface VertexAPI extends EventEmitter<VertexAPIEvents> {
 	/**
 	 * Starts a new task with an optional initial message and images.
 	 * @param task Optional initial task message.
@@ -21,7 +21,7 @@ export interface RooCodeAPI extends EventEmitter<RooCodeAPIEvents> {
 		images,
 		newTab,
 	}: {
-		configuration?: RooCodeSettings
+		configuration?: VertexSettings
 		text?: string
 		images?: string[]
 		newTab?: boolean
@@ -79,12 +79,12 @@ export interface RooCodeAPI extends EventEmitter<RooCodeAPIEvents> {
 	 * Returns the current configuration.
 	 * @returns The current configuration.
 	 */
-	getConfiguration(): RooCodeSettings
+	getConfiguration(): VertexSettings
 	/**
 	 * Sets the configuration for the current task.
 	 * @param values An object containing key-value pairs to set.
 	 */
-	setConfiguration(values: RooCodeSettings): Promise<void>
+	setConfiguration(values: VertexSettings): Promise<void>
 	/**
 	 * Returns a list of all configured profile names
 	 * @returns Array of profile names
@@ -140,7 +140,7 @@ export interface RooCodeAPI extends EventEmitter<RooCodeAPIEvents> {
 	 */
 	setActiveProfile(name: string): Promise<string | undefined>
 	/**
-	 * Activates a process-wide VS Code terminal profile override for Zoo Code
+	 * Activates a process-wide VS Code terminal profile override for Vertex AI
 	 * commands. This is intended for trusted extension integrations.
 	 * Passing undefined restores the VS Code default profile behavior and
 	 * closes idle terminals so the next command starts fresh.
@@ -148,7 +148,7 @@ export interface RooCodeAPI extends EventEmitter<RooCodeAPIEvents> {
 	setTerminalProfile(name: string | undefined): void
 }
 
-export interface RooCodeIpcServer extends EventEmitter<IpcServerEvents> {
+export interface VertexIpcServer extends EventEmitter<IpcServerEvents> {
 	listen(): void
 	broadcast(message: IpcMessage): void
 	send(client: string | Socket, message: IpcMessage): void

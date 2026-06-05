@@ -4,9 +4,9 @@ import { Trans } from "react-i18next"
 import { Download, Upload, TriangleAlert, Bug, Lightbulb, Shield, MessagesSquare } from "lucide-react"
 import { VSCodeCheckbox, VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 
-import type { TelemetrySetting } from "@roo-code/types"
+import type { TelemetrySetting } from "@vertex-code/types"
 
-import { Package } from "@roo/package"
+import { Package } from "@vertex/package"
 
 import { vscode } from "@/utils/vscode"
 import { EXTERNAL_LINKS } from "@/constants/externalLinks"
@@ -53,7 +53,7 @@ export const About = ({ telemetrySetting, setTelemetrySetting, debug, setDebug, 
 						<Trans
 							i18nKey="settings:footer.telemetry.description"
 							components={{
-								privacyLink: <VSCodeLink href="https://www.zoocode.dev/privacy" />,
+								privacyLink: <VSCodeLink href="https://www.vertexai.dev/privacy" />,
 							}}
 						/>
 					</p>

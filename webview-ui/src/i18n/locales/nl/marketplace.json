@@ -1,5 +1,5 @@
 {
-	"title": "Zoo Marketplace",
+	"title": "Vertex Marketplace",
 	"tabs": {
 		"installed": "Geïnstalleerd",
 		"settings": "Instellingen",
@@ -133,7 +133,7 @@
 			"nameTooLong": "Naam moet 20 tekens of minder zijn",
 			"nonVisibleCharsName": "Naam bevat onzichtbare tekens anders dan spaties",
 			"duplicateName": "Deze naam is al in gebruik (hoofdletters en spaties genegeerd)",
-			"emojiName": "Emoji-tekens kunnen weergaveproblemen veroorzaken",
+			"emojiName": "Emoji-tekens kunnen weergaveproblemen vevertexrzaken",
 			"maxSources": "Maximaal {{max}} bronnen toegestaan"
 		}
 	},

@@ -22,8 +22,8 @@
 		"paths": {
 			"@/*": ["./src/*"],
 			"@src/*": ["./src/*"],
-			"@roo-code/types": ["./src/types-shared/index.ts"],
-			"@roo/*": ["./src/shared/*"]
+			"@vertex-code/types": ["./src/types-shared/index.ts"],
+			"@vertex/*": ["./src/shared/*"]
 		}
 	},
 	"include": ["src"]

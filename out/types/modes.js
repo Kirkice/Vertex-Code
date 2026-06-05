@@ -2,7 +2,7 @@
 /**
  * ============================================================
  *  Mini Modes - 类型定义
- *  对应 Roo-Code 的 packages/types/src/modes.ts
+ *  对应 Vertex 的 packages/types/src/modes.ts
  * ============================================================
  *
  *  核心概念：
@@ -14,7 +14,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DEFAULT_MODES = void 0;
 // ─── 内置模式 ───────────────────────────────────────────
-// 对应 Roo-Code 的 DEFAULT_MODES（有 Code / Architect / Ask 等）
+// 对应 Vertex 的 DEFAULT_MODES（有 Code / Architect / Ask 等）
 exports.DEFAULT_MODES = [
     {
         slug: "code",

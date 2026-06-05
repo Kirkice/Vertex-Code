@@ -27,9 +27,9 @@
 		"loading": "Membuat diagram mermaid...",
 		"render_error": "Tidak Dapat Merender Diagram",
 		"buttons": {
-			"zoom": "Zoom",
-			"zoomIn": "Perbesar",
-			"zoomOut": "Perkecil",
+			"vertexm": "Vertexm",
+			"vertexmIn": "Perbesar",
+			"vertexmOut": "Perkecil",
 			"copy": "Salin",
 			"save": "Simpan Gambar",
 			"viewCode": "Lihat Kode",

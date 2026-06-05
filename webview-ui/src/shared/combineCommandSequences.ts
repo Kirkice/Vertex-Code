@@ -1,4 +1,4 @@
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage } from "@vertex-code/types"
 
 function safeJsonParse<T>(str: string, fallback: T): T {
 	try { return JSON.parse(str) } catch { return fallback }

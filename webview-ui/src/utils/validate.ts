@@ -11,15 +11,15 @@ import {
 	isDynamicProvider,
 	isFauxProvider,
 	isCustomProvider,
-} from "@roo-code/types"
+} from "@vertex-code/types"
 
 export function validateApiConfiguration(
 	apiConfiguration: ProviderSettings,
 	routerModels?: RouterModels,
 	organizationAllowList?: OrganizationAllowList,
-	zooCodeIsAuthenticated?: boolean,
+	vertexCodeIsAuthenticated?: boolean,
 ): string | undefined {
-	const keysAndIdsPresentErrorMessage = validateModelsAndKeysProvided(apiConfiguration, zooCodeIsAuthenticated)
+	const keysAndIdsPresentErrorMessage = validateModelsAndKeysProvided(apiConfiguration, vertexCodeIsAuthenticated)
 
 	if (keysAndIdsPresentErrorMessage) {
 		return keysAndIdsPresentErrorMessage
@@ -39,7 +39,7 @@ export function validateApiConfiguration(
 
 function validateModelsAndKeysProvided(
 	apiConfiguration: ProviderSettings,
-	zooCodeIsAuthenticated?: boolean,
+	vertexCodeIsAuthenticated?: boolean,
 ): string | undefined {
 	switch (apiConfiguration.apiProvider) {
 		case "openrouter":
@@ -132,9 +132,9 @@ function validateModelsAndKeysProvided(
 				return i18next.t("settings:validation.apiKey")
 			}
 			break
-		case "zoo-gateway":
-			if (!apiConfiguration.zooSessionToken && !zooCodeIsAuthenticated) {
-				return i18next.t("settings:validation.zooGatewaySignIn")
+		case "vertex-gateway":
+			if (!apiConfiguration.vertexSessionToken && !vertexCodeIsAuthenticated) {
+				return i18next.t("settings:validation.vertexGatewaySignIn")
 			}
 			break
 		case "baseten":
@@ -292,9 +292,9 @@ export function getModelValidationError(
  * This is used for the general API error display to prevent duplication
  * when model errors are shown in the model selector.
  *
- * Zoo Gateway's sign-in error is rendered inline by the `ZooGateway` provider
+ * Vertex Gateway's sign-in error is rendered inline by the `VertexGateway` provider
  * component, so we skip the keys/sign-in check here. Organization provider
- * restrictions still need to be enforced for zoo-gateway, so the org allowlist
+ * restrictions still need to be enforced for vertex-gateway, so the org allowlist
  * check below runs for every provider.
  */
 export function validateApiConfigurationExcludingModelErrors(
@@ -302,7 +302,7 @@ export function validateApiConfigurationExcludingModelErrors(
 	_routerModels?: RouterModels, // Keeping this for compatibility with the old function.
 	organizationAllowList?: OrganizationAllowList,
 ): string | undefined {
-	if (apiConfiguration.apiProvider !== "zoo-gateway") {
+	if (apiConfiguration.apiProvider !== "vertex-gateway") {
 		const keysAndIdsPresentErrorMessage = validateModelsAndKeysProvided(apiConfiguration)
 
 		if (keysAndIdsPresentErrorMessage) {

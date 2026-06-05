@@ -2,14 +2,14 @@
 /**
  * ============================================================
  *  Mini Modes - 系统提示组装
- *  对应 Roo-Code 的 src/core/prompts/ 目录
+ *  对应 Vertex 的 src/core/prompts/ 目录
  * ============================================================
  *
  *  核心逻辑：
  *  将模式的 roleDefinition + customInstructions + 工具描述
  *  组装成完整的 system prompt，供 LLM 使用。
  *
- *  在 Roo-Code 中，这个逻辑分散在多个文件中：
+ *  在 Vertex 中，这个逻辑分散在多个文件中：
  *  - src/core/prompts/sections/system.ts
  *  - src/core/prompts/sections/custom-instructions.ts
  *  - src/core/prompts/buildPrompts.ts

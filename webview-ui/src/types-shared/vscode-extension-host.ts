@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import type { GlobalSettings, RooCodeSettings } from "./global-settings.js"
+import type { GlobalSettings, VertexSettings } from "./global-settings.js"
 import type { ProviderSettings, ProviderSettingsEntry } from "./provider-settings.js"
 import type { HistoryItem } from "./history.js"
 import type { ModeConfig, PromptComponent } from "./mode.js"
@@ -323,7 +323,7 @@ export type ExtensionState = Pick<
 	checkpointTimeout: number // Timeout for checkpoint initialization in seconds (default: 15)
 	maxOpenTabsContext: number // Maximum number of VSCode open tabs to include in context (0-500)
 	maxWorkspaceFiles: number // Maximum number of files to include in current working directory details (0-500)
-	showRooIgnoredFiles: boolean // Whether to show .rooignore'd files in listings
+	showVertexIgnoredFiles: boolean // Whether to show .vertexignore'd files in listings
 	enableSubfolderRules: boolean // Whether to load rules from subdirectories
 	maxReadFileLine?: number // Maximum line limit for read_file tool (-1 for default)
 	maxImageFileSize: number // Maximum size of image files to process in MB
@@ -371,11 +371,11 @@ export type ExtensionState = Pick<
 	mdmCompliant?: boolean
 	taskSyncEnabled: boolean
 	openAiCodexIsAuthenticated?: boolean
-	zooCodeIsAuthenticated?: boolean
-	zooCodeUserName?: string
-	zooCodeUserEmail?: string
-	zooCodeUserImage?: string
-	zooCodeBaseUrl?: string
+	vertexCodeIsAuthenticated?: boolean
+	vertexCodeUserName?: string
+	vertexCodeUserEmail?: string
+	vertexCodeUserImage?: string
+	vertexCodeBaseUrl?: string
 	deviceName?: string
 	debug?: boolean
 
@@ -511,7 +511,7 @@ export interface WebviewMessage {
 		| "rooCloudManualUrl"
 		| "openAiCodexSignIn"
 		| "openAiCodexSignOut"
-		| "zooCodeSignOut"
+		| "vertexCodeSignOut"
 		| "switchOrganization"
 		| "condenseTaskContextRequest"
 		| "requestIndexingStatus"
@@ -685,9 +685,9 @@ export interface WebviewMessage {
 		codebaseIndexVercelAiGatewayApiKey?: string
 		codebaseIndexOpenRouterApiKey?: string
 	}
-	updatedSettings?: RooCodeSettings
+	updatedSettings?: VertexSettings
 	/** Task configuration applied via `createTask()`. */
-	taskConfiguration?: RooCodeSettings
+	taskConfiguration?: VertexSettings
 	// Worktree properties
 	worktreePath?: string
 	worktreeBranch?: string

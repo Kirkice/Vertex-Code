@@ -3,7 +3,7 @@ import { Trans } from "react-i18next"
 import { SiDiscord, SiReddit, SiX } from "react-icons/si"
 import { VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 
-import { Package } from "@roo/package"
+import { Package } from "@vertex/package"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { vscode } from "@src/utils/vscode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@src/components/ui"
@@ -50,12 +50,12 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 							<Trans i18nKey="chat:announcement.handoff.description" components={{ bold: <strong /> }} />
 						</p>
 						<VSCodeLink
-							href="https://www.zoocode.dev?utm_source=zoocode&utm_medium=announcement&utm_campaign=community_handoff"
+							href="https://www.vertexai.dev?utm_source=vertexai&utm_medium=announcement&utm_campaign=community_handoff"
 							onClick={(e) => {
 								e.preventDefault()
 								vscode.postMessage({
 									type: "openExternal",
-									url: "https://www.zoocode.dev?utm_source=zoocode&utm_medium=announcement&utm_campaign=community_handoff",
+									url: "https://www.vertexai.dev?utm_source=vertexai&utm_medium=announcement&utm_campaign=community_handoff",
 								})
 							}}>
 							{t("chat:announcement.handoff.readMore")}
@@ -77,7 +77,7 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 							<SocialLink
 								icon={<SiX className="w-4 h-4" aria-hidden />}
 								label="X"
-								href="https://x.com/ZooCodeDev"
+								href="https://x.com/VertexAIDev"
 							/>
 							<SocialLink
 								icon={<SiDiscord className="w-4 h-4" aria-hidden />}
@@ -87,7 +87,7 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 							<SocialLink
 								icon={<SiReddit className="w-4 h-4" aria-hidden />}
 								label="Reddit"
-								href="https://www.reddit.com/r/ZooCode/"
+								href="https://www.reddit.com/r/VertexAI/"
 							/>
 						</div>
 					</div>

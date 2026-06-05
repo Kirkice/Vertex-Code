@@ -27,9 +27,9 @@
 		"loading": "Mermaid-diagram genereren...",
 		"render_error": "Kan diagram niet weergeven",
 		"buttons": {
-			"zoom": "Zoom",
-			"zoomIn": "Inzoomen",
-			"zoomOut": "Uitzoomen",
+			"vertexm": "Vertexm",
+			"vertexmIn": "Invertexmen",
+			"vertexmOut": "Uitvertexmen",
 			"copy": "Kopiëren",
 			"save": "Afbeelding opslaan",
 			"viewCode": "Code bekijken",
