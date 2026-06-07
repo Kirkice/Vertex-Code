@@ -1,5 +1,5 @@
 {
-	"greeting": "Benvingut a Vertex AI!",
+	"greeting": "Benvingut a Vertex!",
 	"task": {
 		"title": "Tasca",
 		"expand": "Expandir tasca",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Afegeix el missatge a la cua (s'enviarà quan acabi la tasca actual)",
 	"scrollToBottom": "Desplaça't al final del xat",
 	"scrollToLatestCheckpoint": "Desplaça't al checkpoint anterior",
-	"about": "Vertex AI és tot un equip de desenvolupament d'IA al teu editor.",
+	"about": "Vertex és tot un equip de desenvolupament d'IA al teu editor.",
 	"docs": "Consulta els nostres <DocsLink>documents</DocsLink> per a més informació.",
 	"onboarding": "La teva llista de tasques en aquest espai de treball està buida.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Modes personalitzables",
 			"description": "Persones especialitzades que es mantenen en la tasca i compleixen."
@@ -152,7 +152,7 @@
 			"500": "Error del servidor del proveïdor. Quelcom va malament del costat del proveïdor, no hi ha res de malament amb la teva sol·licitud.",
 			"docs": "Documentació",
 			"goToSettings": "Configuració",
-			"unknown": "Error API desconegut. Si us plau, contacta amb el suport de Vertex AI.",
+			"unknown": "Error API desconegut. Si us plau, contacta amb el suport de Vertex.",
 			"connection": "Error de connexió. Assegureu-vos que teniu una connexió a Internet funcional.",
 			"claudeCodeNotAuthenticated": "Has d'iniciar sessió per utilitzar Claude Code. Vés a Configuració i fes clic a \"Iniciar sessió a Claude Code\" per autenticar-te."
 		}
@@ -177,7 +177,7 @@
 		"current": "Actual"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex vol obtenir instruccions detallades per ajudar amb la tasca actual."
+		"wantsToFetch": "Roo vol obtenir instruccions detallades per ajudar amb la tasca actual."
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex vol llegir aquest fitxer",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex vol editar aquest fitxer fora de l'espai de treball",
 		"wantsToEditProtected": "Vertex vol editar un fitxer de configuració protegit",
 		"wantsToCreate": "Vertex vol crear un nou fitxer",
-		"wantsToSearchReplace": "Vertex vol realitzar cerca i substitució en aquest fitxer",
-		"didSearchReplace": "Vertex ha realitzat cerca i substitució en aquest fitxer",
+		"wantsToSearchReplace": "Roo vol realitzar cerca i substitució en aquest fitxer",
+		"didSearchReplace": "Roo ha realitzat cerca i substitució en aquest fitxer",
 		"wantsToInsert": "Vertex vol inserir contingut en aquest fitxer",
 		"wantsToInsertWithLineNumber": "Vertex vol inserir contingut a la línia {{lineNumber}} d'aquest fitxer",
 		"wantsToInsertAtEnd": "Vertex vol afegir contingut al final d'aquest fitxer",
@@ -235,7 +235,7 @@
 	"response": "Resposta",
 	"arguments": "Arguments",
 	"text": {
-		"vertexSaid": "En Vertex ha dit"
+		"rooSaid": "En Vertex ha dit"
 	},
 	"feedback": {
 		"youSaid": "Has dit"
@@ -328,12 +328,12 @@
 		"timerPrefix": "Aprovació automàtica habilitada. Seleccionant en {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "S'ha publicat Vertex AI {{version}}",
-		"support": "Dona suport a Vertex AI fent-nos una estrella a <githubLink>GitHub</githubLink>.",
+		"title": "S'ha publicat Vertex {{version}}",
+		"support": "Dona suport a Vertex fent-nos una estrella a <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Vertex Code ha tornat! Ara com a connector mantingut per la comunitat anomenat Vertex AI!!",
-			"description": "Per si no ho havies seguit, l'equip de Vertex Code ha anunciat fa poc que deixa de desenvolupar Vertex Code i n'arxiva la feina feta. Però no pateixis: la comunitat ha fet un pas endavant per continuar el llegat de Vertex Code amb un nom nou i una llar nova! Ja no som només un sol \"Vertex\", som una comunitat, un \"Vertex\" si vols. Vertex AI és un connector mantingut per la comunitat que reprèn el camí on Vertex Code ho va deixar, i ens comprometem a mantenir viu l'esperit de Vertex mentre també hi incorporem funcions i millores noves. Volem donar un enorme agraïment a tot l'equip de Vertex Code per la feina increïble que han fet i per haver creat una eina tan extraordinària per als desenvolupadors. Ens fa molta il·lusió continuar construint sobre la seva base i veure fins on porta la comunitat Vertex AI en el futur!",
-			"readMore": "Mira la nova pàgina principal de Vertex AI i llegeix l'anunci complet"
+			"heading": "Roo Code ha tornat! Ara com a connector mantingut per la comunitat anomenat Vertex!!",
+			"description": "Per si no ho havies seguit, l'equip de Roo Code ha anunciat fa poc que deixa de desenvolupar Roo Code i n'arxiva la feina feta. Però no pateixis: la comunitat ha fet un pas endavant per continuar el llegat de Roo Code amb un nom nou i una llar nova! Ja no som només un sol \"Roo\", som una comunitat, un \"Vertex\" si vols. Vertex és un connector mantingut per la comunitat que reprèn el camí on Roo Code ho va deixar, i ens comprometem a mantenir viu l'esperit de Roo mentre també hi incorporem funcions i millores noves. Volem donar un enorme agraïment a tot l'equip de Roo Code per la feina increïble que han fet i per haver creat una eina tan extraordinària per als desenvolupadors. Ens fa molta il·lusió continuar construint sobre la seva base i veure fins on porta la comunitat Vertex en el futur!",
+			"readMore": "Mira la nova pàgina principal de Vertex i llegeix l'anunci complet"
 		},
 		"release": {
 			"heading": "Novetats:",
@@ -363,7 +363,7 @@
 	"profileViolationWarning": "El perfil actual no és compatible amb la configuració de la teva organització",
 	"shellIntegration": {
 		"title": "Advertència d'execució d'ordres",
-		"description": "La teva ordre s'està executant sense la integració de shell del terminal VSCode. Per suprimir aquest advertiment, pots desactivar la integració de shell a la secció <strong>Terminal</strong> de la <settingsLink>configuració de Vertex AI</settingsLink> o solucionar problemes d'integració del terminal VSCode utilitzant l'enllaç de sota.",
+		"description": "La teva ordre s'està executant sense la integració de shell del terminal VSCode. Per suprimir aquest advertiment, pots desactivar la integració de shell a la secció <strong>Terminal</strong> de la <settingsLink>configuració de Vertex</settingsLink> o solucionar problemes d'integració del terminal VSCode utilitzant l'enllaç de sota.",
 		"troubleshooting": "Fes clic aquí per a la documentació d'integració de shell."
 	},
 	"ask": {
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Versió {{version}} - Feu clic per veure les notes de llançament"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud està evolucionant!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud està evolucionant!",
 		"description": "Executa agents remots al núvol, accedeix a les teves tasques des de qualsevol lloc, col·labora amb altres i molt més.",
 		"joinWaitlist": "Registra't per rebre les últimes actualitzacions."
 	},

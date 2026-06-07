@@ -292,7 +292,7 @@ describe("SettingsView - Unsaved Changes Detection", () => {
 		terminalZshP10k: false,
 		terminalZdotdir: false,
 		writeDelayMs: 0,
-		showVertexIgnoredFiles: false,
+		showRooIgnoredFiles: false,
 		maxReadFileLine: -1,
 		maxImageFileSize: 5,
 		maxTotalImageSize: 20,

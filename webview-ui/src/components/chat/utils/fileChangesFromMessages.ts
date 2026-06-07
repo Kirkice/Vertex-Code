@@ -1,5 +1,5 @@
-import type { ClineMessage, ClineSayTool } from "@vertex-code/types"
-import { safeJsonParse } from "@vertex/core"
+import type { ClineMessage, ClineSayTool } from "@roo-code/types"
+import { safeJsonParse } from "@roo/core"
 
 /** File-edit tool names from ClineSayTool["tool"] (packages/types). */
 const FILE_EDIT_TOOLS = new Set<string>(["editedExistingFile", "appliedDiff", "newFileCreated"])

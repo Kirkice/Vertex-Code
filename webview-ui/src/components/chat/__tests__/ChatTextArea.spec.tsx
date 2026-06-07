@@ -1,4 +1,4 @@
-import { defaultModeSlug } from "@vertex/modes"
+import { defaultModeSlug } from "@roo/modes"
 
 import { render, fireEvent, screen } from "@src/utils/test-utils"
 import { useExtensionState } from "@src/context/ExtensionStateContext"

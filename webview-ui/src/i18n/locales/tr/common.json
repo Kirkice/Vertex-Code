@@ -27,9 +27,9 @@
 		"loading": "Mermaid diyagramı oluşturuluyor...",
 		"render_error": "Diyagram render edilemiyor",
 		"buttons": {
-			"vertexm": "Yakınlaştır",
-			"vertexmIn": "Büyüt",
-			"vertexmOut": "Küçült",
+			"zoom": "Yakınlaştır",
+			"zoomIn": "Büyüt",
+			"zoomOut": "Küçült",
 			"copy": "Kopyala",
 			"save": "Resmi kaydet",
 			"viewCode": "Kodu görüntüle",

@@ -5,7 +5,7 @@ import { Fzf } from "fzf"
 import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
-import { useVertexPortal } from "./hooks/useVertexPortal"
+import { useRooPortal } from "./hooks/useRooPortal"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui"
 import { StandardTooltip } from "@/components/ui"
 
@@ -66,7 +66,7 @@ export const SelectDropdown = React.memo(
 			const [open, setOpen] = React.useState(false)
 			const [searchValue, setSearchValue] = React.useState("")
 			const searchInputRef = React.useRef<HTMLInputElement>(null)
-			const portalContainer = useVertexPortal("vertex-portal")
+			const portalContainer = useRooPortal("roo-portal")
 
 			// Memoize the selected option to prevent unnecessary calculations
 			const selectedOption = React.useMemo(

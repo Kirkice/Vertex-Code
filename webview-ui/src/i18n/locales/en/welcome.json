@@ -1,18 +1,18 @@
 {
 	"landing": {
-		"greeting": "Welcome to Vertex AI!",
-		"introduction": "With a range of built-in and extensible Modes, Vertex AI lets you plan, architect, code, debug and boost your productivity like never before.",
+		"greeting": "Welcome to Vertex!",
+		"introduction": "With a range of built-in and extensible Modes, Vertex lets you plan, architect, code, debug and boost your productivity like never before.",
 		"getStarted": "Choose your provider"
 	},
 	"providerSignup": {
 		"heading": "Choose your provider",
-		"chooseProvider": "Vertex AI needs an LLM provider to work. Choose one to get started, you can add more later.",
+		"chooseProvider": "Vertex needs an LLM provider to work. Choose one to get started, you can add more later.",
 		"goBack": "Back",
 		"finish": "Finish"
 	},
 	"telemetry": {
-		"helpImprove": "Help Improve Vertex AI",
-		"helpImproveMessage": "Vertex AI collects error and usage data to help us fix bugs and improve the extension. This telemetry does not collect code, prompts or personal information. You can turn this off in <settingsLink>settings</settingsLink>."
+		"helpImprove": "Help Improve Vertex",
+		"helpImproveMessage": "Vertex collects error and usage data to help us fix bugs and improve the extension. This telemetry does not collect code, prompts or personal information. You can turn this off in <settingsLink>settings</settingsLink>."
 	},
 	"importSettings": "Import Settings"
 }

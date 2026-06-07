@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react"
 import { Fzf } from "fzf"
 
 import { cn } from "@/lib/utils"
-import { useVertexPortal } from "@/components/ui/hooks/useVertexPortal"
+import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { vscode } from "@/utils/vscode"
@@ -40,7 +40,7 @@ export const ApiConfigSelector = ({
 	const { t } = useAppTranslation()
 	const [open, setOpen] = useState(false)
 	const [searchValue, setSearchValue] = useState("")
-	const portalContainer = useVertexPortal("vertex-portal")
+	const portalContainer = useRooPortal("roo-portal")
 
 	// Create searchable items for fuzzy search.
 	const searchableItems = useMemo(

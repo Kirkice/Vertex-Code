@@ -18,3 +18,4 @@ webview-ui/style.css
 # OS files
 .DS_Store
 Thumbs.db
+node_modules

@@ -12,7 +12,7 @@ import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useAutoApprovalToggles } from "@/hooks/useAutoApprovalToggles"
 import { useAutoApprovalState } from "@/hooks/useAutoApprovalState"
 
-import { useVertexPortal } from "@/components/ui/hooks/useVertexPortal"
+import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
 
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip, ToggleSwitch, Button } from "@/components/ui"
 
@@ -25,7 +25,7 @@ interface AutoApproveDropdownProps {
 
 export const AutoApproveDropdown = ({ disabled = false, triggerClassName = "" }: AutoApproveDropdownProps) => {
 	const [open, setOpen] = React.useState(false)
-	const portalContainer = useVertexPortal("vertex-portal")
+	const portalContainer = useRooPortal("roo-portal")
 	const { t } = useAppTranslation()
 
 	const {

@@ -1,5 +1,5 @@
 {
-	"greeting": "Selamat datang di Vertex AI!",
+	"greeting": "Selamat datang di Vertex!",
 	"task": {
 		"title": "Tugas",
 		"expand": "Perluas tugas",
@@ -118,10 +118,10 @@
 	"enqueueMessage": "Tambahkan pesan ke antrean (akan dikirim setelah tugas saat ini selesai)",
 	"scrollToBottom": "Gulir ke bawah chat",
 	"scrollToLatestCheckpoint": "Gulir ke checkpoint sebelumnya",
-	"about": "Vertex AI adalah seluruh tim pengembang AI di editor Anda.",
+	"about": "Vertex adalah seluruh tim pengembang AI di editor Anda.",
 	"docs": "Lihat <DocsLink>dokumentasi</DocsLink> kami untuk mempelajari lebih lanjut.",
 	"onboarding": "Daftar tugas Anda di ruang kerja ini kosong.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Mode yang dapat disesuaikan",
 			"description": "Persona khusus yang tetap mengerjakan tugas dan memberikan hasil."
@@ -177,7 +177,7 @@
 			"500": "Kesalahan server penyedia. Ada yang salah di sisi penyedia, tidak ada yang salah dengan permintaan Anda.",
 			"docs": "Dokumentasi",
 			"goToSettings": "Pengaturan",
-			"unknown": "Kesalahan API yang tidak diketahui. Harap hubungi dukungan Vertex AI.",
+			"unknown": "Kesalahan API yang tidak diketahui. Harap hubungi dukungan Vertex.",
 			"connection": "Kesalahan koneksi. Pastikan Anda memiliki koneksi internet yang berfungsi.",
 			"claudeCodeNotAuthenticated": "Anda perlu masuk untuk menggunakan Claude Code. Buka Pengaturan dan klik \"Masuk ke Claude Code\" untuk mengautentikasi."
 		}
@@ -221,7 +221,7 @@
 		"didLoad": "Vertex telah memuat keterampilan"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex ingin mengambil instruksi detail untuk membantu tugas saat ini"
+		"wantsToFetch": "Roo ingin mengambil instruksi detail untuk membantu tugas saat ini"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex ingin membaca file ini",
@@ -238,8 +238,8 @@
 		"wantsToGenerateImageProtected": "Vertex ingin menghasilkan gambar di lokasi yang dilindungi",
 		"didGenerateImage": "Vertex telah menghasilkan gambar",
 		"wantsToCreate": "Vertex ingin membuat file baru",
-		"wantsToSearchReplace": "Vertex ingin mencari dan mengganti di file ini",
-		"didSearchReplace": "Vertex melakukan pencarian dan penggantian pada file ini",
+		"wantsToSearchReplace": "Roo ingin mencari dan mengganti di file ini",
+		"didSearchReplace": "Roo melakukan pencarian dan penggantian pada file ini",
 		"wantsToInsert": "Vertex ingin menyisipkan konten ke file ini",
 		"wantsToInsertWithLineNumber": "Vertex ingin menyisipkan konten ke file ini di baris {{lineNumber}}",
 		"wantsToInsertAtEnd": "Vertex ingin menambahkan konten ke akhir file ini"
@@ -286,7 +286,7 @@
 	"response": "Respons",
 	"arguments": "Argumen",
 	"text": {
-		"vertexSaid": "Vertex berkata"
+		"rooSaid": "Vertex berkata"
 	},
 	"feedback": {
 		"youSaid": "Anda bilang"
@@ -357,12 +357,12 @@
 		"triggerLabelAll": "BRRR"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} Dirilis",
-		"support": "Dukung Vertex AI dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
+		"title": "Vertex {{version}} Dirilis",
+		"support": "Dukung Vertex dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Vertex Code kembali! Sekarang sebagai plugin yang dikelola komunitas bernama Vertex AI!!",
-			"description": "Kalau kamu belum mengikuti kabarnya, tim Vertex Code baru-baru ini mengumumkan bahwa mereka menghentikan pengembangan Vertex Code dan mengarsipkan pekerjaan yang telah mereka lakukan. Tapi jangan khawatir, komunitas telah melangkah maju untuk melanjutkan warisan Vertex Code dengan nama baru dan rumah baru! Kita bukan lagi satu \"Vertex\" saja, kita adalah sebuah komunitas, sebuah \"Vertex\" kalau boleh dibilang. Vertex AI adalah plugin yang dikelola komunitas dan melanjutkan dari titik terakhir Vertex Code, dan kami berkomitmen menjaga semangat Vertex tetap hidup sambil menghadirkan fitur dan peningkatan baru. Kami juga ingin memberi apresiasi besar kepada seluruh tim Vertex Code atas kerja luar biasa mereka dan karena telah menciptakan alat yang luar biasa untuk para developer. Kami antusias melanjutkan fondasi mereka dan melihat ke mana komunitas akan membawa Vertex AI ke depannya!",
-			"readMore": "Lihat halaman beranda baru Vertex AI dan baca pengumuman lengkapnya"
+			"heading": "Roo Code kembali! Sekarang sebagai plugin yang dikelola komunitas bernama Vertex!!",
+			"description": "Kalau kamu belum mengikuti kabarnya, tim Roo Code baru-baru ini mengumumkan bahwa mereka menghentikan pengembangan Roo Code dan mengarsipkan pekerjaan yang telah mereka lakukan. Tapi jangan khawatir, komunitas telah melangkah maju untuk melanjutkan warisan Roo Code dengan nama baru dan rumah baru! Kita bukan lagi satu \"Roo\" saja, kita adalah sebuah komunitas, sebuah \"Vertex\" kalau boleh dibilang. Vertex adalah plugin yang dikelola komunitas dan melanjutkan dari titik terakhir Roo Code, dan kami berkomitmen menjaga semangat Roo tetap hidup sambil menghadirkan fitur dan peningkatan baru. Kami juga ingin memberi apresiasi besar kepada seluruh tim Roo Code atas kerja luar biasa mereka dan karena telah menciptakan alat yang luar biasa untuk para developer. Kami antusias melanjutkan fondasi mereka dan melihat ke mana komunitas akan membawa Vertex ke depannya!",
+			"readMore": "Lihat halaman beranda baru Vertex dan baca pengumuman lengkapnya"
 		},
 		"release": {
 			"heading": "Yang Baru:",
@@ -400,7 +400,7 @@
 	"profileViolationWarning": "Profil saat ini tidak kompatibel dengan pengaturan organisasi kamu",
 	"shellIntegration": {
 		"title": "Peringatan Eksekusi Perintah",
-		"description": "Perintah kamu dijalankan tanpa integrasi shell terminal VSCode. Untuk menekan peringatan ini kamu bisa menonaktifkan integrasi shell di bagian <strong>Terminal</strong> dari <settingsLink>pengaturan Vertex AI</settingsLink> atau troubleshoot integrasi terminal VSCode menggunakan link di bawah.",
+		"description": "Perintah kamu dijalankan tanpa integrasi shell terminal VSCode. Untuk menekan peringatan ini kamu bisa menonaktifkan integrasi shell di bagian <strong>Terminal</strong> dari <settingsLink>pengaturan Vertex</settingsLink> atau troubleshoot integrasi terminal VSCode menggunakan link di bawah.",
 		"troubleshooting": "Klik di sini untuk dokumentasi integrasi shell."
 	},
 	"ask": {
@@ -426,8 +426,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Versi {{version}} - Klik untuk melihat catatan rilis"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud sedang berkembang!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud sedang berkembang!",
 		"description": "Jalankan agen jarak jauh di cloud, akses tugas Anda dari mana saja, berkolaborasi dengan orang lain, dan banyak lagi.",
 		"joinWaitlist": "Daftar untuk mendapatkan pembaruan terbaru."
 	},

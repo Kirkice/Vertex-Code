@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 import { Trans } from "react-i18next"
 import { ArrowLeft, Brain } from "lucide-react"
 
-import { openRouterDefaultModelId, type ProviderSettings } from "@vertex-code/types"
+import { openRouterDefaultModelId, type ProviderSettings } from "@roo-code/types"
 
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { validateApiConfiguration } from "@src/utils/validate"
@@ -13,7 +13,7 @@ import { Button } from "@src/components/ui"
 import ApiOptions from "../settings/ApiOptions"
 import { Tab, TabContent } from "../common/Tab"
 
-import VertexHero from "./VertexHero"
+import RooHero from "./RooHero"
 
 const DEFAULT_WELCOME_API_CONFIGURATION: ProviderSettings = {
 	apiProvider: "openrouter",
@@ -22,7 +22,7 @@ const DEFAULT_WELCOME_API_CONFIGURATION: ProviderSettings = {
 
 const getWelcomeApiConfiguration = (
 	apiConfiguration?: ProviderSettings,
-	vertexCodeIsAuthenticated?: boolean,
+	vertexIsAuthenticated?: boolean,
 ): ProviderSettings => {
 	// validateApiConfiguration treats a missing apiProvider as valid (no switch case matches),
 	// so we explicitly fall back here before delegating to it for incomplete-but-set configs.
@@ -30,7 +30,7 @@ const getWelcomeApiConfiguration = (
 		return DEFAULT_WELCOME_API_CONFIGURATION
 	}
 
-	const validationError = validateApiConfiguration(apiConfiguration, undefined, undefined, vertexCodeIsAuthenticated)
+	const validationError = validateApiConfiguration(apiConfiguration, undefined, undefined, vertexIsAuthenticated)
 	if (validationError) {
 		return DEFAULT_WELCOME_API_CONFIGURATION
 	}
@@ -39,14 +39,14 @@ const getWelcomeApiConfiguration = (
 }
 
 const WelcomeViewProvider = () => {
-	const { apiConfiguration, currentApiConfigName, setApiConfiguration, uriScheme, vertexCodeIsAuthenticated } =
+	const { apiConfiguration, currentApiConfigName, setApiConfiguration, uriScheme, vertexIsAuthenticated } =
 		useExtensionState()
 	const { t } = useAppTranslation()
 	const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined)
 	const [showProviderSetup, setShowProviderSetup] = useState(false)
 	const [welcomeApiConfiguration, setWelcomeApiConfiguration] = useState<ProviderSettings>()
 	const effectiveApiConfiguration =
-		welcomeApiConfiguration ?? getWelcomeApiConfiguration(apiConfiguration, vertexCodeIsAuthenticated)
+		welcomeApiConfiguration ?? getWelcomeApiConfiguration(apiConfiguration, vertexIsAuthenticated)
 
 	const setApiConfigurationFieldForApiOptions = useCallback(
 		<K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => {
@@ -61,7 +61,7 @@ const WelcomeViewProvider = () => {
 
 	const handleGetStarted = useCallback(() => {
 		if (!showProviderSetup) {
-			const initialApiConfiguration = getWelcomeApiConfiguration(apiConfiguration, vertexCodeIsAuthenticated)
+			const initialApiConfiguration = getWelcomeApiConfiguration(apiConfiguration, vertexIsAuthenticated)
 			setWelcomeApiConfiguration(initialApiConfiguration)
 
 			setApiConfiguration(initialApiConfiguration)
@@ -70,7 +70,7 @@ const WelcomeViewProvider = () => {
 			return
 		}
 
-		const error = validateApiConfiguration(effectiveApiConfiguration, undefined, undefined, vertexCodeIsAuthenticated)
+		const error = validateApiConfiguration(effectiveApiConfiguration, undefined, undefined, vertexIsAuthenticated)
 
 		if (error) {
 			setErrorMessage(error)
@@ -89,14 +89,14 @@ const WelcomeViewProvider = () => {
 		setApiConfiguration,
 		effectiveApiConfiguration,
 		currentApiConfigName,
-		vertexCodeIsAuthenticated,
+		vertexIsAuthenticated,
 	])
 
 	if (!showProviderSetup) {
 		return (
 			<Tab>
 				<TabContent className="relative flex flex-col gap-4 p-6 justify-center">
-					<VertexHero />
+					<RooHero />
 					<h2 className="mt-0 mb-0 text-xl">{t("welcome:landing.greeting")}</h2>
 
 					<div className="space-y-4 leading-normal">

@@ -1,6 +1,6 @@
 import React from "react"
 import { render, screen, waitFor } from "@/utils/test-utils"
-import type { ModelInfo, ProviderSettings, RouterModels } from "@vertex-code/types"
+import type { ModelInfo, ProviderSettings, RouterModels } from "@roo-code/types"
 
 import { VertexGateway, pickVertexGatewayDefaultModelId } from "../VertexGateway"
 
@@ -11,10 +11,10 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 }))
 
 const extensionStateMock = {
-	vertexCodeIsAuthenticated: true,
-	vertexCodeUserEmail: "user@example.com",
-	vertexCodeUserName: "User",
-	vertexCodeBaseUrl: "https://www.vertexai.dev",
+	vertexIsAuthenticated: true,
+	vertexUserEmail: "user@example.com",
+	vertexUserName: "User",
+	vertexBaseUrl: "https://www.vertex.dev",
 	uriScheme: "vscode",
 	deviceName: "Test Device",
 }
@@ -24,7 +24,7 @@ vi.mock("@src/context/ExtensionStateContext", () => ({
 }))
 
 vi.mock("@src/oauth/urls", () => ({
-	getVertexAIAuthUrl: () => "https://www.vertexai.dev/dashboard/connect",
+	getVertexAuthUrl: () => "https://www.vertex.dev/dashboard/connect",
 }))
 
 vi.mock("../../ModelPicker", () => ({
@@ -169,8 +169,8 @@ describe("VertexGateway component", () => {
 	})
 
 	it("renders the sign-in validation error inline when not authenticated", () => {
-		const original = extensionStateMock.vertexCodeIsAuthenticated
-		extensionStateMock.vertexCodeIsAuthenticated = false
+		const original = extensionStateMock.vertexIsAuthenticated
+		extensionStateMock.vertexIsAuthenticated = false
 		try {
 			render(
 				<VertexGateway
@@ -183,7 +183,7 @@ describe("VertexGateway component", () => {
 
 			expect(screen.getByText("settings:validation.vertexGatewaySignIn")).toBeInTheDocument()
 		} finally {
-			extensionStateMock.vertexCodeIsAuthenticated = original
+			extensionStateMock.vertexIsAuthenticated = original
 		}
 	})
 })

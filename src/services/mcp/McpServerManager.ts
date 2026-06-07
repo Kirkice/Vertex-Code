@@ -1,264 +1,88 @@
-/**
- * McpServerManager - Singleton wrapper for McpHub
- * Manages MCP server lifecycle and configuration persistence
- */
-
 import * as vscode from "vscode"
-import * as fs from "fs/promises"
-import * as path from "path"
-
 import { McpHub } from "./McpHub"
-import type { McpServerConfig, McpServer } from "./types"
+import { SecretStorageService } from "./SecretStorageService"
+import { ClineProvider } from "../../core/webview/ClineProvider"
 
-const MCP_CONFIG_FILE = ".vertex/mcp_settings.json"
-
+/**
+ * Singleton manager for MCP server instances.
+ * Ensures only one set of MCP servers runs across all webviews.
+ */
 export class McpServerManager {
-	private static instance: McpServerManager
-	private mcpHub: McpHub
-	private extensionContext: vscode.ExtensionContext
-	private workspaceDir: string | undefined
-	private _enabled: boolean = true
-	private configWatcher?: vscode.FileSystemWatcher
+	private static instance: McpHub | null = null
+	private static readonly GLOBAL_STATE_KEY = "mcpHubInstanceId"
+	private static providers: Set<ClineProvider> = new Set()
+	private static initializationPromise: Promise<McpHub> | null = null
 
-	private constructor(context: vscode.ExtensionContext) {
-		this.extensionContext = context
-		this.mcpHub = new McpHub()
-		this.workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+	/**
+	 * Get the singleton McpHub instance.
+	 * Creates a new instance if one doesn't exist.
+	 * Thread-safe implementation using a promise-based lock.
+	 */
+	static async getInstance(context: vscode.ExtensionContext, provider: ClineProvider): Promise<McpHub> {
+		// Register the provider
+		this.providers.add(provider)
 
-		// Listen for hub events
-		this.mcpHub.on("servers-updated", (servers) => {
-			// Notify webview of server updates
+		// If we already have an instance, return it
+		if (this.instance) {
+			return this.instance
+		}
+
+		// If initialization is in progress, wait for it
+		if (this.initializationPromise) {
+			return this.initializationPromise
+		}
+
+		// Create a new initialization promise
+		this.initializationPromise = (async () => {
+			try {
+				// Double-check instance in case it was created while we were waiting
+				if (!this.instance) {
+					const secretStorage = new SecretStorageService(context)
+					const hub = new McpHub(provider, secretStorage)
+					// Wait for all MCP servers to finish connecting (or timing out)
+					await hub.waitUntilReady()
+					this.instance = hub
+					// Store a unique identifier in global state to track the primary instance
+					await context.globalState.update(this.GLOBAL_STATE_KEY, Date.now().toString())
+				}
+				return this.instance
+			} finally {
+				// Clear the initialization promise after completion or error
+				this.initializationPromise = null
+			}
+		})()
+
+		return this.initializationPromise
+	}
+
+	/**
+	 * Remove a provider from the tracked set.
+	 * This is called when a webview is disposed.
+	 */
+	static unregisterProvider(provider: ClineProvider): void {
+		this.providers.delete(provider)
+	}
+
+	/**
+	 * Notify all registered providers of server state changes.
+	 */
+	static notifyProviders(message: any): void {
+		this.providers.forEach((provider) => {
+			provider.postMessageToWebview(message).catch((error) => {
+				console.error("Failed to notify provider:", error)
+			})
 		})
 	}
 
 	/**
-	 * Get singleton instance
+	 * Clean up the singleton instance and all its resources.
 	 */
-	static getInstance(context: vscode.ExtensionContext): McpServerManager {
-		if (!McpServerManager.instance) {
-			McpServerManager.instance = new McpServerManager(context)
+	static async cleanup(context: vscode.ExtensionContext): Promise<void> {
+		if (this.instance) {
+			await this.instance.dispose()
+			this.instance = null
+			await context.globalState.update(this.GLOBAL_STATE_KEY, undefined)
 		}
-		return McpServerManager.instance
-	}
-
-	/**
-	 * Get the McpHub instance
-	 */
-	getHub(): McpHub {
-		return this.mcpHub
-	}
-
-	/**
-	 * Get all servers
-	 */
-	getServers(): McpServer[] {
-		return this.mcpHub.getServers()
-	}
-
-	/**
-	 * Enable or disable MCP
-	 */
-	setEnabled(enabled: boolean): void {
-		this._enabled = enabled
-
-		if (!enabled) {
-			this.mcpHub.disconnectAll()
-		}
-	}
-
-	/**
-	 * Check if MCP is enabled
-	 */
-	isEnabled(): boolean {
-		return this._enabled
-	}
-
-	/**
-	 * Initialize MCP servers from config file
-	 */
-	async initialize(): Promise<void> {
-		if (!this.workspaceDir) {
-			console.log("[McpServerManager] No workspace directory, skipping initialization")
-			return
-		}
-
-		// Load config from workspace
-		const configs = await this.loadConfig()
-
-		// Connect to each configured server
-		for (const config of configs) {
-			if (!config.disabled) {
-				await this.mcpHub.connectServer(config)
-			}
-		}
-
-		// Watch for config changes
-		this.setupConfigWatcher()
-	}
-
-	/**
-	 * Load MCP server configurations from file
-	 */
-	async loadConfig(): Promise<McpServerConfig[]> {
-		if (!this.workspaceDir) {
-			return []
-		}
-
-		const configPath = path.join(this.workspaceDir, MCP_CONFIG_FILE)
-
-		try {
-			const content = await fs.readFile(configPath, "utf-8")
-			const parsed = JSON.parse(content)
-
-			// Support both array format and object format { mcpServers: [...] }
-			if (Array.isArray(parsed)) {
-				return parsed
-			} else if (parsed.mcpServers) {
-				return Object.entries(parsed.mcpServers).map(([name, config]: [string, any]) => ({
-					name,
-					...config,
-				}))
-			}
-
-			return []
-		} catch (error) {
-			if ((error as any).code !== "ENOENT") {
-				console.error("[McpServerManager] Failed to load config:", error)
-			}
-			return []
-		}
-	}
-
-	/**
-	 * Save MCP server configurations to file
-	 */
-	async saveConfig(configs: McpServerConfig[]): Promise<void> {
-		if (!this.workspaceDir) {
-			throw new Error("No workspace directory")
-		}
-
-		const configPath = path.join(this.workspaceDir, MCP_CONFIG_FILE)
-		const configDir = path.dirname(configPath)
-
-		// Ensure directory exists
-		await fs.mkdir(configDir, { recursive: true })
-
-		// Convert to object format for better readability
-		const mcpServers: Record<string, any> = {}
-
-		for (const config of configs) {
-			const { name, ...rest } = config
-			mcpServers[name] = rest
-		}
-
-		const content = JSON.stringify({ mcpServers }, null, 2)
-		await fs.writeFile(configPath, content, "utf-8")
-	}
-
-	/**
-	 * Add a new MCP server
-	 */
-	async addServer(config: McpServerConfig): Promise<void> {
-		const configs = await this.loadConfig()
-
-		// Check if server already exists
-		const existing = configs.findIndex((c) => c.name === config.name)
-
-		if (existing >= 0) {
-			configs[existing] = config
-		} else {
-			configs.push(config)
-		}
-
-		await this.saveConfig(configs)
-
-		// Connect if not disabled
-		if (!config.disabled) {
-			await this.mcpHub.connectServer(config)
-		}
-	}
-
-	/**
-	 * Remove an MCP server
-	 */
-	async removeServer(name: string): Promise<void> {
-		await this.mcpHub.disconnectServer(name)
-
-		const configs = await this.loadConfig()
-		const filtered = configs.filter((c) => c.name !== name)
-		await this.saveConfig(filtered)
-	}
-
-	/**
-	 * Update an MCP server configuration
-	 */
-	async updateServer(name: string, config: Partial<McpServerConfig>): Promise<void> {
-		const configs = await this.loadConfig()
-		const index = configs.findIndex((c) => c.name === name)
-
-		if (index < 0) {
-			throw new Error(`Server ${name} not found`)
-		}
-
-		configs[index] = { ...configs[index], ...config }
-		await this.saveConfig(configs)
-
-		// Restart the server
-		await this.mcpHub.restartServer(name)
-	}
-
-	/**
-	 * Restart a specific server
-	 */
-	async restartServer(name: string): Promise<void> {
-		await this.mcpHub.restartServer(name)
-	}
-
-	/**
-	 * Restart all servers
-	 */
-	async restartAll(): Promise<void> {
-		await this.mcpHub.disconnectAll()
-
-		const configs = await this.loadConfig()
-
-		for (const config of configs) {
-			if (!config.disabled) {
-				await this.mcpHub.connectServer(config)
-			}
-		}
-	}
-
-	/**
-	 * Setup file watcher for config changes
-	 */
-	private setupConfigWatcher(): void {
-		if (!this.workspaceDir) return
-
-		const pattern = new vscode.RelativePattern(this.workspaceDir, MCP_CONFIG_FILE)
-		this.configWatcher = vscode.workspace.createFileSystemWatcher(pattern)
-
-		this.configWatcher.onDidChange(async () => {
-			console.log("[McpServerManager] Config file changed, reloading...")
-			await this.restartAll()
-		})
-
-		this.configWatcher.onDidCreate(async () => {
-			console.log("[McpServerManager] Config file created, loading...")
-			await this.restartAll()
-		})
-
-		this.configWatcher.onDidDelete(async () => {
-			console.log("[McpServerManager] Config file deleted, disconnecting all...")
-			await this.mcpHub.disconnectAll()
-		})
-	}
-
-	/**
-	 * Cleanup resources
-	 */
-	async dispose(): Promise<void> {
-		this.configWatcher?.dispose()
-		await this.mcpHub.disconnectAll()
+		this.providers.clear()
 	}
 }

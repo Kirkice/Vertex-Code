@@ -9,7 +9,7 @@ import {
 	type ProviderSettings,
 	isRetiredProvider,
 	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
 import {
 	getProviderServiceConfig,
@@ -247,7 +247,7 @@ const ApiOptions = ({
 		}
 
 		// Vertex Gateway renders its own auth-state error inline (sign-in card in
-		// VertexGateway.tsx) so it can react to vertexCodeIsAuthenticated changes
+		// VertexGateway.tsx) so it can react to vertexIsAuthenticated changes
 		// without re-running this effect or threading auth state through validation.
 		if (apiConfiguration.apiProvider === "vertex-gateway") {
 			setErrorMessage(undefined)

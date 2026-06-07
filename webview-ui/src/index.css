@@ -23,7 +23,7 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-	--font-display: var(--vscode-font-family), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", EmojiSymbols, sans-serif;
+	--font-display: var(--vscode-font-family);
 
 	--text-xs: calc(var(--vscode-font-size) * 0.85);
 	--text-sm: calc(var(--vscode-font-size) * 0.9);
@@ -184,7 +184,6 @@
 
 	body {
 		--vscode-input-border: var(--border);
-		font-family: var(--vscode-font-family), "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 	}
 }
 
@@ -255,7 +254,7 @@ html {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	/*
-	 * Font size for the Vertex AI chat message surface (consumed by MarkdownBlock).
+	 * Font size for the Vertex chat message surface (consumed by MarkdownBlock).
 	 * Defaults to VS Code's font size so appearance is unchanged unless the user
 	 * configures the "Chat font size" setting, which overrides this variable at
 	 * runtime. Scoped to chat rendering so it does not resize settings/other UI.

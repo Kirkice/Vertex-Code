@@ -1,5 +1,5 @@
 {
-	"greeting": "Welcome to Vertex AI!",
+	"greeting": "Welcome to Vertex!",
 	"task": {
 		"title": "Task",
 		"expand": "Expand task",
@@ -118,7 +118,7 @@
 	"about": "Vertex is a whole AI dev team in your editor",
 	"docs": "Check our <DocsLink>docs</DocsLink> to get started",
 	"onboarding": "What would you like to do?",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Customizable modes that don't swerve",
 			"description": "Specialized personas that stay on-task and deliver."
@@ -175,7 +175,7 @@
 			"docs": "Docs",
 			"goToSettings": "Settings",
 			"connection": "Connection error. Make sure you have a working internet connection.",
-			"unknown": "Unknown API error. Please contact Vertex AI support.",
+			"unknown": "Unknown API error. Please contact Vertex support.",
 			"claudeCodeNotAuthenticated": "You need to sign in to use Claude Code. Go to Settings and click \"Sign in to Claude Code\" to authenticate."
 		}
 	},
@@ -278,7 +278,7 @@
 	"response": "Response",
 	"arguments": "Arguments",
 	"text": {
-		"vertexSaid": "Vertex said"
+		"rooSaid": "Vertex said"
 	},
 	"feedback": {
 		"youSaid": "You said"
@@ -347,12 +347,12 @@
 		"triggerLabelAll": "BRRR"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} Released",
-		"support": "Please support Vertex AI by starring us on <githubLink>GitHub</githubLink>.",
+		"title": "Vertex {{version}} Released",
+		"support": "Please support Vertex by starring us on <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Vertex Code is back! Now as a community-maintained plugin called Vertex AI!!",
-			"description": "If you haven't been following, the Vertex Code team recently announced they are sun setting the development of Vertex Code and are archiving the work they have done. But fear not, the community has stepped up to continue the legacy of Vertex Code with a new name and a new home! We are not just a single \"Vertex\" anymore, we are a community, a \"Vertex\" if you will, Vertex AI is a community-maintained plugin that picks up where Vertex Code left off, and we're committed to keeping the spirit of Vertex alive while also introducing new features and improvements. We want to give a huge shoutout to the entire Vertex Code team for their incredible work and for creating such an amazing tool for developers. We're excited to continue building on their foundation and to see where the community takes Vertex AI in the future!",
-			"readMore": "See the new home page of Vertex AI and read the full announcement"
+			"heading": "Roo Code is back! Now as a community-maintained plugin called Vertex!!",
+			"description": "If you haven't been following, the Roo Code team recently announced they are sun setting the development of Roo Code and are archiving the work they have done. But fear not, the community has stepped up to continue the legacy of Roo Code with a new name and a new home! We are not just a single \"Roo\" anymore, we are a community, a \"Vertex\" if you will, Vertex is a community-maintained plugin that picks up where Roo Code left off, and we're committed to keeping the spirit of Roo alive while also introducing new features and improvements. We want to give a huge shoutout to the entire Roo Code team for their incredible work and for creating such an amazing tool for developers. We're excited to continue building on their foundation and to see where the community takes Vertex in the future!",
+			"readMore": "See the new home page of Vertex and read the full announcement"
 		},
 		"release": {
 			"heading": "What's New:",
@@ -390,7 +390,7 @@
 	"profileViolationWarning": "The current profile isn't compatible with your organization's settings",
 	"shellIntegration": {
 		"title": "Command Execution Warning",
-		"description": "Your command is being executed without VSCode terminal shell integration. To suppress this warning you can disable shell integration in the <strong>Terminal</strong> section of the <settingsLink>Vertex AI settings</settingsLink> or troubleshoot VSCode terminal integration using the link below.",
+		"description": "Your command is being executed without VSCode terminal shell integration. To suppress this warning you can disable shell integration in the <strong>Terminal</strong> section of the <settingsLink>Vertex settings</settingsLink> or troubleshoot VSCode terminal integration using the link below.",
 		"troubleshooting": "Click here for shell integration documentation."
 	},
 	"ask": {

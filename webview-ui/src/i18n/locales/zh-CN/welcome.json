@@ -1,18 +1,18 @@
 {
 	"landing": {
-		"greeting": "欢迎使用 Vertex AI！",
-		"introduction": "通过一系列内置和可扩展的模式，Vertex AI 让你能够以前所未有的方式进行规划、架构设计、编码、调试并提升工作效率。",
+		"greeting": "欢迎使用 Vertex！",
+		"introduction": "通过一系列内置和可扩展的模式，Vertex 让你能够以前所未有的方式进行规划、架构设计、编码、调试并提升工作效率。",
 		"getStarted": "选择你的供应商"
 	},
 	"providerSignup": {
 		"heading": "选择你的供应商",
-		"chooseProvider": "Vertex AI 需要 LLM 提供商才能工作。选择一个开始使用，你可以稍后添加更多。",
+		"chooseProvider": "Vertex 需要 LLM 提供商才能工作。选择一个开始使用，你可以稍后添加更多。",
 		"goBack": "返回",
 		"finish": "完成"
 	},
 	"telemetry": {
-		"helpImprove": "帮助改进 Vertex AI",
-		"helpImproveMessage": "Vertex AI 收集错误和使用数据以帮助我们修复 Bug 并改进扩展。此遥测不收集代码、提示或个人信息。你可以在<settingsLink>设置</settingsLink>中将其关闭。"
+		"helpImprove": "帮助改进 Vertex",
+		"helpImproveMessage": "Vertex 收集错误和使用数据以帮助我们修复 Bug 并改进扩展。此遥测不收集代码、提示或个人信息。你可以在<settingsLink>设置</settingsLink>中将其关闭。"
 	},
 	"importSettings": "导入设置"
 }

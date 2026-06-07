@@ -1,5 +1,5 @@
 {
-	"greeting": "Witamy w Vertex AI!",
+	"greeting": "Witamy w Vertex!",
 	"task": {
 		"title": "Zadanie",
 		"expand": "Rozwiń zadanie",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Dodaj wiadomość do kolejki (zostanie wysłana po zakończeniu bieżącego zadania)",
 	"scrollToBottom": "Przewiń do dołu czatu",
 	"scrollToLatestCheckpoint": "Przewiń do poprzedniego punktu kontrolnego",
-	"about": "Vertex AI to cały zespół deweloperów AI w Twoim edytorze.",
+	"about": "Vertex to cały zespół deweloperów AI w Twoim edytorze.",
 	"docs": "Sprawdź naszą <DocsLink>dokumentację</DocsLink>, aby dowiedzieć się więcej.",
 	"onboarding": "Twoja lista zadań w tym obszarze roboczym jest pusta.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Konfigurowalne tryby",
 			"description": "Wyspecjalizowane persony, które trzymają się zadania i dostarczają."
@@ -152,7 +152,7 @@
 			"500": "Błąd serwera dostawcy. Po stronie dostawcy coś się nie powiodło, w Twoim żądaniu nie ma nic złego.",
 			"docs": "Dokumentacja",
 			"goToSettings": "Ustawienia",
-			"unknown": "Nieznany błąd API. Skontaktuj się z pomocą techniczną Vertex AI.",
+			"unknown": "Nieznany błąd API. Skontaktuj się z pomocą techniczną Vertex.",
 			"connection": "Błąd połączenia. Upewnij się, że masz działające połączenie internetowe.",
 			"claudeCodeNotAuthenticated": "Musisz się zalogować, aby korzystać z Claude Code. Przejdź do Ustawień i kliknij \"Zaloguj się do Claude Code\", aby się uwierzytelnić."
 		}
@@ -177,7 +177,7 @@
 		"current": "Bieżący"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex chce pobrać szczegółowe instrukcje, aby pomóc w bieżącym zadaniu"
+		"wantsToFetch": "Roo chce pobrać szczegółowe instrukcje, aby pomóc w bieżącym zadaniu"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex chce przeczytać ten plik",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex chce edytować ten plik poza obszarem roboczym",
 		"wantsToEditProtected": "Vertex chce edytować chroniony plik konfiguracyjny",
 		"wantsToCreate": "Vertex chce utworzyć nowy plik",
-		"wantsToSearchReplace": "Vertex chce wykonać wyszukiwanie i zamianę w tym pliku",
-		"didSearchReplace": "Vertex wykonał wyszukiwanie i zamianę w tym pliku",
+		"wantsToSearchReplace": "Roo chce wykonać wyszukiwanie i zamianę w tym pliku",
+		"didSearchReplace": "Roo wykonał wyszukiwanie i zamianę w tym pliku",
 		"wantsToInsert": "Vertex chce wstawić zawartość do tego pliku",
 		"wantsToInsertWithLineNumber": "Vertex chce wstawić zawartość do tego pliku w linii {{lineNumber}}",
 		"wantsToInsertAtEnd": "Vertex chce dodać zawartość na końcu tego pliku",
@@ -235,7 +235,7 @@
 	"response": "Odpowiedź",
 	"arguments": "Argumenty",
 	"text": {
-		"vertexSaid": "Vertex powiedział"
+		"rooSaid": "Vertex powiedział"
 	},
 	"feedback": {
 		"youSaid": "Powiedziałeś"
@@ -328,12 +328,12 @@
 		"timerPrefix": "Automatyczne zatwierdzanie włączone. Zaznaczanie za {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} wydany",
-		"support": "Wesprzyj Vertex AI, dając nam gwiazdkę na <githubLink>GitHub</githubLink>.",
+		"title": "Vertex {{version}} wydany",
+		"support": "Wesprzyj Vertex, dając nam gwiazdkę na <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Vertex Code wraca! Teraz jako wtyczka utrzymywana przez społeczność pod nazwą Vertex AI!!",
-			"description": "Jeśli nie jesteś na bieżąco, zespół Vertex Code niedawno ogłosił, że wygasza rozwój Vertex Code i archiwizuje dotychczasową pracę. Ale bez obaw — społeczność ruszyła do działania, aby kontynuować dziedzictwo Vertex Code pod nową nazwą i w nowym domu! Nie jesteśmy już tylko jednym „Vertex” — jesteśmy społecznością, czyli „Vertex”, jeśli wolisz. Vertex AI to wtyczka utrzymywana przez społeczność, która przejmuje pałeczkę tam, gdzie Vertex Code skończył, i zobowiązujemy się zachować ducha Vertex, jednocześnie wprowadzając nowe funkcje i ulepszenia. Chcemy też ogromnie podziękować całemu zespołowi Vertex Code za ich niesamowitą pracę i stworzenie tak świetnego narzędzia dla deweloperów. Cieszymy się, że możemy rozwijać ich dorobek i zobaczyć, dokąd społeczność zaprowadzi Vertex AI w przyszłości!",
-			"readMore": "Zobacz nową stronę główną Vertex AI i przeczytaj pełne ogłoszenie"
+			"heading": "Roo Code wraca! Teraz jako wtyczka utrzymywana przez społeczność pod nazwą Vertex!!",
+			"description": "Jeśli nie jesteś na bieżąco, zespół Roo Code niedawno ogłosił, że wygasza rozwój Roo Code i archiwizuje dotychczasową pracę. Ale bez obaw — społeczność ruszyła do działania, aby kontynuować dziedzictwo Roo Code pod nową nazwą i w nowym domu! Nie jesteśmy już tylko jednym „Roo” — jesteśmy społecznością, czyli „Vertex”, jeśli wolisz. Vertex to wtyczka utrzymywana przez społeczność, która przejmuje pałeczkę tam, gdzie Roo Code skończył, i zobowiązujemy się zachować ducha Roo, jednocześnie wprowadzając nowe funkcje i ulepszenia. Chcemy też ogromnie podziękować całemu zespołowi Roo Code za ich niesamowitą pracę i stworzenie tak świetnego narzędzia dla deweloperów. Cieszymy się, że możemy rozwijać ich dorobek i zobaczyć, dokąd społeczność zaprowadzi Vertex w przyszłości!",
+			"readMore": "Zobacz nową stronę główną Vertex i przeczytaj pełne ogłoszenie"
 		},
 		"release": {
 			"heading": "Co nowego:",
@@ -363,7 +363,7 @@
 	"profileViolationWarning": "Bieżący profil nie jest kompatybilny z ustawieniami Twojej organizacji",
 	"shellIntegration": {
 		"title": "Ostrzeżenie wykonania polecenia",
-		"description": "Twoje polecenie jest wykonywane bez integracji powłoki terminala VSCode. Aby ukryć to ostrzeżenie, możesz wyłączyć integrację powłoki w sekcji <strong>Terminal</strong> w <settingsLink>ustawieniach Vertex AI</settingsLink> lub rozwiązać problemy z integracją terminala VSCode korzystając z poniższego linku.",
+		"description": "Twoje polecenie jest wykonywane bez integracji powłoki terminala VSCode. Aby ukryć to ostrzeżenie, możesz wyłączyć integrację powłoki w sekcji <strong>Terminal</strong> w <settingsLink>ustawieniach Vertex</settingsLink> lub rozwiązać problemy z integracją terminala VSCode korzystając z poniższego linku.",
 		"troubleshooting": "Kliknij tutaj, aby zobaczyć dokumentację integracji powłoki."
 	},
 	"ask": {
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Wersja {{version}} - Kliknij, aby wyświetlić informacje o wydaniu"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud się rozwija!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud się rozwija!",
 		"description": "Uruchamiaj zdalne agenty w chmurze, uzyskuj dostęp do swoich zadań z dowolnego miejsca, współpracuj z innymi i wiele więcej.",
 		"joinWaitlist": "Zarejestruj się, aby otrzymywać najnowsze aktualizacje."
 	},

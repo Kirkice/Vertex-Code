@@ -27,9 +27,9 @@
 		"loading": "生成 Mermaid 图表中...",
 		"render_error": "无法渲染图表",
 		"buttons": {
-			"vertexm": "缩放",
-			"vertexmIn": "放大",
-			"vertexmOut": "缩小",
+			"zoom": "缩放",
+			"zoomIn": "放大",
+			"zoomOut": "缩小",
 			"copy": "复制",
 			"save": "保存图片",
 			"viewCode": "查看代码",

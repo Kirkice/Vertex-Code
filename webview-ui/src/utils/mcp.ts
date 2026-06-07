@@ -1,4 +1,4 @@
-import type { McpResource, McpResourceTemplate } from "@vertex-code/types"
+import type { McpResource, McpResourceTemplate } from "@roo-code/types"
 
 /**
  * Matches a URI against an array of URI templates and returns the matching template

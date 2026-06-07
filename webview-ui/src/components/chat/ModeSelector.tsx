@@ -2,16 +2,16 @@ import React from "react"
 import { Fzf } from "fzf"
 import { Check, X } from "lucide-react"
 
-import { type ModeConfig, type CustomModePrompts, TelemetryEventName } from "@vertex-code/types"
+import { type ModeConfig, type CustomModePrompts, TelemetryEventName } from "@roo-code/types"
 
-import { type Mode, getAllModes, defaultModeSlug } from "@vertex/modes"
+import { type Mode, getAllModes, defaultModeSlug } from "@roo/modes"
 
 import { vscode } from "@/utils/vscode"
 import { telemetryClient } from "@/utils/TelemetryClient"
 import { cn } from "@/lib/utils"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { useAppTranslation } from "@/i18n/TranslationContext"
-import { useVertexPortal } from "@/components/ui/hooks/useVertexPortal"
+import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 
 import { IconButton } from "./IconButton"
@@ -47,7 +47,7 @@ export const ModeSelector = ({
 	const selectedItemRef = React.useRef<HTMLDivElement>(null)
 	const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 	const lastNotifiedInvalidModeRef = React.useRef<string | null>(null)
-	const portalContainer = useVertexPortal("vertex-portal")
+	const portalContainer = useRooPortal("roo-portal")
 	const { hasOpenedModeSelector, setHasOpenedModeSelector } = useExtensionState()
 	const { t } = useAppTranslation()
 
@@ -311,6 +311,21 @@ export const ModeSelector = ({
 					{/* Bottom bar with buttons on left and title on right */}
 					<div className="flex flex-row items-center justify-between px-2 py-2 border-t border-vscode-dropdown-border">
 						<div className="flex flex-row gap-1">
+							<IconButton
+								iconClass="codicon-extensions"
+								title={t("chat:modeSelector.marketplace")}
+								onClick={() => {
+									window.postMessage(
+										{
+											type: "action",
+											action: "marketplaceButtonClicked",
+											values: { marketplaceTab: "mode" },
+										},
+										"*",
+									)
+									setOpen(false)
+								}}
+							/>
 							<IconButton
 								iconClass="codicon-settings-gear"
 								title={t("chat:modeSelector.settings")}

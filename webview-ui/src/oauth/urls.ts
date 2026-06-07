@@ -1,4 +1,4 @@
-import { Package } from "@vertex/package"
+import { Package } from "@roo/package"
 
 export function getCallbackUrl(provider: string, uriScheme?: string) {
 	return encodeURIComponent(`${uriScheme || "vscode"}://${Package.publisher}.${Package.name}/${provider}`)
@@ -12,10 +12,10 @@ export function getRequestyAuthUrl(uriScheme?: string) {
 	return `https://app.requesty.ai/oauth/authorize?callback_url=${getCallbackUrl("requesty", uriScheme)}`
 }
 
-const VERTEX_AI_DEFAULT_BASE_URL = "https://www.vertexai.dev"
+const VERTEX_DEFAULT_BASE_URL = "https://www.vertex.dev"
 
-export function getVertexAIAuthUrl(uriScheme?: string, baseUrl?: string, deviceName?: string) {
-	const resolvedBaseUrl = baseUrl || VERTEX_AI_DEFAULT_BASE_URL
+export function getVertexAuthUrl(uriScheme?: string, baseUrl?: string, deviceName?: string) {
+	const resolvedBaseUrl = baseUrl || VERTEX_DEFAULT_BASE_URL
 	const callbackUri = getCallbackUrl("auth-callback", uriScheme)
 	const resolvedDeviceName = encodeURIComponent(deviceName || "VS Code")
 	const editor = encodeURIComponent("VS Code")

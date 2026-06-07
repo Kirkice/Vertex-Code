@@ -1,5 +1,5 @@
 {
-	"greeting": "Vertex AI में आपका स्वागत है!",
+	"greeting": "Vertex में आपका स्वागत है!",
 	"task": {
 		"title": "कार्य",
 		"expand": "कार्य विस्तृत करें",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "संदेश को कतार में जोड़ें (वर्तमान कार्य पूरा होने के बाद भेजा जाएगा)",
 	"scrollToBottom": "चैट के निचले हिस्से तक स्क्रॉल करें",
 	"scrollToLatestCheckpoint": "पिछले चेकपॉइंट तक स्क्रॉल करें",
-	"about": "Vertex AI आपके संपादक में एक पूरी AI देव टीम है।",
+	"about": "Vertex आपके संपादक में एक पूरी AI देव टीम है।",
 	"docs": "और जानने के लिए हमारे <DocsLink>दस्तावेज़</DocsLink> देखें।",
 	"onboarding": "इस कार्यक्षेत्र में आपकी कार्य सूची खाली है।",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "अनुकूलन योग्य मोड",
 			"description": "विशेष व्यक्ति जो कार्य पर बने रहते हैं और वितरित करते हैं।"
@@ -152,7 +152,7 @@
 			"500": "प्रदाता सर्वर त्रुटि। प्रदाता की ओर से कुछ गलत है, आपके अनुरोध में कुछ गलत नहीं है।",
 			"docs": "डॉक्स",
 			"goToSettings": "सेटिंग्स",
-			"unknown": "अज्ञात API त्रुटि। कृपया Vertex AI सहायता से संपर्क करें।",
+			"unknown": "अज्ञात API त्रुटि। कृपया Vertex सहायता से संपर्क करें।",
 			"connection": "कनेक्शन त्रुटि। सुनिश्चित करें कि आपके पास कार्यशील इंटरनेट कनेक्शन है।",
 			"claudeCodeNotAuthenticated": "Claude Code का उपयोग करने के लिए आपको साइन इन करना होगा। सेटिंग्स में जाएं और प्रमाणित करने के लिए \"Claude Code में साइन इन करें\" पर क्लिक करें।"
 		}
@@ -177,7 +177,7 @@
 		"current": "वर्तमान"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex को वर्तमान कार्य में सहायता के लिए विस्तृत निर्देश प्राप्त करना है"
+		"wantsToFetch": "Roo को वर्तमान कार्य में सहायता के लिए विस्तृत निर्देश प्राप्त करना है"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex इस फ़ाइल को पढ़ना चाहता है",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex कार्यक्षेत्र के बाहर इस फ़ाइल को संपादित करना चाहता है",
 		"wantsToEditProtected": "Vertex एक सुरक्षित कॉन्फ़िगरेशन फ़ाइल को संपादित करना चाहता है",
 		"wantsToCreate": "Vertex एक नई फ़ाइल बनाना चाहता है",
-		"wantsToSearchReplace": "Vertex इस फ़ाइल में खोज और प्रतिस्थापन करना चाहता है",
-		"didSearchReplace": "Vertex ने इस फ़ाइल में खोज और प्रतिस्थापन किया",
+		"wantsToSearchReplace": "Roo इस फ़ाइल में खोज और प्रतिस्थापन करना चाहता है",
+		"didSearchReplace": "Roo ने इस फ़ाइल में खोज और प्रतिस्थापन किया",
 		"wantsToInsert": "Vertex इस फ़ाइल में सामग्री डालना चाहता है",
 		"wantsToInsertWithLineNumber": "Vertex इस फ़ाइल की {{lineNumber}} लाइन पर सामग्री डालना चाहता है",
 		"wantsToInsertAtEnd": "Vertex इस फ़ाइल के अंत में सामग्री जोड़ना चाहता है",
@@ -235,7 +235,7 @@
 	"response": "प्रतिक्रिया",
 	"arguments": "आर्ग्युमेंट्स",
 	"text": {
-		"vertexSaid": "रू ने कहा"
+		"rooSaid": "रू ने कहा"
 	},
 	"feedback": {
 		"youSaid": "आपने कहा"
@@ -328,12 +328,12 @@
 		"timerPrefix": "ऑटो-अनुमोदन सक्षम है। {{seconds}}s में चयन किया जा रहा है…"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} रिलीज़ हो गया",
-		"support": "कृपया <githubLink>GitHub</githubLink> पर हमें स्टार देकर Vertex AI का समर्थन करें।",
+		"title": "Vertex {{version}} रिलीज़ हो गया",
+		"support": "कृपया <githubLink>GitHub</githubLink> पर हमें स्टार देकर Vertex का समर्थन करें।",
 		"handoff": {
-			"heading": "Vertex Code वापस आ गया है! अब Vertex AI नाम के community-maintained plugin के रूप में!!",
-			"description": "अगर आपने हाल की खबर नहीं देखी, तो Vertex Code टीम ने हाल ही में घोषणा की कि वे Vertex Code का विकास बंद कर रहे हैं और अब तक किए गए काम को archive कर रहे हैं। लेकिन चिंता मत करें, community नए नाम और नए घर के साथ Vertex Code की विरासत को आगे बढ़ाने के लिए आगे आई है! अब हम सिर्फ एक \"Vertex\" नहीं हैं, हम एक community हैं — अगर चाहो तो एक \"Vertex\"। Vertex AI एक community-maintained plugin है जो वहीं से आगे बढ़ता है जहाँ Vertex Code रुका था, और हम Vertex की भावना को ज़िंदा रखते हुए नई सुविधाएँ और सुधार लाने के लिए प्रतिबद्ध हैं। हम पूरी Vertex Code टीम को उनके शानदार काम और डेवलपर्स के लिए इतना बेहतरीन tool बनाने के लिए दिल से धन्यवाद देना चाहते हैं। हम उनकी बनाई नींव पर आगे निर्माण करने और यह देखने के लिए उत्साहित हैं कि community Vertex AI को आगे कहाँ ले जाती है!",
-			"readMore": "Vertex AI का नया होम पेज देखें और पूरी घोषणा पढ़ें"
+			"heading": "Roo Code वापस आ गया है! अब Vertex नाम के community-maintained plugin के रूप में!!",
+			"description": "अगर आपने हाल की खबर नहीं देखी, तो Roo Code टीम ने हाल ही में घोषणा की कि वे Roo Code का विकास बंद कर रहे हैं और अब तक किए गए काम को archive कर रहे हैं। लेकिन चिंता मत करें, community नए नाम और नए घर के साथ Roo Code की विरासत को आगे बढ़ाने के लिए आगे आई है! अब हम सिर्फ एक \"Roo\" नहीं हैं, हम एक community हैं — अगर चाहो तो एक \"Vertex\"। Vertex एक community-maintained plugin है जो वहीं से आगे बढ़ता है जहाँ Roo Code रुका था, और हम Roo की भावना को ज़िंदा रखते हुए नई सुविधाएँ और सुधार लाने के लिए प्रतिबद्ध हैं। हम पूरी Roo Code टीम को उनके शानदार काम और डेवलपर्स के लिए इतना बेहतरीन tool बनाने के लिए दिल से धन्यवाद देना चाहते हैं। हम उनकी बनाई नींव पर आगे निर्माण करने और यह देखने के लिए उत्साहित हैं कि community Vertex को आगे कहाँ ले जाती है!",
+			"readMore": "Vertex का नया होम पेज देखें और पूरी घोषणा पढ़ें"
 		},
 		"release": {
 			"heading": "नया क्या है:",
@@ -363,7 +363,7 @@
 	"profileViolationWarning": "वर्तमान प्रोफ़ाइल आपके संगठन की सेटिंग्स के साथ संगत नहीं है",
 	"shellIntegration": {
 		"title": "कमांड निष्पादन चेतावनी",
-		"description": "आपका कमांड VSCode टर्मिनल शेल इंटीग्रेशन के बिना निष्पादित हो रहा है। इस चेतावनी को दबाने के लिए आप <settingsLink>Vertex AI सेटिंग्स</settingsLink> के <strong>Terminal</strong> अनुभाग में शेल इंटीग्रेशन को अक्षम कर सकते हैं या नीचे दिए गए लिंक का उपयोग करके VSCode टर्मिनल इंटीग्रेशन की समस्या का समाधान कर सकते हैं।",
+		"description": "आपका कमांड VSCode टर्मिनल शेल इंटीग्रेशन के बिना निष्पादित हो रहा है। इस चेतावनी को दबाने के लिए आप <settingsLink>Vertex सेटिंग्स</settingsLink> के <strong>Terminal</strong> अनुभाग में शेल इंटीग्रेशन को अक्षम कर सकते हैं या नीचे दिए गए लिंक का उपयोग करके VSCode टर्मिनल इंटीग्रेशन की समस्या का समाधान कर सकते हैं।",
 		"troubleshooting": "शेल इंटीग्रेशन दस्तावेज़ के लिए यहां क्लिक करें।"
 	},
 	"ask": {
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "संस्करण {{version}} - रिलीज़ नोट्स देखने के लिए क्लिक करें"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud विकसित हो रहा है!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud विकसित हो रहा है!",
 		"description": "क्लाउड में रिमोट एजेंट चलाएं, कहीं से भी अपने कार्यों तक पहुंचें, दूसरों के साथ सहयोग करें, और बहुत कुछ।",
 		"joinWaitlist": "नवीनतम अपडेट प्राप्त करने के लिए साइन अप करें।"
 	},

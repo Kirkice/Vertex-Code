@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react"
 import { GitBranch, Check, ChevronDown, Plus } from "lucide-react"
 
-import type { Worktree, WorktreeListResponse } from "@vertex-code/types"
+import type { Worktree, WorktreeListResponse } from "@roo-code/types"
 
 import { cn } from "@/lib/utils"
-import { useVertexPortal } from "@/components/ui/hooks/useVertexPortal"
+import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip, Button } from "@/components/ui"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { vscode } from "@/utils/vscode"
@@ -22,7 +22,7 @@ export const WorktreeSelector = ({ disabled = false }: WorktreeSelectorProps) =>
 	const [worktrees, setWorktrees] = useState<Worktree[]>([])
 	const [isGitRepo, setIsGitRepo] = useState(true)
 	const [showCreateModal, setShowCreateModal] = useState(false)
-	const portalContainer = useVertexPortal("vertex-portal")
+	const portalContainer = useRooPortal("roo-portal")
 
 	// Find current worktree
 	const currentWorktree = useMemo(() => worktrees.find((w) => w.isCurrent), [worktrees])

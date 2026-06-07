@@ -10,24 +10,24 @@ import { appendImages } from "@src/utils/imageUtils"
 import { getCostBreakdownIfNeeded } from "@src/utils/costFormatting"
 import { batchConsecutive } from "@src/utils/batchConsecutive"
 
-import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@vertex-code/types"
-import { isRetiredProvider } from "@vertex-code/types"
+import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@roo-code/types"
+import { isRetiredProvider } from "@roo-code/types"
 
-import { findLast } from "@vertex/array"
-import { SuggestionItem } from "@vertex-code/types"
-import { combineApiRequests } from "@vertex/combineApiRequests"
-import { combineCommandSequences } from "@vertex/combineCommandSequences"
-import { getApiMetrics } from "@vertex/getApiMetrics"
-import { getAllModes } from "@vertex/modes"
-import { ProfileValidator } from "@vertex/ProfileValidator"
-import { getLatestTodo } from "@vertex/todo"
+import { findLast } from "@roo/array"
+import { SuggestionItem } from "@roo-code/types"
+import { combineApiRequests } from "@roo/combineApiRequests"
+import { combineCommandSequences } from "@roo/combineCommandSequences"
+import { getApiMetrics } from "@roo/getApiMetrics"
+import { getAllModes } from "@roo/modes"
+import { ProfileValidator } from "@roo/ProfileValidator"
+import { getLatestTodo } from "@roo/todo"
 
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@src/components/ui/hooks/useSelectedModel"
-import VertexHero from "@src/components/welcome/VertexHero"
-import VertexTips from "@src/components/welcome/VertexTips"
+import RooHero from "@src/components/welcome/RooHero"
+import RooTips from "@src/components/welcome/RooTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 
 import TelemetryBanner from "../common/TelemetryBanner"
@@ -1554,44 +1554,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		<div
 			data-testid="chat-view"
 			className={isHidden ? "hidden" : "fixed top-0 left-0 right-0 bottom-0 flex flex-col overflow-hidden"}>
-			{/* Top toolbar with NewTask, Settings, Views buttons - always visible */}
-			<div className="absolute top-2 left-3 right-3 flex justify-between items-center z-20 pointer-events-none">
-				<div className="flex gap-1 pointer-events-auto">
-					{/* New Task button */}
-					<StandardTooltip content={t("chat:startNewTask.tooltip")}>
-						<button
-							className="codicon codicon-add p-1 rounded hover:bg-vscode-list-hoverBackground text-vscode-foreground opacity-70 hover:opacity-100 transition-opacity"
-							onClick={() => {
-								// Start new task - clear current conversation
-								startNewTask()
-							}}
-							aria-label={t("chat:startNewTask.title")}
-						/>
-					</StandardTooltip>
-				</div>
-				<div className="flex gap-1 items-center pointer-events-auto">
-					{/* Settings button */}
-					<StandardTooltip content={t("chat:settings.tooltip")}>
-						<button
-							className="codicon codicon-settings-gear p-1 rounded hover:bg-vscode-list-hoverBackground text-vscode-foreground opacity-70 hover:opacity-100 transition-opacity"
-							onClick={() => {
-								vscode.postMessage({ type: "switchTab", tab: "settings" })
-							}}
-							aria-label={t("chat:settings.title")}
-						/>
-					</StandardTooltip>
-					{/* Views and More Actions button */}
-					<StandardTooltip content={t("chat:views.tooltip")}>
-						<button
-							className="codicon codicon-ellipsis p-1 rounded hover:bg-vscode-list-hoverBackground text-vscode-foreground opacity-70 hover:opacity-100 transition-opacity"
-							onClick={() => {
-								vscode.postMessage({ type: "switchTab", tab: "history" })
-							}}
-							aria-label={t("chat:views.title")}
-						/>
-					</StandardTooltip>
-				</div>
-			</div>
 			{telemetrySetting === "unset" && <TelemetryBanner />}
 			{(showAnnouncement || showAnnouncementModal) && (
 				<Announcement
@@ -1649,10 +1611,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</>
 			) : (
 				<div className="flex flex-col h-full p-6 min-h-0 overflow-y-auto gap-4 relative">
-					<div className="flex flex-col items-start gap-2 my-auto min-[400px]:px-6 mt-8">
+					<div className="flex flex-col items-start gap-2 my-auto min-[400px]:px-6">
+						<VersionIndicator
+							onClick={() => setShowAnnouncementModal(true)}
+							className="absolute top-2 right-3 z-10"
+						/>
 						<div className="flex flex-col gap-4 w-full">
-							<VertexHero />
-							<VertexTips />
+							<RooHero />
+							<RooTips />
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
 						</div>
@@ -1825,7 +1791,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			<div id="vertex-portal" />
+			<div id="roo-portal" />
 		</div>
 	)
 }

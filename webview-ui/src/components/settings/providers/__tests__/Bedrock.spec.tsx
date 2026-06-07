@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@/utils/test-utils"
 import { Bedrock } from "../Bedrock"
-import { ProviderSettings } from "@vertex-code/types"
+import { ProviderSettings } from "@roo-code/types"
 
 // Mock the vscrui Checkbox component
 vi.mock("vscrui", () => ({

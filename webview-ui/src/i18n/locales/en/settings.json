@@ -41,7 +41,7 @@
 		"ui": "UI",
 		"experimental": "Experimental",
 		"language": "Language",
-		"about": "About Vertex AI"
+		"about": "About Vertex"
 	},
 	"about": {
 		"bugReport": {
@@ -56,7 +56,7 @@
 			"label": "Discovered a vulnerability?",
 			"link": "Follow our disclosure process"
 		},
-		"community": "Want tips or to just hang out with other Vertex AI users? Join <redditLink>reddit.com/r/VertexAI</redditLink> or <discordLink>discord.gg/VxfP4Vx3gX</discordLink>",
+		"community": "Want tips or to just hang out with other Vertex users? Join <redditLink>reddit.com/r/Vertex</redditLink> or <discordLink>discord.gg/VxfP4Vx3gX</discordLink>",
 		"contactAndCommunity": "Contact & Community",
 		"manageSettings": "Manage Settings",
 		"debugMode": {
@@ -163,7 +163,7 @@
 		},
 		"chatFontSize": {
 			"label": "Chat font size",
-			"description": "Set the font size (in pixels) for the Vertex AI chat. Leave at the default to match VS Code's font size.",
+			"description": "Set the font size (in pixels) for the Vertex chat. Leave at the default to match VS Code's font size.",
 			"reset": "Use VS Code default"
 		}
 	},
@@ -305,7 +305,7 @@
 			},
 			"protected": {
 				"label": "Include protected files",
-				"description": "Allow Vertex to create and edit protected files (like .vertexignore and .vertex/ configuration files) without requiring approval."
+				"description": "Allow Vertex to create and edit protected files (like .rooignore and .roo/ configuration files) without requiring approval."
 			}
 		},
 		"mcp": {
@@ -534,7 +534,7 @@
 			"draftModelDesc": "Draft model must be from the same model family for speculative decoding to work correctly.",
 			"selectDraftModel": "Select Draft Model",
 			"noModelsFound": "No draft models found. Please ensure LM Studio is running with Server Mode enabled.",
-			"description": "LM Studio allows you to run models locally on your computer. For instructions on how to get started, see their <a>quickstart guide</a>. You will also need to start LM Studio's <b>local server</b> feature to use it with this extension. <span>Note:</span> Vertex AI uses complex prompts and works best with Claude models. Less capable models may not work as expected."
+			"description": "LM Studio allows you to run models locally on your computer. For instructions on how to get started, see their <a>quickstart guide</a>. You will also need to start LM Studio's <b>local server</b> feature to use it with this extension. <span>Note:</span> Vertex uses complex prompts and works best with Claude models. Less capable models may not work as expected."
 		},
 		"ollama": {
 			"baseUrl": "Base URL (optional)",
@@ -544,7 +544,7 @@
 			"numCtx": "Context Window Size (num_ctx)",
 			"numCtxHelp": "Override the model's default context window size. Leave empty to use the model's Modelfile configuration. Minimum value is 128.",
 			"description": "Ollama allows you to run models locally on your computer. For instructions on how to get started, see their quickstart guide.",
-			"warning": "Note: Vertex AI uses complex prompts and works best with Claude models. Less capable models may not work as expected."
+			"warning": "Note: Vertex uses complex prompts and works best with Claude models. Less capable models may not work as expected."
 		},
 		"openRouter": {
 			"providerRouting": {
@@ -554,14 +554,14 @@
 			}
 		},
 		"vertexGateway": {
-			"account": "Vertex AI Account",
-			"signInButton": "Sign in to Vertex AI",
+			"account": "Vertex Account",
+			"signInButton": "Sign in to Vertex",
 			"signInDescription": "Sign in to use Vertex Gateway with your account",
 			"authenticated": "Authenticated",
 			"authenticatedAs": "Authenticated as {{name}}"
 		},
 		"customModel": {
-			"capabilities": "Configure the capabilities and pricing for your custom OpenAI-compatible model. Be careful when specifying the model capabilities, as they can affect how Vertex AI performs.",
+			"capabilities": "Configure the capabilities and pricing for your custom OpenAI-compatible model. Be careful when specifying the model capabilities, as they can affect how Vertex performs.",
 			"maxTokens": {
 				"label": "Max Output Tokens",
 				"description": "Maximum number of tokens the model can generate in a response. (Specify -1 to allow the server to set the max tokens.)"
@@ -689,9 +689,9 @@
 			"label": "Workspace files context limit",
 			"description": "Maximum number of files to include in current working directory details. Higher values provide more context but increase token usage."
 		},
-		"vertexignore": {
-			"label": "Show .vertexignore'd files in lists and searches",
-			"description": "When enabled, files matching patterns in .vertexignore will be shown in lists with a lock symbol. When disabled, these files will be completely hidden from file lists and searches."
+		"rooignore": {
+			"label": "Show .rooignore'd files in lists and searches",
+			"description": "When enabled, files matching patterns in .rooignore will be shown in lists with a lock symbol. When disabled, these files will be completely hidden from file lists and searches."
 		},
 		"maxConcurrentFileReads": {
 			"label": "Concurrent file reads limit",
@@ -752,7 +752,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Enable subfolder rules",
-			"description": "Recursively discover and load .vertex/rules and AGENTS.md files from subdirectories. Useful for monorepos with per-package rules."
+			"description": "Recursively discover and load .roo/rules and AGENTS.md files from subdirectories. Useful for monorepos with per-package rules."
 		}
 	},
 	"terminal": {
@@ -818,12 +818,12 @@
 			"description": "Turn this on to inherit environment variables from the parent VS Code process. <0>Learn more</0>"
 		},
 		"profile": {
-			"label": "Vertex AI terminal override",
+			"label": "Vertex terminal override",
 			"default": "Use VS Code default profile (recommended)",
-			"overrideLabel": "Override shell for Vertex AI",
+			"overrideLabel": "Override shell for Vertex",
 			"configureButton": "Choose default profile in VS Code",
 			"noProfiles": "(no path-based profiles found in terminal.integrated.profiles)",
-			"description": "By default Vertex AI uses whatever shell VS Code is configured to use. Select Override to pick a path-based shell profile exposed by VS Code. Source-only profiles (e.g. the built-in PowerShell entry) cannot be listed here. <0>Learn more</0>"
+			"description": "By default Vertex uses whatever shell VS Code is configured to use. Select Override to pick a path-based shell profile exposed by VS Code. Source-only profiles (e.g. the built-in PowerShell entry) cannot be listed here. <0>Learn more</0>"
 		}
 	},
 	"advancedSettings": {
@@ -904,9 +904,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Enable custom tools",
-			"description": "When enabled, Vertex can load and use custom TypeScript/JavaScript tools from your project's .vertex/tools directory or ~/.vertex/tools for global tools. Note: these tools will automatically be auto-approved.",
+			"description": "When enabled, Vertex can load and use custom TypeScript/JavaScript tools from your project's .roo/tools directory or ~/.roo/tools for global tools. Note: these tools will automatically be auto-approved.",
 			"toolsHeader": "Available Custom Tools",
-			"noTools": "No custom tools loaded. Add .ts or .js files to your project's .vertex/tools directory or ~/.vertex/tools for global tools.",
+			"noTools": "No custom tools loaded. Add .ts or .js files to your project's .roo/tools directory or ~/.roo/tools for global tools.",
 			"refreshButton": "Refresh",
 			"refreshing": "Refreshing...",
 			"refreshSuccess": "Tools refreshed successfully",
@@ -946,7 +946,7 @@
 		}
 	},
 	"modelPicker": {
-		"automaticFetch": "The extension automatically fetches the latest list of models available on <serviceLink>{{serviceName}}</serviceLink>. If you're unsure which model to choose, Vertex AI works best with <defaultModelLink>{{defaultModelId}}</defaultModelLink>. You can also try searching \"free\" for no-cost options currently available.",
+		"automaticFetch": "The extension automatically fetches the latest list of models available on <serviceLink>{{serviceName}}</serviceLink>. If you're unsure which model to choose, Vertex works best with <defaultModelLink>{{defaultModelId}}</defaultModelLink>. You can also try searching \"free\" for no-cost options currently available.",
 		"label": "Model",
 		"searchPlaceholder": "Search",
 		"noMatchFound": "No match found",
@@ -956,7 +956,7 @@
 	"footer": {
 		"telemetry": {
 			"label": "Allow anonymous error and usage reporting",
-			"description": "Help improve Vertex AI by sending anonymous usage data and error reports. This telemetry does not collect code, prompts or personal information. See our <privacyLink>privacy policy</privacyLink> for more details."
+			"description": "Help improve Vertex by sending anonymous usage data and error reports. This telemetry does not collect code, prompts or personal information. See our <privacyLink>privacy policy</privacyLink> for more details."
 		},
 		"settings": {
 			"import": "Import",
@@ -985,7 +985,7 @@
 		"modelNotAllowed": "Model '{{model}}' is not allowed for provider '{{provider}}' by your organization",
 		"profileInvalid": "This profile contains a provider or model that is not allowed by your organization",
 		"qwenCodeOauthPath": "You must provide a valid OAuth credentials path.",
-		"vertexGatewaySignIn": "Sign in to Vertex AI to use Vertex Gateway."
+		"vertexGatewaySignIn": "Sign in to Vertex to use Vertex Gateway."
 	},
 	"placeholders": {
 		"apiKey": "Enter API Key...",

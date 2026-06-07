@@ -1,6 +1,6 @@
 import { render, screen } from "@/utils/test-utils"
 
-import type { HistoryItem } from "@vertex-code/types"
+import type { HistoryItem } from "@roo-code/types"
 
 import HistoryPreview from "../HistoryPreview"
 import type { TaskGroup } from "../types"

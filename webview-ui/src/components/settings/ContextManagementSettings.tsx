@@ -4,7 +4,7 @@ import { useAppTranslation } from "@/i18n/TranslationContext"
 import { VSCodeCheckbox, VSCodeTextArea } from "@vscode/webview-ui-toolkit/react"
 import { FoldVertical } from "lucide-react"
 
-import { supportPrompt } from "@vertex/support-prompt"
+import { supportPrompt } from "@roo/support-prompt"
 
 import { cn } from "@/lib/utils"
 import {
@@ -31,7 +31,7 @@ type ContextManagementSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	listApiConfigMeta: any[]
 	maxOpenTabsContext: number
 	maxWorkspaceFiles: number
-	showVertexIgnoredFiles?: boolean
+	showRooIgnoredFiles?: boolean
 	enableSubfolderRules?: boolean
 	maxImageFileSize?: number
 	maxTotalImageSize?: number
@@ -49,7 +49,7 @@ type ContextManagementSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "autoCondenseContextPercent"
 		| "maxOpenTabsContext"
 		| "maxWorkspaceFiles"
-		| "showVertexIgnoredFiles"
+		| "showRooIgnoredFiles"
 		| "enableSubfolderRules"
 		| "maxImageFileSize"
 		| "maxTotalImageSize"
@@ -69,7 +69,7 @@ export const ContextManagementSettings = ({
 	listApiConfigMeta,
 	maxOpenTabsContext,
 	maxWorkspaceFiles,
-	showVertexIgnoredFiles,
+	showRooIgnoredFiles,
 	enableSubfolderRules,
 	setCachedStateField,
 	maxImageFileSize,
@@ -213,19 +213,19 @@ export const ContextManagementSettings = ({
 				</SearchableSetting>
 
 				<SearchableSetting
-					settingId="context-show-vertexignored-files"
+					settingId="context-show-rooignored-files"
 					section="contextManagement"
-					label={t("settings:contextManagement.vertexignore.label")}>
+					label={t("settings:contextManagement.rooignore.label")}>
 					<VSCodeCheckbox
-						checked={showVertexIgnoredFiles}
-						onChange={(e: any) => setCachedStateField("showVertexIgnoredFiles", e.target.checked)}
-						data-testid="show-vertexignored-files-checkbox">
+						checked={showRooIgnoredFiles}
+						onChange={(e: any) => setCachedStateField("showRooIgnoredFiles", e.target.checked)}
+						data-testid="show-rooignored-files-checkbox">
 						<label className="block font-medium mb-1">
-							{t("settings:contextManagement.vertexignore.label")}
+							{t("settings:contextManagement.rooignore.label")}
 						</label>
 					</VSCodeCheckbox>
 					<div className="text-vscode-descriptionForeground text-sm mt-1 mb-3">
-						{t("settings:contextManagement.vertexignore.description")}
+						{t("settings:contextManagement.rooignore.description")}
 					</div>
 				</SearchableSetting>
 

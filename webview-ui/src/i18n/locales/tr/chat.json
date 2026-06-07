@@ -1,5 +1,5 @@
 {
-	"greeting": "Vertex AI'a hoş geldin!",
+	"greeting": "Vertex'a hoş geldin!",
 	"task": {
 		"title": "Görev",
 		"expand": "Görevi genişlet",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Mesajı kuyruğa ekle (mevcut görev tamamlandıktan sonra gönderilecek)",
 	"scrollToBottom": "Sohbetin altına kaydır",
 	"scrollToLatestCheckpoint": "Önceki checkpoint'e kaydır",
-	"about": "Vertex AI, düzenleyicinizdeki bütün bir yapay zeka geliştirme ekibidir.",
+	"about": "Vertex, düzenleyicinizdeki bütün bir yapay zeka geliştirme ekibidir.",
 	"docs": "Daha fazla bilgi için <DocsLink>belgelerimize</DocsLink> göz atın.",
 	"onboarding": "Bu çalışma alanındaki görev listeniz boş.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Özelleştirilebilir modlar",
 			"description": "Göreve odaklanan ve sonuç veren özel kişilikler."
@@ -120,7 +120,7 @@
 		"title": "Modlar",
 		"marketplace": "Mod Pazaryeri",
 		"settings": "Mod Ayarları",
-		"description": "Vertex'nun davranışını özelleştiren uzmanlaşmış kişilikler.",
+		"description": "Vertex'in davranışını özelleştiren uzmanlaşmış kişilikler.",
 		"searchPlaceholder": "Modları ara...",
 		"noResults": "Sonuç bulunamadı"
 	},
@@ -152,7 +152,7 @@
 			"500": "Sağlayıcı sunucu hatası. Sağlayıcı tarafında bir sorun var, isteğinizde sorun yok.",
 			"docs": "Belgeler",
 			"goToSettings": "Ayarlar",
-			"unknown": "Bilinmeyen API hatası. Lütfen Vertex AI desteğiyle iletişime geç.",
+			"unknown": "Bilinmeyen API hatası. Lütfen Vertex desteğiyle iletişime geç.",
 			"connection": "Bağlantı hatası. Çalışan bir internet bağlantınız olduğundan emin olun.",
 			"claudeCodeNotAuthenticated": "Claude Code'u kullanmak için oturum açmanız gerekiyor. Ayarlar'a gidin ve kimlik doğrulaması yapmak için \"Claude Code'da Oturum Aç\" seçeneğine tıklayın."
 		}
@@ -177,7 +177,7 @@
 		"current": "Mevcut"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex mevcut göreve yardımcı olmak için ayrıntılı talimatlar almak istiyor"
+		"wantsToFetch": "Roo mevcut göreve yardımcı olmak için ayrıntılı talimatlar almak istiyor"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex bu dosyayı okumak istiyor",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex çalışma alanı dışındaki bu dosyayı düzenlemek istiyor",
 		"wantsToEditProtected": "Vertex korumalı bir yapılandırma dosyasını düzenlemek istiyor",
 		"wantsToCreate": "Vertex yeni bir dosya oluşturmak istiyor",
-		"wantsToSearchReplace": "Vertex bu dosyada arama ve değiştirme yapmak istiyor",
-		"didSearchReplace": "Vertex bu dosyada arama ve değiştirme yaptı",
+		"wantsToSearchReplace": "Roo bu dosyada arama ve değiştirme yapmak istiyor",
+		"didSearchReplace": "Roo bu dosyada arama ve değiştirme yaptı",
 		"wantsToInsert": "Vertex bu dosyaya içerik eklemek istiyor",
 		"wantsToInsertWithLineNumber": "Vertex bu dosyanın {{lineNumber}}. satırına içerik eklemek istiyor",
 		"wantsToInsertAtEnd": "Vertex bu dosyanın sonuna içerik eklemek istiyor",
@@ -236,7 +236,7 @@
 	"response": "Yanıt",
 	"arguments": "Argümanlar",
 	"text": {
-		"vertexSaid": "Vertex dedi"
+		"rooSaid": "Vertex dedi"
 	},
 	"feedback": {
 		"youSaid": "Dediniz ki"
@@ -262,7 +262,7 @@
 		"goToSubtask": "Görevi görüntüle"
 	},
 	"questions": {
-		"hasQuestion": "Vertex'nun bir sorusu var"
+		"hasQuestion": "Vertex'in bir sorusu var"
 	},
 	"taskCompleted": "Görev Tamamlandı",
 	"modelResponseIncomplete": "Model yanıtı eksik",
@@ -278,7 +278,7 @@
 		"copyToClipboard": "Panoya Kopyala",
 		"copied": "Kopyalandı!",
 		"diagnostics": "Ayrıntılı hata bilgisi al",
-		"proxyProvider": "Proxy tabanlı bir sağlayıcı kullanıyor gibi görünüyorsun. Günlüklerini kontrol ettiğinden ve Vertex'nun isteklerini yeniden yazmadığından emin ol."
+		"proxyProvider": "Proxy tabanlı bir sağlayıcı kullanıyor gibi görünüyorsun. Günlüklerini kontrol ettiğinden ve Vertex'in isteklerini yeniden yazmadığından emin ol."
 	},
 	"powershell": {
 		"issues": "Windows PowerShell ile ilgili sorunlar yaşıyor gibi görünüyorsunuz, lütfen şu konuya bakın"
@@ -329,12 +329,12 @@
 		"timerPrefix": "Otomatik onay etkinleştirildi. {{seconds}}s içinde seçim yapılıyor…"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} yayınlandı",
-		"support": "Lütfen <githubLink>GitHub</githubLink>'da bize yıldız vererek Vertex AI'u destekle.",
+		"title": "Vertex {{version}} yayınlandı",
+		"support": "Lütfen <githubLink>GitHub</githubLink>'da bize yıldız vererek Vertex'u destekle.",
 		"handoff": {
-			"heading": "Vertex Code geri döndü! Artık Vertex AI adlı, topluluk tarafından sürdürülen bir eklenti!!",
-			"description": "Takip etmiyorsan kaçırmış olabilirsin: Vertex Code ekibi kısa süre önce Vertex Code geliştirmesini aşamalı olarak sonlandırdığını ve yaptıkları çalışmaları arşivlediğini duyurdu. Ama endişelenme; topluluk, Vertex Code mirasını yeni bir ad ve yeni bir yuva ile sürdürmek için öne çıktı! Artık sadece tek bir \"Vertex\" değiliz; bir topluluğuz, istersen bir \"Vertex\" diyebilirsin. Vertex AI, Vertex Code'un bıraktığı yerden devam eden, topluluk tarafından sürdürülen bir eklenti ve Vertex'nun ruhunu korurken yeni özellikler ve iyileştirmeler sunmaya kararlıyız. Geliştiriciler için böylesine harika bir araç yarattıkları ve yaptıkları inanılmaz iş için tüm Vertex Code ekibine kocaman bir teşekkür göndermek istiyoruz. Onların temeli üzerine inşa etmeyi sürdürmekten ve topluluğun gelecekte Vertex AI'u nereye taşıyacağını görmekten heyecan duyuyoruz!",
-			"readMore": "Vertex AI'un yeni ana sayfasına göz at ve tam duyuruyu oku"
+			"heading": "Roo Code geri döndü! Artık Vertex adlı, topluluk tarafından sürdürülen bir eklenti!!",
+			"description": "Takip etmiyorsan kaçırmış olabilirsin: Roo Code ekibi kısa süre önce Roo Code geliştirmesini aşamalı olarak sonlandırdığını ve yaptıkları çalışmaları arşivlediğini duyurdu. Ama endişelenme; topluluk, Roo Code mirasını yeni bir ad ve yeni bir yuva ile sürdürmek için öne çıktı! Artık sadece tek bir \"Roo\" değiliz; bir topluluğuz, istersen bir \"Vertex\" diyebilirsin. Vertex, Roo Code'un bıraktığı yerden devam eden, topluluk tarafından sürdürülen bir eklenti ve Roo'nun ruhunu korurken yeni özellikler ve iyileştirmeler sunmaya kararlıyız. Geliştiriciler için böylesine harika bir araç yarattıkları ve yaptıkları inanılmaz iş için tüm Roo Code ekibine kocaman bir teşekkür göndermek istiyoruz. Onların temeli üzerine inşa etmeyi sürdürmekten ve topluluğun gelecekte Vertex'u nereye taşıyacağını görmekten heyecan duyuyoruz!",
+			"readMore": "Vertex'un yeni ana sayfasına göz at ve tam duyuruyu oku"
 		},
 		"release": {
 			"heading": "Yenilikler:",
@@ -364,7 +364,7 @@
 	"profileViolationWarning": "Geçerli profil kuruluşunuzun ayarlarıyla uyumlu değil",
 	"shellIntegration": {
 		"title": "Komut Çalıştırma Uyarısı",
-		"description": "Komutunuz VSCode terminal kabuk entegrasyonu olmadan çalıştırılıyor. Bu uyarıyı gizlemek için <settingsLink>Vertex AI ayarları</settingsLink>'nın <strong>Terminal</strong> bölümünden kabuk entegrasyonunu devre dışı bırakabilir veya aşağıdaki bağlantıyı kullanarak VSCode terminal entegrasyonu sorunlarını giderebilirsiniz.",
+		"description": "Komutunuz VSCode terminal kabuk entegrasyonu olmadan çalıştırılıyor. Bu uyarıyı gizlemek için <settingsLink>Vertex ayarları</settingsLink>'nın <strong>Terminal</strong> bölümünden kabuk entegrasyonunu devre dışı bırakabilir veya aşağıdaki bağlantıyı kullanarak VSCode terminal entegrasyonu sorunlarını giderebilirsiniz.",
 		"troubleshooting": "Kabuk entegrasyonu belgelerini görmek için buraya tıklayın."
 	},
 	"ask": {
@@ -421,8 +421,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Sürüm {{version}} - Sürüm notlarını görüntülemek için tıklayın"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud gelişiyor!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud gelişiyor!",
 		"description": "Bulutta uzak ajanlar çalıştırın, görevlerinize her yerden erişin, başkalarıyla işbirliği yapın ve daha fazlası.",
 		"joinWaitlist": "En son güncellemeleri almak için kaydolun."
 	},

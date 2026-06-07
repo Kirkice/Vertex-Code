@@ -11,15 +11,15 @@ import {
 	isDynamicProvider,
 	isFauxProvider,
 	isCustomProvider,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
 export function validateApiConfiguration(
 	apiConfiguration: ProviderSettings,
 	routerModels?: RouterModels,
 	organizationAllowList?: OrganizationAllowList,
-	vertexCodeIsAuthenticated?: boolean,
+	vertexIsAuthenticated?: boolean,
 ): string | undefined {
-	const keysAndIdsPresentErrorMessage = validateModelsAndKeysProvided(apiConfiguration, vertexCodeIsAuthenticated)
+	const keysAndIdsPresentErrorMessage = validateModelsAndKeysProvided(apiConfiguration, vertexIsAuthenticated)
 
 	if (keysAndIdsPresentErrorMessage) {
 		return keysAndIdsPresentErrorMessage
@@ -39,7 +39,7 @@ export function validateApiConfiguration(
 
 function validateModelsAndKeysProvided(
 	apiConfiguration: ProviderSettings,
-	vertexCodeIsAuthenticated?: boolean,
+	vertexIsAuthenticated?: boolean,
 ): string | undefined {
 	switch (apiConfiguration.apiProvider) {
 		case "openrouter":
@@ -133,7 +133,7 @@ function validateModelsAndKeysProvided(
 			}
 			break
 		case "vertex-gateway":
-			if (!apiConfiguration.vertexSessionToken && !vertexCodeIsAuthenticated) {
+			if (!apiConfiguration.vertexSessionToken && !vertexIsAuthenticated) {
 				return i18next.t("settings:validation.vertexGatewaySignIn")
 			}
 			break

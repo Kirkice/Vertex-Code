@@ -40,7 +40,7 @@
 		"ui": "UI",
 		"experimental": "實驗性",
 		"language": "語言",
-		"about": "關於 Vertex AI",
+		"about": "關於 Vertex",
 		"skills": "Skills"
 	},
 	"about": {
@@ -56,7 +56,7 @@
 			"label": "發現安全漏洞？",
 			"link": "遵循我們的揭露流程"
 		},
-		"community": "想要取得使用技巧或與其他 Vertex AI 使用者交流？加入 <redditLink>reddit.com/r/VertexAI</redditLink> 或 <discordLink>discord.gg/VxfP4Vx3gX</discordLink>",
+		"community": "想要取得使用技巧或與其他 Vertex 使用者交流？加入 <redditLink>reddit.com/r/Vertex</redditLink> 或 <discordLink>discord.gg/VxfP4Vx3gX</discordLink>",
 		"contactAndCommunity": "聯絡與社群",
 		"manageSettings": "管理設定",
 		"debugMode": {
@@ -110,7 +110,7 @@
 		},
 		"chatFontSize": {
 			"label": "聊天字型大小",
-			"description": "設定 Vertex AI 聊天的字型大小（以像素為單位）。保留預設值以符合 VS Code 的字型大小。",
+			"description": "設定 Vertex 聊天的字型大小（以像素為單位）。保留預設值以符合 VS Code 的字型大小。",
 			"reset": "使用 VS Code 預設值"
 		}
 	},
@@ -252,7 +252,7 @@
 			},
 			"protected": {
 				"label": "包含受保護的檔案",
-				"description": "允許 Vertex 建立與編輯受保護的檔案（如 .vertexignore 和 .vertex/ 設定檔）且無需核准。"
+				"description": "允許 Vertex 建立與編輯受保護的檔案（如 .rooignore 和 .roo/ 設定檔）且無需核准。"
 			}
 		},
 		"mcp": {
@@ -481,7 +481,7 @@
 			"draftModelDesc": "草稿模型必須來自相同模型系列才能正確運作。",
 			"selectDraftModel": "選擇草稿模型",
 			"noModelsFound": "未找到草稿模型。請確保 LM Studio 以伺服器模式執行。",
-			"description": "LM Studio 允許您在本機電腦執行模型。詳細資訊請參閱快速入門指南。您需要啟動 LM Studio 的本機伺服器功能才能與此擴充功能搭配使用。<span>注意：</span> Vertex AI 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
+			"description": "LM Studio 允許您在本機電腦執行模型。詳細資訊請參閱快速入門指南。您需要啟動 LM Studio 的本機伺服器功能才能與此擴充功能搭配使用。<span>注意：</span> Vertex 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
 		},
 		"ollama": {
 			"baseUrl": "基礎 URL（選用）",
@@ -491,7 +491,7 @@
 			"numCtx": "上下文視窗大小（num_ctx）",
 			"numCtxHelp": "覆寫模型的預設上下文視窗大小。留空以使用模型的 Modelfile 設定。最小值為 128。",
 			"description": "Ollama 允許您在本機電腦執行模型。請參閱快速入門指南。",
-			"warning": "注意：Vertex AI 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
+			"warning": "注意：Vertex 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
 		},
 		"openRouter": {
 			"providerRouting": {
@@ -501,7 +501,7 @@
 			}
 		},
 		"customModel": {
-			"capabilities": "設定自訂 OpenAI 相容模型的功能和定價。請謹慎設定模型功能，因為這會影響 Vertex AI 的運作方式。",
+			"capabilities": "設定自訂 OpenAI 相容模型的功能和定價。請謹慎設定模型功能，因為這會影響 Vertex 的運作方式。",
 			"maxTokens": {
 				"label": "最大輸出 Token",
 				"description": "模型能在一則回應中產生的最大 Token 數量。（設為 -1 則由伺服器決定最大值）"
@@ -577,8 +577,8 @@
 			"maxTokensDescription": "Claude Code 回應的最大輸出 Token 數量。預設為 8000。"
 		},
 		"vertexGateway": {
-			"account": "Vertex AI 帳戶",
-			"signInButton": "登入 Vertex AI",
+			"account": "Vertex 帳戶",
+			"signInButton": "登入 Vertex",
 			"signInDescription": "登入以使用您的帳戶存取 Vertex Gateway",
 			"authenticated": "已認證",
 			"authenticatedAs": "已認證為 {{name}}"
@@ -636,9 +636,9 @@
 			"label": "工作區檔案的上下文限制",
 			"description": "目前工作目錄中最多包含多少個檔案。數值越高提供的上下文越多，但 Token 用量也會增加。"
 		},
-		"vertexignore": {
-			"label": "在清單和搜尋中顯示被 .vertexignore 排除的檔案",
-			"description": "啟用後，符合 .vertexignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
+		"rooignore": {
+			"label": "在清單和搜尋中顯示被 .rooignore 排除的檔案",
+			"description": "啟用後，符合 .rooignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
 		},
 		"maxConcurrentFileReads": {
 			"label": "並行檔案讀取限制",
@@ -699,7 +699,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "啟用子資料夾規則",
-			"description": "遞迴發現並載入子目錄中的 .vertex/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
+			"description": "遞迴發現並載入子目錄中的 .roo/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
 		}
 	},
 	"terminal": {
@@ -765,10 +765,10 @@
 			"description": "啟用此選項以從父 VS Code 程序繼承環境變數。<0>了解更多</0>"
 		},
 		"profile": {
-			"label": "Vertex AI 終端機覆寫",
+			"label": "Vertex 終端機覆寫",
 			"default": "使用 VS Code 預設設定檔（建議）",
-			"description": "預設情況下，Vertex AI 使用 VS Code 設定的 Shell。選擇覆寫可從 VS Code 公開的路徑型 Shell 設定檔中選取。僅含來源的設定檔（如內建的 PowerShell 項目）無法在此列出。 <0>了解更多</0>",
-			"overrideLabel": "為 Vertex AI 覆寫 Shell",
+			"description": "預設情況下，Vertex 使用 VS Code 設定的 Shell。選擇覆寫可從 VS Code 公開的路徑型 Shell 設定檔中選取。僅含來源的設定檔（如內建的 PowerShell 項目）無法在此列出。 <0>了解更多</0>",
+			"overrideLabel": "為 Vertex 覆寫 Shell",
 			"configureButton": "在 VS Code 中選擇預設設定檔",
 			"noProfiles": "(在 terminal.integrated.profiles 中未找到路徑型設定檔)"
 		}
@@ -851,9 +851,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "啟用自訂工具",
-			"description": "啟用後，Vertex 可以從專案中的 .vertex/tools 目錄或全域工具目錄 ~/.vertex/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
+			"description": "啟用後，Vertex 可以從專案中的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
 			"toolsHeader": "可用自訂工具",
-			"noTools": "未載入自訂工具。請向專案的 .vertex/tools 目錄或全域工具目錄 ~/.vertex/tools 新增 .ts 或 .js 檔案。",
+			"noTools": "未載入自訂工具。請向專案的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 新增 .ts 或 .js 檔案。",
 			"refreshButton": "重新整理",
 			"refreshing": "正在重新整理...",
 			"refreshSuccess": "工具重新整理成功",
@@ -893,7 +893,7 @@
 		}
 	},
 	"modelPicker": {
-		"automaticFetch": "此擴充功能會自動從 <serviceLink>{{serviceName}}</serviceLink> 取得最新的可用模型清單。如果不確定要選哪個模型，建議使用 <defaultModelLink>{{defaultModelId}}</defaultModelLink>，這是與 Vertex AI 最佳搭配的模型。您也可以搜尋「free」來檢視目前可用的免費選項。",
+		"automaticFetch": "此擴充功能會自動從 <serviceLink>{{serviceName}}</serviceLink> 取得最新的可用模型清單。如果不確定要選哪個模型，建議使用 <defaultModelLink>{{defaultModelId}}</defaultModelLink>，這是與 Vertex 最佳搭配的模型。您也可以搜尋「free」來檢視目前可用的免費選項。",
 		"label": "模型",
 		"searchPlaceholder": "搜尋",
 		"noMatchFound": "找不到符合的結果",
@@ -903,7 +903,7 @@
 	"footer": {
 		"telemetry": {
 			"label": "允許匿名錯誤與使用情況回報",
-			"description": "透過發送匿名使用資料和錯誤回報來協助改善 Vertex AI。此遙測不會收集程式碼、提示詞或個人資訊。查看我們的 <privacyLink>隱私權政策</privacyLink> 以了解更多資訊。"
+			"description": "透過發送匿名使用資料和錯誤回報來協助改善 Vertex。此遙測不會收集程式碼、提示詞或個人資訊。查看我們的 <privacyLink>隱私權政策</privacyLink> 以了解更多資訊。"
 		},
 		"settings": {
 			"import": "匯入",
@@ -932,7 +932,7 @@
 		"modelNotAllowed": "模型 '{{model}}' 不允許用於供應商 '{{provider}}'，此設定已被組織禁止",
 		"profileInvalid": "此設定檔包含您的組織不允許的供應商或模型",
 		"qwenCodeOauthPath": "您必須提供有效的 OAuth 憑證路徑",
-		"vertexGatewaySignIn": "請登入 Vertex AI 以使用 Vertex Gateway。"
+		"vertexGatewaySignIn": "請登入 Vertex 以使用 Vertex Gateway。"
 	},
 	"placeholders": {
 		"apiKey": "請輸入 API 金鑰...",

@@ -2,7 +2,7 @@
 
 import React from "react"
 import { render, screen, fireEvent } from "@/utils/test-utils"
-import { openRouterDefaultModelId } from "@vertex-code/types"
+import { openRouterDefaultModelId } from "@roo-code/types"
 
 import * as ExtensionStateContext from "@src/context/ExtensionStateContext"
 const { ExtensionStateContextProvider } = ExtensionStateContext
@@ -47,7 +47,7 @@ vi.mock("../../common/Tab", () => ({
 	),
 }))
 
-vi.mock("../VertexHero", () => ({
+vi.mock("../RooHero", () => ({
 	default: () => <div data-testid="roo-hero">Roo Hero</div>,
 }))
 
@@ -84,7 +84,7 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 
 // Mock buildDocLink
 vi.mock("@/utils/docLinks", () => ({
-	buildDocLink: (path: string, source: string) => `https://docs.vertexai.dev/${path}?utm_source=${source}`,
+	buildDocLink: (path: string, source: string) => `https://docs.vertex.dev/${path}?utm_source=${source}`,
 }))
 
 const renderWelcomeViewProvider = (extensionState = {}) => {

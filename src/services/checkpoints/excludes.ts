@@ -1,14 +1,7 @@
 import fs from "fs/promises"
 import { join } from "path"
 
-const fileExistsAtPath = async (path: string): Promise<boolean> => {
-	try {
-		await fs.access(path)
-		return true
-	} catch {
-		return false
-	}
-}
+import { fileExistsAtPath } from "../../utils/fs"
 
 const getBuildArtifactPatterns = () => [
 	".gradle/",

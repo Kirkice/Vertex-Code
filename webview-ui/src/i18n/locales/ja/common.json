@@ -27,9 +27,9 @@
 		"loading": "Mermaidダイアグラムを生成中...",
 		"render_error": "ダイアグラムをレンダリングできません",
 		"buttons": {
-			"vertexm": "ズーム",
-			"vertexmIn": "拡大",
-			"vertexmOut": "縮小",
+			"zoom": "ズーム",
+			"zoomIn": "拡大",
+			"zoomOut": "縮小",
 			"copy": "コピー",
 			"save": "画像を保存",
 			"viewCode": "コードを表示",

@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ExtensionMessage, TelemetryEventName } from "@vertex-code/types"
+import { type ExtensionMessage, TelemetryEventName } from "@roo-code/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
+import { MarketplaceViewStateManager } from "./components/marketplace/MarketplaceViewStateManager"
 
 import { vscode } from "./utils/vscode"
 import { telemetryClient } from "./utils/TelemetryClient"
@@ -14,6 +15,7 @@ import ChatView, { ChatViewRef } from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
 import SettingsView, { SettingsViewRef } from "./components/settings/SettingsView"
 import WelcomeView from "./components/welcome/WelcomeViewProvider"
+import { MarketplaceView } from "./components/marketplace/MarketplaceView"
 import { CheckpointRestoreDialog } from "./components/chat/CheckpointRestoreDialog"
 import { DeleteMessageDialog, EditMessageDialog } from "./components/chat/MessageModificationConfirmationDialog"
 import ErrorBoundary from "./components/ErrorBoundary"
@@ -21,9 +23,7 @@ import { useAddNonInteractiveClickListener } from "./components/ui/hooks/useNonI
 import { TooltipProvider } from "./components/ui/tooltip"
 import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 
-// Only keep tabs that have actual backend implementation
-// Hidden tabs (Zoo-Code specific): marketplace
-type Tab = "settings" | "history" | "chat"
+type Tab = "settings" | "history" | "chat" | "marketplace"
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -43,12 +43,11 @@ interface EditMessageDialogState {
 const MemoizedDeleteMessageDialog = React.memo(DeleteMessageDialog)
 const MemoizedEditMessageDialog = React.memo(EditMessageDialog)
 const MemoizedCheckpointRestoreDialog = React.memo(CheckpointRestoreDialog)
-// Only map actions to tabs that have backend implementation
-// Hidden actions (Zoo-Code specific): marketplaceButtonClicked
 const tabsByMessageAction: Partial<Record<NonNullable<ExtensionMessage["action"]>, Tab>> = {
 	chatButtonClicked: "chat",
 	settingsButtonClicked: "settings",
 	historyButtonClicked: "history",
+	marketplaceButtonClicked: "marketplace",
 }
 
 const App = () => {
@@ -63,6 +62,9 @@ const App = () => {
 		renderContext,
 		mdmCompliant,
 	} = useExtensionState()
+
+	// Create a persistent state manager
+	const marketplaceStateManager = useMemo(() => new MarketplaceViewStateManager(), [])
 
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [tab, setTab] = useState<Tab>("chat")
@@ -94,6 +96,7 @@ const App = () => {
 			}
 
 			setCurrentSection(undefined)
+			setCurrentMarketplaceTab(undefined)
 
 			if (settingsRef.current?.checkUnsaveChanges) {
 				settingsRef.current.checkUnsaveChanges(() => setTab(newTab))
@@ -105,6 +108,7 @@ const App = () => {
 	)
 
 	const [currentSection, setCurrentSection] = useState<string | undefined>(undefined)
+	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
 
 	const onMessage = useCallback(
 		(e: MessageEvent) => {
@@ -118,14 +122,17 @@ const App = () => {
 					// Extract targetSection from values if provided
 					const targetSection = message.values?.section as string | undefined
 					setCurrentSection(targetSection)
+					setCurrentMarketplaceTab(undefined)
 				} else {
 					// Handle other actions using the mapping
 					const newTab = tabsByMessageAction[message.action]
 					const section = message.values?.section as string | undefined
+					const marketplaceTab = message.values?.marketplaceTab as string | undefined
 
 					if (newTab) {
 						switchTab(newTab)
 						setCurrentSection(section)
+						setCurrentMarketplaceTab(marketplaceTab)
 					}
 				}
 			}
@@ -165,12 +172,13 @@ const App = () => {
 	}, [shouldShowAnnouncement, tab])
 
 	useEffect(() => {
-		const isRecoverableTab = tab === "settings"
+		const isRecoverableTab = tab === "settings" || tab === "marketplace"
 
 		if (showWelcome && settingsImportedAt && settingsImportedAt !== handledImportRef.current) {
 			handledImportRef.current = settingsImportedAt
 			if (!isRecoverableTab) {
 				setCurrentSection("providers")
+				setCurrentMarketplaceTab(undefined)
 				setTab("settings")
 			}
 		}
@@ -208,7 +216,12 @@ const App = () => {
 			}
 		}, [renderContext]),
 	)
-	// Hidden: marketplace tab tracking (Zoo-Code specific)
+	// Track marketplace tab views
+	useEffect(() => {
+		if (tab === "marketplace") {
+			telemetryClient.capture(TelemetryEventName.MARKETPLACE_TAB_VIEWED)
+		}
+	}, [tab])
 
 	if (!didHydrateState) {
 		return null
@@ -216,15 +229,22 @@ const App = () => {
 
 	// Do not conditionally load ChatView, it's expensive and there's state we
 	// don't want to lose (user input, disableInput, askResponse promise, etc.)
-	const isSetupGatedTab = showWelcome && tab !== "settings"
+	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace"
 
 	return isSetupGatedTab ? (
 		<WelcomeView />
 	) : (
 		<>
-			{tab === "history" && <HistoryView onDone={() => setTab("chat")} />}
+			{tab === "history" && <HistoryView onDone={() => switchTab("chat")} />}
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
+			)}
+			{tab === "marketplace" && (
+				<MarketplaceView
+					stateManager={marketplaceStateManager}
+					onDone={() => switchTab("chat")}
+					targetTab={currentMarketplaceTab as "mcp" | "mode" | undefined}
+				/>
 			)}
 			<ChatView
 				ref={chatViewRef}

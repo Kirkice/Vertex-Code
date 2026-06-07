@@ -1,4 +1,4 @@
-import type { ProviderName, ModelInfo, ProviderSettings } from "@vertex-code/types"
+import type { ProviderName, ModelInfo, ProviderSettings } from "@roo-code/types"
 import {
 	anthropicDefaultModelId,
 	bedrockDefaultModelId,
@@ -26,7 +26,7 @@ import {
 	vercelAiGatewayDefaultModelId,
 	opencodeGoDefaultModelId,
 	vertexGatewayDefaultModelId,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
 import { MODELS_BY_PROVIDER } from "../constants"
 

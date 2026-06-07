@@ -4,10 +4,10 @@ import {
 	type OrganizationAllowList,
 	type RouterModels,
 	vertexGatewayDefaultModelId,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
 import { useExtensionState } from "@src/context/ExtensionStateContext"
-import { getVertexAIAuthUrl } from "@src/oauth/urls"
+import { getVertexAuthUrl } from "@src/oauth/urls"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { VSCodeButtonLink } from "@src/components/common/VSCodeButtonLink"
 
@@ -57,11 +57,11 @@ export const VertexGateway = ({
 	simplifySettings,
 }: VertexGatewayProps) => {
 	const { t } = useAppTranslation()
-	const { vertexCodeIsAuthenticated, vertexCodeUserEmail, vertexCodeUserName, vertexCodeBaseUrl, uriScheme, deviceName } =
+	const { vertexIsAuthenticated, vertexUserEmail, vertexUserName, vertexBaseUrl, uriScheme, deviceName } =
 		useExtensionState()
 
-	const authUrl = getVertexAIAuthUrl(uriScheme, vertexCodeBaseUrl, deviceName)
-	const resolvedDashboardBase = vertexCodeBaseUrl?.replace(/\/$/, "") || "https://www.vertexai.dev"
+	const authUrl = getVertexAuthUrl(uriScheme, vertexBaseUrl, deviceName)
+	const resolvedDashboardBase = vertexBaseUrl?.replace(/\/$/, "") || "https://www.vertex.dev"
 
 	const vertexModels = useMemo(() => routerModels?.["vertex-gateway"] ?? {}, [routerModels])
 	const modelIds = useMemo(() => Object.keys(vertexModels), [vertexModels])
@@ -83,11 +83,11 @@ export const VertexGateway = ({
 			<div className="flex flex-col gap-1 rounded-md border border-vscode-panel-border p-2">
 				<div className="flex items-center justify-between">
 					<label className="block text-sm font-medium">{t("settings:providers.vertexGateway.account")}</label>
-					{vertexCodeIsAuthenticated && vertexCodeUserEmail && (
-						<span className="text-xs text-vscode-descriptionForeground">{vertexCodeUserEmail}</span>
+					{vertexIsAuthenticated && vertexUserEmail && (
+						<span className="text-xs text-vscode-descriptionForeground">{vertexUserEmail}</span>
 					)}
 				</div>
-				{!vertexCodeIsAuthenticated ? (
+				{!vertexIsAuthenticated ? (
 					<div className="flex flex-col gap-1">
 						<ApiErrorMessage errorMessage={t("settings:validation.vertexGatewaySignIn")} />
 						<p className="text-xs text-vscode-descriptionForeground">
@@ -101,8 +101,8 @@ export const VertexGateway = ({
 					<div className="flex items-center gap-1">
 						<span className="codicon codicon-check text-vscode-charts-green" />
 						<span className="text-xs text-vscode-descriptionForeground">
-							{vertexCodeUserName
-								? t("settings:providers.vertexGateway.authenticatedAs", { name: vertexCodeUserName })
+							{vertexUserName
+								? t("settings:providers.vertexGateway.authenticatedAs", { name: vertexUserName })
 								: t("settings:providers.vertexGateway.authenticated")}
 						</span>
 					</div>

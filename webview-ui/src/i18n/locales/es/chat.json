@@ -1,5 +1,5 @@
 {
-	"greeting": "¡Bienvenido a Vertex AI!",
+	"greeting": "¡Bienvenido a Vertex!",
 	"task": {
 		"title": "Tarea",
 		"expand": "Expandir tarea",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Agregar mensaje a la cola (se enviará después de que termine la tarea actual)",
 	"scrollToBottom": "Desplazarse al final del chat",
 	"scrollToLatestCheckpoint": "Desplazarse al checkpoint anterior",
-	"about": "Vertex AI es todo un equipo de desarrollo de IA en tu editor.",
+	"about": "Vertex es todo un equipo de desarrollo de IA en tu editor.",
 	"docs": "Consulta nuestra <DocsLink>documentación</DocsLink> para saber más.",
 	"onboarding": "Tu lista de tareas en este espacio de trabajo está vacía.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Modos personalizables",
 			"description": "Personajes especializados que se mantienen en la tarea y cumplen."
@@ -152,7 +152,7 @@
 			"500": "Error del servidor del proveedor. Algo está mal en el lado del proveedor, no hay nada mal con tu solicitud.",
 			"docs": "Documentación",
 			"goToSettings": "Configuración",
-			"unknown": "Error API desconocido. Contacta con el soporte de Vertex AI.",
+			"unknown": "Error API desconocido. Contacta con el soporte de Vertex.",
 			"connection": "Error de conexión. Asegúrate de tener una conexión a Internet funcional.",
 			"claudeCodeNotAuthenticated": "Debes iniciar sesión para usar Claude Code. Ve a Configuración y haz clic en \"Iniciar sesión en Claude Code\" para autenticarte."
 		}
@@ -177,7 +177,7 @@
 		"current": "Actual"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex quiere obtener instrucciones detalladas para ayudar con la tarea actual"
+		"wantsToFetch": "Roo quiere obtener instrucciones detalladas para ayudar con la tarea actual"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex quiere leer este archivo",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex quiere editar este archivo fuera del espacio de trabajo",
 		"wantsToEditProtected": "Vertex quiere editar un archivo de configuración protegido",
 		"wantsToCreate": "Vertex quiere crear un nuevo archivo",
-		"wantsToSearchReplace": "Vertex quiere realizar búsqueda y reemplazo en este archivo",
-		"didSearchReplace": "Vertex realizó búsqueda y reemplazo en este archivo",
+		"wantsToSearchReplace": "Roo quiere realizar búsqueda y reemplazo en este archivo",
+		"didSearchReplace": "Roo realizó búsqueda y reemplazo en este archivo",
 		"wantsToInsert": "Vertex quiere insertar contenido en este archivo",
 		"wantsToInsertWithLineNumber": "Vertex quiere insertar contenido en este archivo en la línea {{lineNumber}}",
 		"wantsToInsertAtEnd": "Vertex quiere añadir contenido al final de este archivo",
@@ -235,7 +235,7 @@
 	"response": "Respuesta",
 	"arguments": "Argumentos",
 	"text": {
-		"vertexSaid": "Vertex ha dicho"
+		"rooSaid": "Vertex ha dicho"
 	},
 	"feedback": {
 		"youSaid": "Has dicho"
@@ -328,12 +328,12 @@
 		"timerPrefix": "Aprobación automática habilitada. Seleccionando en {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} publicado",
-		"support": "Apoya a Vertex AI dándonos una estrella en <githubLink>GitHub</githubLink>.",
+		"title": "Vertex {{version}} publicado",
+		"support": "Apoya a Vertex dándonos una estrella en <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "¡Vertex Code ha vuelto! Ahora como un plugin mantenido por la comunidad llamado Vertex AI!!",
-			"description": "Si no has estado al tanto, el equipo de Vertex Code anunció recientemente que va a dejar de desarrollar Vertex Code y archivará el trabajo realizado. Pero no te preocupes: la comunidad ha dado un paso al frente para continuar el legado de Vertex Code con un nuevo nombre y un nuevo hogar. Ya no somos solo un \"Vertex\", somos una comunidad, un \"Vertex\", si quieres verlo así. Vertex AI es un plugin mantenido por la comunidad que continúa donde Vertex Code lo dejó, y estamos comprometidos a mantener vivo el espíritu de Vertex mientras introducimos nuevas funciones y mejoras. Queremos dar un enorme agradecimiento a todo el equipo de Vertex Code por su increíble trabajo y por crear una herramienta tan increíble para desarrolladores. Nos entusiasma seguir construyendo sobre sus cimientos y ver hasta dónde lleva la comunidad a Vertex AI en el futuro.",
-			"readMore": "Visita la nueva página principal de Vertex AI y lee el anuncio completo"
+			"heading": "¡Roo Code ha vuelto! Ahora como un plugin mantenido por la comunidad llamado Vertex!!",
+			"description": "Si no has estado al tanto, el equipo de Roo Code anunció recientemente que va a dejar de desarrollar Roo Code y archivará el trabajo realizado. Pero no te preocupes: la comunidad ha dado un paso al frente para continuar el legado de Roo Code con un nuevo nombre y un nuevo hogar. Ya no somos solo un \"Roo\", somos una comunidad, un \"Vertex\", si quieres verlo así. Vertex es un plugin mantenido por la comunidad que continúa donde Roo Code lo dejó, y estamos comprometidos a mantener vivo el espíritu de Roo mientras introducimos nuevas funciones y mejoras. Queremos dar un enorme agradecimiento a todo el equipo de Roo Code por su increíble trabajo y por crear una herramienta tan increíble para desarrolladores. Nos entusiasma seguir construyendo sobre sus cimientos y ver hasta dónde lleva la comunidad a Vertex en el futuro.",
+			"readMore": "Visita la nueva página principal de Vertex y lee el anuncio completo"
 		},
 		"release": {
 			"heading": "Novedades:",
@@ -363,7 +363,7 @@
 	"profileViolationWarning": "El perfil actual no es compatible con la configuración de tu organización",
 	"shellIntegration": {
 		"title": "Advertencia de ejecución de comandos",
-		"description": "Tu comando se está ejecutando sin la integración de shell del terminal de VSCode. Para ocultar esta advertencia, puedes desactivar la integración de shell en la sección <strong>Terminal</strong> de la <settingsLink>configuración de Vertex AI</settingsLink> o solucionar los problemas de integración del terminal de VSCode con el enlace de abajo.",
+		"description": "Tu comando se está ejecutando sin la integración de shell del terminal de VSCode. Para ocultar esta advertencia, puedes desactivar la integración de shell en la sección <strong>Terminal</strong> de la <settingsLink>configuración de Vertex</settingsLink> o solucionar los problemas de integración del terminal de VSCode con el enlace de abajo.",
 		"troubleshooting": "Haz clic aquí para ver la documentación de integración de shell."
 	},
 	"ask": {
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Versión {{version}} - Haz clic para ver las notas de la versión"
 	},
-	"vertexCloudCTA": {
-		"title": "¡Vertex AI Cloud está evolucionando!",
+	"rooCloudCTA": {
+		"title": "¡Vertex Cloud está evolucionando!",
 		"description": "Ejecuta agentes remotos en la nube, accede a tus tareas desde cualquier lugar, colabora con otros y mucho más.",
 		"joinWaitlist": "Regístrate para recibir las últimas actualizaciones."
 	},

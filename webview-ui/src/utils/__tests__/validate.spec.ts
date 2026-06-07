@@ -1,4 +1,4 @@
-import type { ProviderSettings, OrganizationAllowList, RouterModels } from "@vertex-code/types"
+import type { ProviderSettings, OrganizationAllowList, RouterModels } from "@roo-code/types"
 
 // Mock i18next to return translation keys with interpolated values
 vi.mock("i18next", () => ({
@@ -219,7 +219,7 @@ describe("Model Validation Functions", () => {
 
 	describe("Vertex Gateway validation", () => {
 		describe("validateApiConfiguration (welcome-view entry point)", () => {
-			it("returns a sign-in error when neither profile token nor Zoo auth is present", () => {
+			it("returns a sign-in error when neither profile token nor Vertex auth is present", () => {
 				const config: ProviderSettings = {
 					apiProvider: "vertex-gateway",
 					vertexGatewayModelId: "anthropic/claude-sonnet-4",
@@ -229,7 +229,7 @@ describe("Model Validation Functions", () => {
 				expect(result).toBe("settings:validation.vertexGatewaySignIn")
 			})
 
-			it("returns undefined when Vertex AI auth is active without a profile token", () => {
+			it("returns undefined when Vertex auth is active without a profile token", () => {
 				const config: ProviderSettings = {
 					apiProvider: "vertex-gateway",
 					vertexGatewayModelId: "anthropic/claude-sonnet-4",
@@ -243,7 +243,7 @@ describe("Model Validation Functions", () => {
 				const config: ProviderSettings = {
 					apiProvider: "vertex-gateway",
 					vertexGatewayModelId: "anthropic/claude-sonnet-4",
-					vertexSessionToken: "zoo_ext_test_token",
+					vertexSessionToken: "vertex_ext_test_token",
 				}
 
 				const result = validateApiConfiguration(config, mockRouterModels, allowAllOrganization, false)
@@ -273,7 +273,7 @@ describe("Model Validation Functions", () => {
 				const config: ProviderSettings = {
 					apiProvider: "vertex-gateway",
 					vertexGatewayModelId: "anthropic/claude-sonnet-4",
-					vertexSessionToken: "zoo_ext_test_token",
+					vertexSessionToken: "vertex_ext_test_token",
 				}
 
 				const result = validateApiConfigurationExcludingModelErrors(

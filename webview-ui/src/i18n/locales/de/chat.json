@@ -1,5 +1,5 @@
 {
-	"greeting": "Willkommen bei Vertex AI!",
+	"greeting": "Willkommen bei Vertex!",
 	"task": {
 		"title": "Aufgabe",
 		"expand": "Aufgabe erweitern",
@@ -88,10 +88,10 @@
 	"enqueueMessage": "Nachricht zur Warteschlange hinzufügen (wird nach Abschluss der aktuellen Aufgabe gesendet)",
 	"scrollToBottom": "Zum Chat-Ende scrollen",
 	"scrollToLatestCheckpoint": "Zum vorherigen Checkpoint scrollen",
-	"about": "Vertex AI ist ein ganzes KI-Entwicklerteam in deinem Editor.",
+	"about": "Vertex ist ein ganzes KI-Entwicklerteam in deinem Editor.",
 	"docs": "Schau in unsere <DocsLink>Dokumentation</DocsLink>, um mehr zu erfahren.",
 	"onboarding": "Deine Aufgabenliste in diesem Arbeitsbereich ist leer.",
-	"vertexTips": {
+	"rooTips": {
 		"customizableModes": {
 			"title": "Anpassbare Modi",
 			"description": "Spezialisierte Personas, die bei der Sache bleiben und liefern."
@@ -120,7 +120,7 @@
 		"title": "Modi",
 		"marketplace": "Modus-Marketplace",
 		"settings": "Modus-Einstellungen",
-		"description": "Spezialisierte Personas, die Vertexs Verhalten anpassen.",
+		"description": "Spezialisierte Personas, die Roos Verhalten anpassen.",
 		"searchPlaceholder": "Modi suchen...",
 		"noResults": "Keine Ergebnisse gefunden"
 	},
@@ -152,7 +152,7 @@
 			"500": "Fehler auf dem Server des Anbieters. Es stimmt etwas mit der Anbieterseite nicht, mit deiner Anfrage stimmt alles.",
 			"docs": "Dokumentation",
 			"goToSettings": "Einstellungen",
-			"unknown": "Unbekannter API-Fehler. Bitte kontaktiere den Vertex AI Support.",
+			"unknown": "Unbekannter API-Fehler. Bitte kontaktiere den Vertex Support.",
 			"connection": "Verbindungsfehler. Stelle sicher, dass du eine funktionierende Internetverbindung hast.",
 			"claudeCodeNotAuthenticated": "Du musst dich anmelden, um Claude Code zu verwenden. Gehe zu den Einstellungen und klicke auf \"Bei Claude Code anmelden\", um dich zu authentifizieren."
 		}
@@ -177,7 +177,7 @@
 		"current": "Aktuell"
 	},
 	"instructions": {
-		"wantsToFetch": "Vertex möchte detaillierte Anweisungen abrufen, um bei der aktuellen Aufgabe zu helfen"
+		"wantsToFetch": "Roo möchte detaillierte Anweisungen abrufen, um bei der aktuellen Aufgabe zu helfen"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex möchte diese Datei lesen",
@@ -188,8 +188,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex möchte diese Datei außerhalb des Arbeitsbereichs bearbeiten",
 		"wantsToEditProtected": "Vertex möchte eine geschützte Konfigurationsdatei bearbeiten",
 		"wantsToCreate": "Vertex möchte eine neue Datei erstellen",
-		"wantsToSearchReplace": "Vertex möchte in dieser Datei suchen und ersetzen",
-		"didSearchReplace": "Vertex hat Suchen und Ersetzen in dieser Datei durchgeführt",
+		"wantsToSearchReplace": "Roo möchte in dieser Datei suchen und ersetzen",
+		"didSearchReplace": "Roo hat Suchen und Ersetzen in dieser Datei durchgeführt",
 		"wantsToInsert": "Vertex möchte Inhalte in diese Datei einfügen",
 		"wantsToInsertWithLineNumber": "Vertex möchte Inhalte in diese Datei in Zeile {{lineNumber}} einfügen",
 		"wantsToInsertAtEnd": "Vertex möchte Inhalte am Ende dieser Datei anhängen",
@@ -235,7 +235,7 @@
 	"response": "Antwort",
 	"arguments": "Argumente",
 	"text": {
-		"vertexSaid": "Vertex hat gesagt"
+		"rooSaid": "Vertex hat gesagt"
 	},
 	"feedback": {
 		"youSaid": "Du hast gesagt"
@@ -277,7 +277,7 @@
 		"copyToClipboard": "In Zwischenablage kopieren",
 		"copied": "Kopiert!",
 		"diagnostics": "Detaillierte Fehlerinformationen abrufen",
-		"proxyProvider": "Du scheinst einen Proxy-basierten Anbieter zu verwenden. Überprüfe unbedingt seine Protokolle und stelle sicher, dass er Vertexs Anfragen nicht umschreibt."
+		"proxyProvider": "Du scheinst einen Proxy-basierten Anbieter zu verwenden. Überprüfe unbedingt seine Protokolle und stelle sicher, dass er Roos Anfragen nicht umschreibt."
 	},
 	"powershell": {
 		"issues": "Es scheint, dass du Probleme mit Windows PowerShell hast, bitte sieh dir dies an"
@@ -328,12 +328,12 @@
 		"timerPrefix": "Automatische Genehmigung aktiviert. Wähle in {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "Vertex AI {{version}} veröffentlicht",
-		"support": "Bitte unterstütze Vertex AI, indem du uns auf <githubLink>GitHub</githubLink> einen Stern gibst.",
+		"title": "Vertex {{version}} veröffentlicht",
+		"support": "Bitte unterstütze Vertex, indem du uns auf <githubLink>GitHub</githubLink> einen Stern gibst.",
 		"handoff": {
-			"heading": "Vertex Code ist zurück! Jetzt als Community-gepflegtes Plugin namens Vertex AI!!",
-			"description": "Falls du es nicht mitbekommen hast: Das Vertex Code Team hat vor Kurzem angekündigt, die Entwicklung von Vertex Code einzustellen und die bisherige Arbeit zu archivieren. Aber keine Sorge: Die Community ist eingesprungen, um das Vermächtnis von Vertex Code unter neuem Namen und in einem neuen Zuhause weiterzuführen! Wir sind nicht mehr nur ein einzelnes \"Vertex\", sondern eine Community – ein \"Vertex\", wenn du so willst. Vertex AI ist ein Community-gepflegtes Plugin, das dort weitermacht, wo Vertex Code aufgehört hat. Wir wollen den Geist von Vertex bewahren und gleichzeitig neue Funktionen und Verbesserungen einführen. Dem gesamten Vertex Code Team gilt ein riesiges Dankeschön für die unglaubliche Arbeit und dafür, dass es so ein großartiges Tool für Entwickler geschaffen hat. Wir freuen uns darauf, auf diesem Fundament weiterzubauen und zu sehen, wohin die Community Vertex AI in Zukunft führt!",
-			"readMore": "Sieh dir die neue Vertex AI Startseite an und lies die vollständige Ankündigung"
+			"heading": "Roo Code ist zurück! Jetzt als Community-gepflegtes Plugin namens Vertex!!",
+			"description": "Falls du es nicht mitbekommen hast: Das Roo Code Team hat vor Kurzem angekündigt, die Entwicklung von Roo Code einzustellen und die bisherige Arbeit zu archivieren. Aber keine Sorge: Die Community ist eingesprungen, um das Vermächtnis von Roo Code unter neuem Namen und in einem neuen Zuhause weiterzuführen! Wir sind nicht mehr nur ein einzelnes \"Roo\", sondern eine Community – ein \"Vertex\", wenn du so willst. Vertex ist ein Community-gepflegtes Plugin, das dort weitermacht, wo Roo Code aufgehört hat. Wir wollen den Geist von Roo bewahren und gleichzeitig neue Funktionen und Verbesserungen einführen. Dem gesamten Roo Code Team gilt ein riesiges Dankeschön für die unglaubliche Arbeit und dafür, dass es so ein großartiges Tool für Entwickler geschaffen hat. Wir freuen uns darauf, auf diesem Fundament weiterzubauen und zu sehen, wohin die Community Vertex in Zukunft führt!",
+			"readMore": "Sieh dir die neue Vertex Startseite an und lies die vollständige Ankündigung"
 		},
 		"release": {
 			"heading": "Was ist neu:",
@@ -363,7 +363,7 @@
 	"profileViolationWarning": "Das aktuelle Profil ist nicht kompatibel mit den Einstellungen deiner Organisation",
 	"shellIntegration": {
 		"title": "Befehlsausführungswarnung",
-		"description": "Dein Befehl wird ohne VSCode Terminal-Shell-Integration ausgeführt. Um diese Warnung zu unterdrücken, kannst du die Shell-Integration im Abschnitt <strong>Terminal</strong> der <settingsLink>Vertex AI Einstellungen</settingsLink> deaktivieren oder die VSCode Terminal-Integration mit dem Link unten beheben.",
+		"description": "Dein Befehl wird ohne VSCode Terminal-Shell-Integration ausgeführt. Um diese Warnung zu unterdrücken, kannst du die Shell-Integration im Abschnitt <strong>Terminal</strong> der <settingsLink>Vertex Einstellungen</settingsLink> deaktivieren oder die VSCode Terminal-Integration mit dem Link unten beheben.",
 		"troubleshooting": "Klicke hier für die Shell-Integrationsdokumentation."
 	},
 	"ask": {
@@ -420,8 +420,8 @@
 	"versionIndicator": {
 		"ariaLabel": "Version {{version}} - Klicken Sie, um die Versionshinweise anzuzeigen"
 	},
-	"vertexCloudCTA": {
-		"title": "Vertex AI Cloud entwickelt sich weiter!",
+	"rooCloudCTA": {
+		"title": "Vertex Cloud entwickelt sich weiter!",
 		"description": "Führe Remote-Agenten in der Cloud aus, greife von überall auf deine Aufgaben zu, arbeite mit anderen zusammen und vieles mehr.",
 		"joinWaitlist": "Melde dich an, um die neuesten Updates zu erhalten."
 	},

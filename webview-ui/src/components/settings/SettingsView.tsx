@@ -37,7 +37,7 @@ import {
 	type TelemetrySetting,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 	ImageGenerationProvider,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
 import { vscode } from "@src/utils/vscode"
 import { cn } from "@src/lib/utils"
@@ -95,8 +95,6 @@ export interface SettingsViewRef {
 	checkUnsaveChanges: (then: () => void) => void
 }
 
-// Features with backend implementation (VertexAI)
-// Hidden (Zoo-Code specific): experimental
 export const sectionNames = [
 	"providers",
 	"autoApprove",
@@ -111,6 +109,7 @@ export const sectionNames = [
 	"worktrees",
 	"prompts",
 	"ui",
+	"experimental",
 	"language",
 	"about",
 ] as const
@@ -186,7 +185,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		terminalZdotdir,
 		terminalProfile,
 		writeDelayMs,
-		showVertexIgnoredFiles,
+		showRooIgnoredFiles,
 		enableSubfolderRules,
 		maxImageFileSize,
 		maxTotalImageSize,
@@ -404,7 +403,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					mcpEnabled,
 					maxOpenTabsContext: Math.min(Math.max(0, maxOpenTabsContext ?? 20), 500),
 					maxWorkspaceFiles: Math.min(Math.max(0, maxWorkspaceFiles ?? 200), 500),
-					showVertexIgnoredFiles: showVertexIgnoredFiles ?? true,
+					showRooIgnoredFiles: showRooIgnoredFiles ?? true,
 					enableSubfolderRules: enableSubfolderRules ?? false,
 					maxImageFileSize: maxImageFileSize ?? 5,
 					maxTotalImageSize: maxTotalImageSize ?? 20,
@@ -511,23 +510,22 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		}
 	}, [])
 
-	// Sections with backend implementation (VertexAI)
-	// Hidden (Zoo-Code specific): experimental
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
 			{ id: "modes", icon: Users2 },
-			{ id: "autoApprove", icon: CheckCheck },
-			{ id: "slashCommands", icon: SquareSlash },
 			{ id: "skills", icon: GraduationCap },
+			{ id: "slashCommands", icon: SquareSlash },
+			{ id: "autoApprove", icon: CheckCheck },
+			{ id: "mcp", icon: Server },
 			{ id: "checkpoints", icon: GitCommitVertical },
 			{ id: "notifications", icon: Bell },
 			{ id: "contextManagement", icon: Database },
 			{ id: "terminal", icon: SquareTerminal },
-			{ id: "mcp", icon: Server },
-			{ id: "worktrees", icon: GitBranch },
 			{ id: "prompts", icon: MessageSquare },
+			{ id: "worktrees", icon: GitBranch },
 			{ id: "ui", icon: Glasses },
+			{ id: "experimental", icon: FlaskConical },
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
 		],
@@ -839,7 +837,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								listApiConfigMeta={listApiConfigMeta ?? []}
 								maxOpenTabsContext={maxOpenTabsContext}
 								maxWorkspaceFiles={maxWorkspaceFiles ?? 200}
-								showVertexIgnoredFiles={showVertexIgnoredFiles}
+								showRooIgnoredFiles={showRooIgnoredFiles}
 								enableSubfolderRules={enableSubfolderRules}
 								maxImageFileSize={maxImageFileSize}
 								maxTotalImageSize={maxTotalImageSize}

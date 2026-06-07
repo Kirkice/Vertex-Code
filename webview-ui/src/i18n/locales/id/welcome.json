@@ -1,18 +1,18 @@
 {
 	"landing": {
-		"greeting": "Selamat datang di Vertex AI!",
-		"introduction": "Dengan berbagai Mode bawaan dan dapat diperluas, Vertex AI memungkinkan Anda merencanakan, merancang, coding, debug, dan meningkatkan produktivitas seperti yang belum pernah terjadi sebelumnya.",
+		"greeting": "Selamat datang di Vertex!",
+		"introduction": "Dengan berbagai Mode bawaan dan dapat diperluas, Vertex memungkinkan Anda merencanakan, merancang, coding, debug, dan meningkatkan produktivitas seperti yang belum pernah terjadi sebelumnya.",
 		"getStarted": "Pilih penyedia Anda"
 	},
 	"providerSignup": {
 		"heading": "Pilih penyedia Anda",
-		"chooseProvider": "Vertex AI memerlukan penyedia LLM untuk bekerja. Pilih satu untuk memulai, Anda dapat menambahkan lebih banyak nanti.",
+		"chooseProvider": "Vertex memerlukan penyedia LLM untuk bekerja. Pilih satu untuk memulai, Anda dapat menambahkan lebih banyak nanti.",
 		"goBack": "Kembali",
 		"finish": "Selesai"
 	},
 	"telemetry": {
-		"helpImprove": "Bantu Tingkatkan Vertex AI",
-		"helpImproveMessage": "Vertex AI mengumpulkan data kesalahan dan penggunaan untuk membantu kami memperbaiki bug dan meningkatkan ekstensi. Telemetri ini tidak mengumpulkan kode, prompt, atau informasi pribadi. Anda dapat menonaktifkannya di <settingsLink>pengaturan</settingsLink>."
+		"helpImprove": "Bantu Tingkatkan Vertex",
+		"helpImproveMessage": "Vertex mengumpulkan data kesalahan dan penggunaan untuk membantu kami memperbaiki bug dan meningkatkan ekstensi. Telemetri ini tidak mengumpulkan kode, prompt, atau informasi pribadi. Anda dapat menonaktifkannya di <settingsLink>pengaturan</settingsLink>."
 	},
 	"importSettings": "Impor Pengaturan"
 }

@@ -5,6 +5,13 @@ import crypto from "crypto"
 import EventEmitter from "events"
 
 import simpleGit, { SimpleGit, SimpleGitOptions } from "simple-git"
+import pWaitFor from "p-wait-for"
+import * as vscode from "vscode"
+
+import { fileExistsAtPath } from "../../utils/fs"
+import { arePathsEqual } from "../../utils/path"
+import { executeRipgrep } from "../../services/search/file-search"
+import { t } from "../../i18n"
 
 import { CheckpointDiff, CheckpointResult, CheckpointEventMap } from "./types"
 import { getExcludePatterns } from "./excludes"
@@ -18,6 +25,9 @@ import { getExcludePatterns } from "./excludes"
  *    unintended repositories or limit where git searches.
  *  - Code-execution vectors blocked by simple-git ≥3.36's blockUnsafeOperationsPlugin when
  *    passed via .env(): GIT_EDITOR, GIT_SSH_COMMAND, GIT_PAGER, PREFIX, etc.
+ *
+ * Stripping GIT_CONFIG_COUNT also neutralises the entire GIT_CONFIG_KEY_n / GIT_CONFIG_VALUE_n
+ * family — git ignores those per-key entries when the count key is absent.
  */
 export const BLOCKED_ENV_KEYS = new Set([
 	"GIT_DIR",
@@ -46,34 +56,17 @@ export const BLOCKED_ENV_KEYS = new Set([
 	"SSH_ASKPASS",
 ])
 
-// Lowercase set for case-insensitive lookup
+// Lowercase set for case-insensitive lookup — the plugin uses toLowerCase() internally,
+// so a var like Git_Editor would bypass an exact-match check on Linux.
 const BLOCKED_ENV_KEYS_LOWER = new Set([...BLOCKED_ENV_KEYS].map((k) => k.toLowerCase()))
-
-/**
- * Check if a path exists
- */
-const fileExistsAtPath = async (filePath: string): Promise<boolean> => {
-	try {
-		await fs.access(filePath)
-		return true
-	} catch {
-		return false
-	}
-}
-
-/**
- * Compare two paths for equality, handling Windows case-insensitivity
- */
-const arePathsEqual = (path1: string, path2: string): boolean => {
-	if (process.platform === "win32") {
-		return path1.toLowerCase() === path2.toLowerCase()
-	}
-	return path1 === path2
-}
 
 /**
  * Creates a SimpleGit instance with sanitized environment variables to prevent
  * interference from inherited git environment variables like GIT_DIR and GIT_WORK_TREE.
+ * This ensures checkpoint operations always target the intended shadow repository.
+ *
+ * @param baseDir - The directory where git operations should be executed
+ * @returns A SimpleGit instance with sanitized environment
  */
 function createSanitizedGit(baseDir: string): SimpleGit {
 	const sanitizedEnv: Record<string, string> = {}
@@ -90,6 +83,7 @@ function createSanitizedGit(baseDir: string): SimpleGit {
 		}
 	}
 
+	// Log which git env vars were removed (helps with debugging Dev Container issues)
 	if (removedKeys.length > 0) {
 		console.log(
 			`[createSanitizedGit] Removed git environment variables for checkpoint isolation: ${removedKeys.join(", ")}`,
@@ -99,10 +93,18 @@ function createSanitizedGit(baseDir: string): SimpleGit {
 	const options: Partial<SimpleGitOptions> = {
 		baseDir,
 		config: [],
+		// --template="" stops git copying hooks/templates into the shadow repo (axis 1).
+		// GIT_TEMPLATE_DIR is stripped from the env above to block the env-var path (axis 2).
+		// allowUnsafeTemplateDir opts out of simple-git ≥3.36's blockUnsafeOperationsPlugin
+		// so the --template arg is not rejected before reaching git.
 		unsafe: { allowUnsafeTemplateDir: true },
 	}
 
+	// Create git instance and set the sanitized environment
 	const git = simpleGit(options)
+
+	// Use the .env() method to set the complete sanitized environment
+	// This replaces the inherited environment with our sanitized version
 	git.env(sanitizedEnv)
 
 	console.log(`[createSanitizedGit] Created git instance for baseDir: ${baseDir}`)
@@ -110,12 +112,6 @@ function createSanitizedGit(baseDir: string): SimpleGit {
 	return git
 }
 
-/**
- * ShadowCheckpointService - Manages git-based checkpoints for task state preservation
- * 
- * This service creates a "shadow" git repository that tracks changes in the workspace.
- * Each checkpoint is a git commit that can be restored to revert the workspace to that state.
- */
 export abstract class ShadowCheckpointService extends EventEmitter {
 	public readonly taskId: string
 	public readonly checkpointsDir: string
@@ -166,12 +162,23 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		this.log = log
 	}
 
-	/**
-	 * Initialize the shadow git repository
-	 */
 	public async initShadowGit(onInit?: () => Promise<void>) {
 		if (this.git) {
 			throw new Error("Shadow git repo already initialized")
+		}
+
+		const nestedGitPath = await this.getNestedGitRepository()
+
+		if (nestedGitPath) {
+			// Show persistent error message with the offending path
+			const relativePath = path.relative(this.workspaceDir, nestedGitPath)
+			const message = t("common:errors.nested_git_repos_warning", { path: relativePath })
+			vscode.window.showErrorMessage(message)
+
+			throw new Error(
+				`Checkpoints are disabled because a nested git repository was detected at: ${relativePath}. ` +
+					"Please remove or relocate nested git repositories to use the checkpoints feature.",
+			)
 		}
 
 		await fs.mkdir(this.checkpointsDir, { recursive: true })
@@ -203,9 +210,9 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		} else {
 			this.log(`[${this.constructor.name}#initShadowGit] creating shadow git repo at ${this.checkpointsDir}`)
 			await git.init({ "--template": "" })
-			await git.addConfig("core.worktree", this.workspaceDir)
-			await git.addConfig("commit.gpgSign", "false")
-			await git.addConfig("user.name", "Vertex AI")
+			await git.addConfig("core.worktree", this.workspaceDir) // Sets the working tree to the current workspace.
+			await git.addConfig("commit.gpgSign", "false") // Disable commit signing for shadow repo.
+			await git.addConfig("user.name", "Roo Code")
 			await git.addConfig("user.email", "noreply@example.com")
 			await this.writeExcludeFile()
 			await this.stageAll(git)
@@ -235,18 +242,17 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		return { created, duration }
 	}
 
-	/**
-	 * Write exclude patterns to .git/info/exclude
-	 */
+	// Add basic excludes directly in git config, while respecting any
+	// .gitignore in the workspace.
+	// .git/info/exclude is local to the shadow git repo, so it's not
+	// shared with the main repo - and won't conflict with user's
+	// .gitignore.
 	protected async writeExcludeFile() {
 		await fs.mkdir(path.join(this.dotGitDir, "info"), { recursive: true })
 		const patterns = await getExcludePatterns(this.workspaceDir)
 		await fs.writeFile(path.join(this.dotGitDir, "info", "exclude"), patterns.join("\n"))
 	}
 
-	/**
-	 * Stage all files in the workspace
-	 */
 	private async stageAll(git: SimpleGit) {
 		try {
 			await git.add([".", "--ignore-errors"])
@@ -257,9 +263,57 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Get the core.worktree config value
-	 */
+	private async getNestedGitRepository(): Promise<string | null> {
+		try {
+			// Find all .git/HEAD files that are not at the root level.
+			const args = ["--files", "--hidden", "--follow", "-g", "**/.git/HEAD", this.workspaceDir]
+
+			const gitPaths = await executeRipgrep({ args, workspacePath: this.workspaceDir })
+
+			// Filter to only include nested git directories (not the root .git).
+			// Since we're searching for HEAD files, we expect type to be "file"
+			const nestedGitPaths = gitPaths.filter(({ type, path: filePath }) => {
+				// Check if it's a file and is a nested .git/HEAD (not at root)
+				if (type !== "file") return false
+
+				// Ensure it's a .git/HEAD file and not the root one
+				const normalizedPath = filePath.replace(/\\/g, "/")
+				return (
+					normalizedPath.includes(".git/HEAD") &&
+					!normalizedPath.startsWith(".git/") &&
+					normalizedPath !== ".git/HEAD"
+				)
+			})
+
+			if (nestedGitPaths.length > 0) {
+				// Get the first nested git repository path
+				// Remove .git/HEAD from the path to get the repository directory
+				const headPath = nestedGitPaths[0].path
+
+				// Use path module to properly extract the repository directory
+				// The HEAD file is at .git/HEAD, so we need to go up two directories
+				const gitDir = path.dirname(headPath) // removes HEAD, gives us .git
+				const repoDir = path.dirname(gitDir) // removes .git, gives us the repo directory
+
+				const absolutePath = path.join(this.workspaceDir, repoDir)
+
+				this.log(
+					`[${this.constructor.name}#getNestedGitRepository] found ${nestedGitPaths.length} nested git repositories, first at: ${repoDir}`,
+				)
+				return absolutePath
+			}
+
+			return null
+		} catch (error) {
+			this.log(
+				`[${this.constructor.name}#getNestedGitRepository] failed to check for nested git repos: ${error instanceof Error ? error.message : String(error)}`,
+			)
+
+			// If we can't check, assume there are no nested repos to avoid blocking the feature.
+			return null
+		}
+	}
+
 	private async getShadowGitConfigWorktree(git: SimpleGit) {
 		if (!this.shadowGitConfigWorktree) {
 			try {
@@ -274,9 +328,6 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		return this.shadowGitConfigWorktree
 	}
 
-	/**
-	 * Save a checkpoint (git commit)
-	 */
 	public async saveCheckpoint(
 		message: string,
 		options?: { allowEmpty?: boolean; suppressMessage?: boolean },
@@ -326,9 +377,6 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Restore to a specific checkpoint
-	 */
 	public async restoreCheckpoint(commitHash: string) {
 		try {
 			this.log(`[${this.constructor.name}#restoreCheckpoint] starting checkpoint restore`)
@@ -341,7 +389,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 			await this.git.clean("f", ["-d", "-f"])
 			await this.git.reset(["--hard", commitHash])
 
-			// Remove all checkpoints after the specified commitHash
+			// Remove all checkpoints after the specified commitHash.
 			const checkpointIndex = this._checkpoints.indexOf(commitHash)
 
 			if (checkpointIndex !== -1) {
@@ -359,9 +407,6 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Get diff between two commits
-	 */
 	public async getDiff({ from, to }: { from?: string; to?: string }): Promise<CheckpointDiff[]> {
 		if (!this.git) {
 			throw new Error("Shadow git repo not initialized")
@@ -373,7 +418,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 			from = (await this.git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim()
 		}
 
-		// Stage all changes so that untracked files appear in diff summary
+		// Stage all changes so that untracked files appear in diff summary.
 		await this.stageAll(this.git)
 
 		this.log(`[${this.constructor.name}#getDiff] diffing ${to ? `${from}..${to}` : `${from}..HEAD`}`)
@@ -397,7 +442,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 	}
 
 	/**
-	 * EventEmitter type-safe methods
+	 * EventEmitter
 	 */
 
 	override emit<K extends keyof CheckpointEventMap>(event: K, data: CheckpointEventMap[K]) {
@@ -417,7 +462,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 	}
 
 	/**
-	 * Storage helpers
+	 * Storage
 	 */
 
 	public static hashWorkspaceDir(workspaceDir: string) {
@@ -448,7 +493,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		workspaceDir: string
 	}) {
 		const workspaceRepoDir = this.workspaceRepoDir({ globalStorageDir, workspaceDir })
-		const branchName = `vertex-${taskId}`
+		const branchName = `roo-${taskId}`
 		const git = createSanitizedGit(workspaceRepoDir)
 		const success = await this.deleteBranch(git, branchName)
 
@@ -479,25 +524,13 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 				const defaultBranch = branches.all.includes("main") ? "main" : "master"
 				await git.checkout([defaultBranch, "--force"])
 
-				// Wait for branch switch
-				await new Promise<void>((resolve, reject) => {
-					let attempts = 0
-					const check = async () => {
-						try {
-							const newBranch = await git.revparse(["--abbrev-ref", "HEAD"])
-							if (newBranch === defaultBranch) {
-								resolve()
-							} else if (attempts++ > 4) {
-								reject(new Error("Timeout waiting for branch switch"))
-							} else {
-								setTimeout(check, 500)
-							}
-						} catch (e) {
-							reject(e)
-						}
-					}
-					check()
-				})
+				await pWaitFor(
+					async () => {
+						const newBranch = await git.revparse(["--abbrev-ref", "HEAD"])
+						return newBranch === defaultBranch
+					},
+					{ interval: 500, timeout: 2_000 },
+				)
 
 				await git.branch(["-D", branchName])
 				return true

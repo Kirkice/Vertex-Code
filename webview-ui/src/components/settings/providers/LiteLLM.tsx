@@ -6,9 +6,9 @@ import {
 	type OrganizationAllowList,
 	type ExtensionMessage,
 	litellmDefaultModelId,
-} from "@vertex-code/types"
+} from "@roo-code/types"
 
-import { RouterName } from "@vertex/api"
+import { RouterName } from "@roo/api"
 
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"

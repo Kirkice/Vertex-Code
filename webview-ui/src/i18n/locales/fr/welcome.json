@@ -1,18 +1,18 @@
 {
 	"landing": {
-		"greeting": "Bienvenue sur Vertex AI !",
-		"introduction": "Avec une gamme de Modes intégrés et extensibles, Vertex AI te permet de planifier, architecturer, coder, déboguer et augmenter ta productivité comme jamais auparavant.",
+		"greeting": "Bienvenue sur Vertex !",
+		"introduction": "Avec une gamme de Modes intégrés et extensibles, Vertex te permet de planifier, architecturer, coder, déboguer et augmenter ta productivité comme jamais auparavant.",
 		"getStarted": "Choisis ton fournisseur"
 	},
 	"providerSignup": {
 		"heading": "Choisis ton fournisseur",
-		"chooseProvider": "Vertex AI a besoin d'un fournisseur LLM pour fonctionner. Choisis-en un pour commencer, tu peux en ajouter d'autres plus tard.",
+		"chooseProvider": "Vertex a besoin d'un fournisseur LLM pour fonctionner. Choisis-en un pour commencer, tu peux en ajouter d'autres plus tard.",
 		"goBack": "Retour",
 		"finish": "Terminer"
 	},
 	"telemetry": {
-		"helpImprove": "Aide à améliorer Vertex AI",
-		"helpImproveMessage": "Vertex AI collecte des données d'erreurs et d'utilisation pour nous aider à corriger les bugs et améliorer l'extension. Cette télémétrie ne collecte pas de code, de prompts ou d'informations personnelles. Tu peux désactiver ceci dans les <settingsLink>paramètres</settingsLink>."
+		"helpImprove": "Aide à améliorer Vertex",
+		"helpImproveMessage": "Vertex collecte des données d'erreurs et d'utilisation pour nous aider à corriger les bugs et améliorer l'extension. Cette télémétrie ne collecte pas de code, de prompts ou d'informations personnelles. Tu peux désactiver ceci dans les <settingsLink>paramètres</settingsLink>."
 	},
 	"importSettings": "Importer les paramètres"
 }
