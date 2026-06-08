@@ -79,16 +79,6 @@ vi.mock("@src/components/modes/ModesView", () => ({
 	},
 }))
 
-vi.mock("@src/components/marketplace/MarketplaceView", () => ({
-	MarketplaceView: function MarketplaceView({ onDone }: { onDone: () => void }) {
-		return (
-			<div data-testid="marketplace-view" onClick={onDone}>
-				Marketplace View
-			</div>
-		)
-	},
-}))
-
 const mockUseExtensionState = vi.fn()
 
 // Mock i18next and react-i18next
@@ -235,10 +225,7 @@ describe("App", () => {
 		expect(chatView.getAttribute("data-hidden")).toBe("true")
 	})
 
-	it.each([
-		["settings", "settings-view"],
-		["marketplace", "marketplace-view"],
-	])("still switches to %s while welcome gating is active", async (action, testId) => {
+	it("still switches to settings while welcome gating is active", async () => {
 		mockUseExtensionState.mockReturnValue({
 			didHydrateState: true,
 			showWelcome: true,
@@ -251,10 +238,10 @@ describe("App", () => {
 		render(<AppWithProviders />)
 
 		act(() => {
-			triggerMessage(`${action}ButtonClicked`)
+			triggerMessage("settingsButtonClicked")
 		})
 
-		expect(await screen.findByTestId(testId)).toBeInTheDocument()
+		expect(await screen.findByTestId("settings-view")).toBeInTheDocument()
 		expect(screen.queryByTestId("welcome-view")).not.toBeInTheDocument()
 	})
 
@@ -321,18 +308,6 @@ describe("App", () => {
 			viewId: "settings-view",
 			nextAction: "historyButtonClicked",
 		},
-		{
-			label: "marketplace before returning to chat",
-			action: "marketplaceButtonClicked",
-			viewId: "marketplace-view",
-			nextAction: undefined,
-		},
-		{
-			label: "marketplace before switching to history",
-			action: "marketplaceButtonClicked",
-			viewId: "marketplace-view",
-			nextAction: "historyButtonClicked",
-		},
 	])(
 		"consumes imported settings without a later redirect when already on $label",
 		async ({ action, viewId, nextAction }) => {
@@ -370,7 +345,6 @@ describe("App", () => {
 
 			expect(screen.getByTestId("welcome-view")).toBeInTheDocument()
 			expect(screen.queryByTestId("settings-view")).not.toBeInTheDocument()
-			expect(screen.queryByTestId("marketplace-view")).not.toBeInTheDocument()
 		},
 	)
 
@@ -443,37 +417,5 @@ describe("App", () => {
 		const chatView = screen.getByTestId("chat-view")
 		expect(chatView.getAttribute("data-hidden")).toBe("false")
 		expect(screen.queryByTestId(`${view}-view`)).not.toBeInTheDocument()
-	})
-
-	it("switches to marketplace view when receiving marketplaceButtonClicked action", async () => {
-		render(<AppWithProviders />)
-
-		act(() => {
-			triggerMessage("marketplaceButtonClicked")
-		})
-
-		const marketplaceView = await screen.findByTestId("marketplace-view")
-		expect(marketplaceView).toBeInTheDocument()
-
-		const chatView = screen.getByTestId("chat-view")
-		expect(chatView.getAttribute("data-hidden")).toBe("true")
-	})
-
-	it("returns to chat view when clicking done in marketplace view", async () => {
-		render(<AppWithProviders />)
-
-		act(() => {
-			triggerMessage("marketplaceButtonClicked")
-		})
-
-		const marketplaceView = await screen.findByTestId("marketplace-view")
-
-		act(() => {
-			marketplaceView.click()
-		})
-
-		const chatView = screen.getByTestId("chat-view")
-		expect(chatView.getAttribute("data-hidden")).toBe("false")
-		expect(screen.queryByTestId("marketplace-view")).not.toBeInTheDocument()
 	})
 })
