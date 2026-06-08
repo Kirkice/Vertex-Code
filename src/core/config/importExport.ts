@@ -12,7 +12,7 @@ import {
 	isProviderName,
 	type ProviderSettingsWithId,
 } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import { ProviderSettingsManager, providerProfilesSchema } from "./ProviderSettingsManager"
 import { ContextProxy } from "./ContextProxy"
@@ -195,9 +195,7 @@ export async function importSettingsFromPath(
 		let error = "Unknown error"
 
 		if (e instanceof ZodError) {
-			error = e.issues.map((issue) => `[${issue.path.join(".")}]: ${issue.message}`).join("\n")
-			TelemetryService.instance.captureSchemaValidationError({ schemaName: "ImportExport", error: e })
-		} else if (e instanceof Error) {
+			error = e.issues.map((issue) => `[${issue.path.join(".")}]: ${issue.message}`).join("\n")		} else if (e instanceof Error) {
 			error = e.message
 		}
 

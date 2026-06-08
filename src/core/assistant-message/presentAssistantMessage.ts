@@ -3,7 +3,6 @@ import { Anthropic } from "@anthropic-ai/sdk"
 
 import type { ToolName, ClineAsk, ToolProgressStatus } from "@roo-code/types"
 import { ConsecutiveMistakeError, TelemetryEventName } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
 import { customToolRegistry } from "@roo-code/core"
 
 import { t } from "../../i18n"
@@ -235,7 +234,6 @@ export async function presentAssistantMessage(cline: Task) {
 
 			if (!mcpBlock.partial) {
 				cline.recordToolUsage("use_mcp_tool") // Record as use_mcp_tool for analytics
-				TelemetryService.instance.captureToolUsage(cline.taskId, "use_mcp_tool")
 			}
 
 			// Resolve sanitized server name back to original server name
@@ -558,15 +556,10 @@ export async function presentAssistantMessage(cline: Task) {
 				const isCustomTool = stateExperiments?.customTools && customToolRegistry.has(block.name)
 				const recordName = isCustomTool ? "custom_tool" : block.name
 				cline.recordToolUsage(recordName)
-				TelemetryService.instance.captureToolUsage(cline.taskId, recordName)
 
 				// Track legacy format usage for read_file tool (for migration monitoring)
 				if (block.name === "read_file" && block.usedLegacyFormat) {
 					const modelInfo = cline.api.getModel()
-					TelemetryService.instance.captureEvent(TelemetryEventName.READ_FILE_LEGACY_FORMAT_USED, {
-						taskId: cline.taskId,
-						model: modelInfo?.id,
-					})
 				}
 			}
 
@@ -652,18 +645,6 @@ export async function presentAssistantMessage(cline: Task) {
 					}
 
 					// Track tool repetition in telemetry via PostHog exception tracking and event.
-					TelemetryService.instance.captureConsecutiveMistakeError(cline.taskId)
-					TelemetryService.instance.captureException(
-						new ConsecutiveMistakeError(
-							`Tool repetition limit reached for ${block.name}`,
-							cline.taskId,
-							cline.consecutiveMistakeCount,
-							cline.consecutiveMistakeLimit,
-							"tool_repetition",
-							cline.apiConfiguration.apiProvider,
-							cline.api.getModel().id,
-						),
-					)
 
 					// Return tool result message about the repetition
 					pushToolResult(

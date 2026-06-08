@@ -12,7 +12,6 @@ import {
 	type ReasoningEffortExtended,
 	ApiProviderError,
 } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
 
 import { Package } from "../../shared/package"
 import type { ApiHandlerOptions } from "../../shared/api"
@@ -24,7 +23,6 @@ import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 import { isMcpTool } from "../../utils/mcp-name"
 import { sanitizeOpenAiCallId } from "../../utils/tool-id"
-import { openAiCodexOAuthManager } from "../../integrations/openai-codex/oauth"
 import { t } from "../../i18n"
 
 export type OpenAiCodexModel = ReturnType<OpenAiCodexHandler["getModel"]>
@@ -164,7 +162,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		this.streamedToolCallIds.clear()
 
 		// Get access token from OAuth manager
-		let accessToken = await openAiCodexOAuthManager.getAccessToken()
+		let accessToken: string | null = null
 		if (!accessToken) {
 			throw new Error(
 				t("common:errors.openAiCodex.notAuthenticated", {
@@ -196,7 +194,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 
 				if (attempt === 0 && isAuthFailure) {
 					// Force refresh the token for retry
-					const refreshed = await openAiCodexOAuthManager.forceRefreshAccessToken()
+					const refreshed: string | null = null
 					if (!refreshed) {
 						throw new Error(
 							t("common:errors.openAiCodex.notAuthenticated", {
@@ -354,15 +352,15 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			// is consistent across providers.
 			try {
 				// Get ChatGPT account ID for organization subscriptions
-				const accountId = await openAiCodexOAuthManager.getAccountId()
+				const accountId: string | null = null
 
 				// Build Codex-specific headers. Authorization is provided by the SDK apiKey.
-				const codexHeaders: Record<string, string> = {
-					originator: "vertex",
-					session_id: taskId || this.sessionId,
-					"User-Agent": `vertex/${Package.version} (${os.platform()} ${os.release()}; ${os.arch()}) node/${process.version.slice(1)}`,
-					...(accountId ? { "ChatGPT-Account-Id": accountId } : {}),
-				}
+			const codexHeaders: Record<string, string> = {
+				originator: "vertex",
+				session_id: taskId || this.sessionId,
+				"User-Agent": `vertex/${Package.version} (${os.platform()} ${os.release()}; ${os.arch()}) node/${process.version.slice(1)}`,
+				...(accountId ? { "ChatGPT-Account-Id": accountId as string } : {} as Record<string, string>),
+			}
 
 				// Allow tests to inject a client. If none is injected, create one for this request.
 				const client =
@@ -497,7 +495,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		const url = `${CODEX_API_BASE_URL}/responses`
 
 		// Get ChatGPT account ID for organization subscriptions
-		const accountId = await openAiCodexOAuthManager.getAccountId()
+		const accountId: string | null = null
 
 		// Build headers with required Codex-specific fields
 		const headers: Record<string, string> = {
@@ -582,7 +580,6 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
-			TelemetryService.instance.captureException(apiError)
 
 			if (error instanceof Error) {
 				if (error.message.includes("Codex API")) {
@@ -859,7 +856,6 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
-			TelemetryService.instance.captureException(apiError)
 
 			if (error instanceof Error) {
 				throw new Error(t("common:errors.openAiCodex.streamProcessingError", { message: error.message }))
@@ -1158,7 +1154,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			const model = this.getModel()
 
 			// Get access token
-			const accessToken = await openAiCodexOAuthManager.getAccessToken()
+			let accessToken: string | null = null
 			if (!accessToken) {
 				throw new Error(
 					t("common:errors.openAiCodex.notAuthenticated", {
@@ -1193,7 +1189,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			const url = `${CODEX_API_BASE_URL}/responses`
 
 			// Get ChatGPT account ID for organization subscriptions
-			const accountId = await openAiCodexOAuthManager.getAccountId()
+			const accountId: string | null = null
 
 			// Build headers with required Codex-specific fields
 			const headers: Record<string, string> = {
@@ -1247,7 +1243,6 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			const errorModel = this.getModel()
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			const apiError = new ApiProviderError(errorMessage, this.providerName, errorModel.id, "completePrompt")
-			TelemetryService.instance.captureException(apiError)
 
 			if (error instanceof Error) {
 				throw new Error(t("common:errors.openAiCodex.completionError", { message: error.message }))

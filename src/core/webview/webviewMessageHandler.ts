@@ -23,8 +23,6 @@ import {
 	checkoutRestorePayloadSchema,
 } from "@roo-code/types"
 import { customToolRegistry } from "@roo-code/core"
-import { CloudService } from "@roo-code/cloud"
-import { TelemetryService } from "@roo-code/telemetry"
 
 import { type ApiMessage } from "../task-persistence/apiMessages"
 import { saveTaskMessages } from "../task-persistence"
@@ -77,7 +75,6 @@ import { getLMStudioModels } from "../../api/providers/fetchers/lmstudio"
 
 const ALLOWED_VSCODE_SETTINGS = new Set(["terminal.integrated.inheritEnv"])
 
-import { MarketplaceManager, MarketplaceItemType } from "../../services/marketplace"
 import { setPendingTodoList } from "../tools/UpdateTodoListTool"
 import {
 	handleListWorktrees,
@@ -95,7 +92,6 @@ import {
 export const webviewMessageHandler = async (
 	provider: ClineProvider,
 	message: WebviewMessage,
-	marketplaceManager?: MarketplaceManager,
 ) => {
 	// Utility functions provided for concise get/update of global state via contextProxy API.
 	const getGlobalState = <K extends keyof GlobalState>(key: K) => provider.contextProxy.getValue(key)
@@ -106,7 +102,6 @@ export const webviewMessageHandler = async (
 		return provider.getCurrentTask()?.cwd || provider.cwd
 	}
 
-	const isCloudServiceAvailable = () => CloudService.hasInstance()
 
 	const showCloudUnavailableMessage = () => {
 		vscode.window.showInformationMessage(getRouterUnavailableSignInMessage())
@@ -619,7 +614,6 @@ export const webviewMessageHandler = async (
 			provider.getStateToPostToWebview().then((state) => {
 				const { telemetrySetting } = state
 				const isOptedIn = telemetrySetting !== "disabled"
-				TelemetryService.instance.updateTelemetryState(isOptedIn)
 			})
 
 			provider.isViewLaunched = true
@@ -1578,23 +1572,8 @@ export const webviewMessageHandler = async (
 					hasOpenedModeSelector: currentState.hasOpenedModeSelector ?? false,
 				}
 				provider.postMessageToWebview({ type: "state", state: stateWithPrompts })
-
-				if (TelemetryService.hasInstance()) {
-					// Determine which setting was changed by comparing objects
-					const oldPrompt = existingPrompts[message.promptMode] || {}
-					const newPrompt = message.customPrompt
-					const changedSettings = Object.keys(newPrompt).filter(
-						(key) =>
-							JSON.stringify((oldPrompt as Record<string, unknown>)[key]) !==
-							JSON.stringify((newPrompt as Record<string, unknown>)[key]),
-					)
-
-					if (changedSettings.length > 0) {
-						TelemetryService.instance.captureModeSettingChanged(changedSettings[0])
-					}
-				}
-			}
-			break
+		}
+		break
 		case "deleteMessage": {
 			if (!provider.getCurrentTask()) {
 				await vscode.window.showErrorMessage(t("common:errors.message.no_active_task_to_delete"))
@@ -1690,7 +1669,6 @@ export const webviewMessageHandler = async (
 					})
 
 					if (result.success && result.enhancedText) {
-						MessageEnhancer.captureTelemetry(currentCline?.taskId, includeTaskHistoryInEnhance)
 						await provider.postMessageToWebview({ type: "enhancedPrompt", text: result.enhancedText })
 					} else {
 						throw new Error(result.error || "Unknown error")
@@ -2022,31 +2000,6 @@ export const webviewMessageHandler = async (
 					await updateGlobalState("customModes", customModes)
 					await updateGlobalState("mode", message.modeConfig.slug)
 					await provider.postStateToWebview()
-
-					// Track telemetry for custom mode creation or update
-					if (TelemetryService.hasInstance()) {
-						if (isNewMode) {
-							// This is a new custom mode
-							TelemetryService.instance.captureCustomModeCreated(
-								message.modeConfig.slug,
-								message.modeConfig.name,
-							)
-						} else {
-							// Determine which setting was changed by comparing objects
-							const existingMode = existingModes.find((mode) => mode.slug === message.modeConfig?.slug)
-							const changedSettings = existingMode
-								? Object.keys(message.modeConfig).filter(
-										(key) =>
-											JSON.stringify((existingMode as Record<string, unknown>)[key]) !==
-											JSON.stringify((message.modeConfig as Record<string, unknown>)[key]),
-									)
-								: []
-
-							if (changedSettings.length > 0) {
-								TelemetryService.instance.captureModeSettingChanged(changedSettings[0])
-							}
-						}
-					}
 				} catch (error) {
 					// Error already shown to user by updateCustomMode
 					// Just prevent unhandled rejection and skip state updates
@@ -2306,24 +2259,8 @@ export const webviewMessageHandler = async (
 			const previousSetting = getGlobalState("telemetrySetting") || "unset"
 			const isOptedIn = telemetrySetting !== "disabled"
 			const wasPreviouslyOptedIn = previousSetting !== "disabled"
-
-			// If turning telemetry OFF, fire event BEFORE disabling
-			if (wasPreviouslyOptedIn && !isOptedIn && TelemetryService.hasInstance()) {
-				TelemetryService.instance.captureTelemetrySettingsChanged(previousSetting, telemetrySetting)
-			}
-
 			// Update the telemetry state
 			await updateGlobalState("telemetrySetting", telemetrySetting)
-
-			if (TelemetryService.hasInstance()) {
-				TelemetryService.instance.updateTelemetryState(isOptedIn)
-			}
-
-			// If turning telemetry ON, fire event AFTER enabling
-			if (!wasPreviouslyOptedIn && isOptedIn && TelemetryService.hasInstance()) {
-				TelemetryService.instance.captureTelemetrySettingsChanged(previousSetting, telemetrySetting)
-			}
-
 			await provider.postStateToWebview()
 			break
 		}
@@ -2335,147 +2272,30 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "rooCloudSignIn": {
-			if (!isCloudServiceAvailable()) {
-				provider.log("CloudService unavailable; ignoring rooCloudSignIn")
-				showCloudUnavailableMessage()
-				break
-			}
-
-			try {
-				TelemetryService.instance.captureEvent(TelemetryEventName.AUTHENTICATION_INITIATED)
-				// Use provider signup flow if useProviderSignup is explicitly true
-				await CloudService.instance.login(undefined, message.useProviderSignup ?? false)
-			} catch (error) {
-				provider.log(`AuthService#login failed: ${error}`)
-				vscode.window.showErrorMessage("Sign in failed.")
-			}
-
+			// Cloud sign-in removed
 			break
 		}
 		case "cloudLandingPageSignIn": {
-			if (!isCloudServiceAvailable()) {
-				provider.log("CloudService unavailable; ignoring cloudLandingPageSignIn")
-				showCloudUnavailableMessage()
-				break
-			}
-
-			try {
-				const landingPageSlug = message.text || "supernova"
-				TelemetryService.instance.captureEvent(TelemetryEventName.AUTHENTICATION_INITIATED)
-				await CloudService.instance.login(landingPageSlug)
-			} catch (error) {
-				provider.log(`CloudService#login failed: ${error}`)
-				vscode.window.showErrorMessage("Sign in failed.")
-			}
+			// Cloud sign-in removed
 			break
 		}
 		case "rooCloudSignOut": {
-			if (!isCloudServiceAvailable()) {
-				await provider.postStateToWebview()
-				provider.postMessageToWebview({ type: "authenticatedUser", userInfo: undefined })
-				break
-			}
-
-			try {
-				await CloudService.instance.logout()
-				await provider.postStateToWebview()
-				provider.postMessageToWebview({ type: "authenticatedUser", userInfo: undefined })
-			} catch (error) {
-				provider.log(`AuthService#logout failed: ${error}`)
-				vscode.window.showErrorMessage("Sign out failed.")
-			}
-
+			// Cloud sign-out removed
 			break
 		}
 		case "openAiCodexSignIn": {
-			try {
-				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				const authUrl = openAiCodexOAuthManager.startAuthorizationFlow()
-
-				// Open the authorization URL in the browser
-				await vscode.env.openExternal(vscode.Uri.parse(authUrl))
-
-				// Wait for the callback in a separate promise (non-blocking)
-				openAiCodexOAuthManager
-					.waitForCallback()
-					.then(async () => {
-						vscode.window.showInformationMessage("Successfully signed in to OpenAI Codex")
-						await provider.postStateToWebview()
-					})
-					.catch((error) => {
-						provider.log(`OpenAI Codex OAuth callback failed: ${error}`)
-						if (!String(error).includes("timed out")) {
-							vscode.window.showErrorMessage(`OpenAI Codex sign in failed: ${error.message || error}`)
-						}
-					})
-			} catch (error) {
-				provider.log(`OpenAI Codex OAuth failed: ${error}`)
-				vscode.window.showErrorMessage("OpenAI Codex sign in failed.")
-			}
+			// OpenAI Codex sign-in removed
 			break
 		}
 		case "openAiCodexSignOut": {
-			try {
-				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				await openAiCodexOAuthManager.clearCredentials()
-				vscode.window.showInformationMessage("Signed out from OpenAI Codex")
-				await provider.postStateToWebview()
-			} catch (error) {
-				provider.log(`OpenAI Codex sign out failed: ${error}`)
-				vscode.window.showErrorMessage("OpenAI Codex sign out failed.")
-			}
+			// OpenAI Codex sign-out removed
 			break
 		}
 		case "rooCloudManualUrl": {
-			if (!isCloudServiceAvailable()) {
-				provider.log("CloudService unavailable; ignoring rooCloudManualUrl")
-				showCloudUnavailableMessage()
-				break
-			}
-
-			try {
-				if (!message.text) {
-					vscode.window.showErrorMessage(t("common:errors.manual_url_empty"))
-					break
-				}
-
-				// Parse the callback URL to extract parameters
-				const callbackUrl = message.text.trim()
-				const uri = vscode.Uri.parse(callbackUrl)
-
-				if (!uri.query) {
-					throw new Error(t("common:errors.manual_url_no_query"))
-				}
-
-				const query = new URLSearchParams(uri.query)
-				const code = query.get("code")
-				const state = query.get("state")
-				const organizationId = query.get("organizationId")
-
-				if (!code || !state) {
-					throw new Error(t("common:errors.manual_url_missing_params"))
-				}
-
-				// Reuse the existing authentication flow
-				await CloudService.instance.handleAuthCallback(
-					code,
-					state,
-					organizationId === "null" ? null : organizationId,
-				)
-
-				await provider.postStateToWebview()
-			} catch (error) {
-				provider.log(`ManualUrl#handleAuthCallback failed: ${error}`)
-				const errorMessage = error instanceof Error ? error.message : t("common:errors.manual_url_auth_failed")
-
-				// Show error message through VS Code UI
-				vscode.window.showErrorMessage(`${t("common:errors.manual_url_auth_error")}: ${errorMessage}`)
-			}
-
+			// Cloud manual URL removed
 			break
 		}
 		case "clearCloudAuthSkipModel": {
-			// Clear the flag that indicates auth completed without model selection
 			await provider.context.globalState.update("roo-auth-skip-model", undefined)
 			await provider.postStateToWebview()
 			break
@@ -2547,38 +2367,9 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "switchOrganization": {
-			try {
-				const organizationId = message.organizationId ?? null
-
-				// Switch to the new organization context
-				await CloudService.instance.switchOrganization(organizationId)
-
-				// Refresh the state to update UI
-				await provider.postStateToWebview()
-
-				// Send success response back to webview
-				await provider.postMessageToWebview({
-					type: "organizationSwitchResult",
-					success: true,
-					organizationId: organizationId,
-				})
-			} catch (error) {
-				provider.log(`Organization switch failed: ${error}`)
-				const errorMessage = error instanceof Error ? error.message : String(error)
-
-				// Send error response back to webview
-				await provider.postMessageToWebview({
-					type: "organizationSwitchResult",
-					success: false,
-					error: errorMessage,
-					organizationId: message.organizationId ?? null,
-				})
-
-				vscode.window.showErrorMessage(`Failed to switch organization: ${errorMessage}`)
-			}
+			// Organization switching removed
 			break
 		}
-
 		case "saveCodeIndexSettingsAtomic": {
 			if (!message.codeIndexSettings) {
 				break
@@ -2953,132 +2744,27 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "filterMarketplaceItems": {
-			if (marketplaceManager && message.filters) {
-				try {
-					await marketplaceManager.updateWithFilteredItems({
-						type: message.filters.type as MarketplaceItemType | undefined,
-						search: message.filters.search,
-						tags: message.filters.tags,
-					})
-					await provider.postStateToWebview()
-				} catch (error) {
-					console.error("Marketplace: Error filtering items:", error)
-					vscode.window.showErrorMessage("Failed to filter marketplace items")
-				}
-			}
 			break
 		}
 
 		case "fetchMarketplaceData": {
-			// Fetch marketplace data on demand
-			await provider.fetchMarketplaceData()
 			break
 		}
 
 		case "installMarketplaceItem": {
-			if (marketplaceManager && message.mpItem && message.mpInstallOptions) {
-				try {
-					const configFilePath = await marketplaceManager.installMarketplaceItem(
-						message.mpItem,
-						message.mpInstallOptions,
-					)
-					await provider.postStateToWebview()
-					console.log(`Marketplace item installed and config file opened: ${configFilePath}`)
-
-					// Send success message to webview
-					provider.postMessageToWebview({
-						type: "marketplaceInstallResult",
-						success: true,
-						slug: message.mpItem.id,
-					})
-				} catch (error) {
-					console.error(`Error installing marketplace item: ${error}`)
-					// Send error message to webview
-					provider.postMessageToWebview({
-						type: "marketplaceInstallResult",
-						success: false,
-						error: error instanceof Error ? error.message : String(error),
-						slug: message.mpItem.id,
-					})
-				}
-			}
 			break
 		}
 
 		case "removeInstalledMarketplaceItem": {
-			if (marketplaceManager && message.mpItem && message.mpInstallOptions) {
-				try {
-					await marketplaceManager.removeInstalledMarketplaceItem(message.mpItem, message.mpInstallOptions)
-					await provider.postStateToWebview()
-
-					// Send success message to webview
-					provider.postMessageToWebview({
-						type: "marketplaceRemoveResult",
-						success: true,
-						slug: message.mpItem.id,
-					})
-				} catch (error) {
-					console.error(`Error removing marketplace item: ${error}`)
-
-					// Show error message to user
-					vscode.window.showErrorMessage(
-						`Failed to remove marketplace item: ${error instanceof Error ? error.message : String(error)}`,
-					)
-
-					// Send error message to webview
-					provider.postMessageToWebview({
-						type: "marketplaceRemoveResult",
-						success: false,
-						error: error instanceof Error ? error.message : String(error),
-						slug: message.mpItem.id,
-					})
-				}
-			} else {
-				// MarketplaceManager not available or missing required parameters
-				const errorMessage = !marketplaceManager
-					? "Marketplace manager is not available"
-					: "Missing required parameters for marketplace item removal"
-				console.error(errorMessage)
-
-				vscode.window.showErrorMessage(errorMessage)
-
-				if (message.mpItem?.id) {
-					provider.postMessageToWebview({
-						type: "marketplaceRemoveResult",
-						success: false,
-						error: errorMessage,
-						slug: message.mpItem.id,
-					})
-				}
-			}
 			break
 		}
 
 		case "installMarketplaceItemWithParameters": {
-			if (marketplaceManager && message.payload && "item" in message.payload && "parameters" in message.payload) {
-				try {
-					const configFilePath = await marketplaceManager.installMarketplaceItem(message.payload.item, {
-						parameters: message.payload.parameters,
-					})
-					await provider.postStateToWebview()
-					console.log(`Marketplace item with parameters installed and config file opened: ${configFilePath}`)
-				} catch (error) {
-					console.error(`Error installing marketplace item with parameters: ${error}`)
-					vscode.window.showErrorMessage(
-						`Failed to install marketplace item: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}
 			break
 		}
 
 		case "switchTab": {
 			if (message.tab) {
-				// Capture tab shown event for all switchTab messages (which are user-initiated).
-				if (TelemetryService.hasInstance()) {
-					TelemetryService.instance.captureTabShown(message.tab)
-				}
-
 				await provider.postMessageToWebview({
 					type: "action",
 					action: "switchTab",
@@ -3388,37 +3074,9 @@ export const webviewMessageHandler = async (
 		}
 
 		case "requestOpenAiCodexRateLimits": {
-			try {
-				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				const accessToken = await openAiCodexOAuthManager.getAccessToken()
-
-				if (!accessToken) {
-					provider.postMessageToWebview({
-						type: "openAiCodexRateLimits",
-						error: "Not authenticated with OpenAI Codex",
-					})
-					break
-				}
-
-				const accountId = await openAiCodexOAuthManager.getAccountId()
-				const { fetchOpenAiCodexRateLimitInfo } = await import("../../integrations/openai-codex/rate-limits")
-				const rateLimits = await fetchOpenAiCodexRateLimitInfo(accessToken, { accountId })
-
-				provider.postMessageToWebview({
-					type: "openAiCodexRateLimits",
-					values: rateLimits,
-				})
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error)
-				provider.log(`Error fetching OpenAI Codex rate limits: ${errorMessage}`)
-				provider.postMessageToWebview({
-					type: "openAiCodexRateLimits",
-					error: errorMessage,
-				})
-			}
+			provider.postMessageToWebview({ type: "openAiCodexRateLimits", error: "OpenAI Codex removed" })
 			break
 		}
-
 		case "openDebugApiHistory":
 		case "openDebugUiHistory": {
 			const currentTask = provider.getCurrentTask()

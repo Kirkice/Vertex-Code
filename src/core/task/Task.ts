@@ -16,47 +16,7 @@ import { serializeError } from "serialize-error"
 import { Package } from "../../shared/package"
 import { formatToolInvocation } from "../tools/helpers/toolResultFormatting"
 
-import {
-	type TaskLike,
-	type TaskMetadata,
-	type TaskEvents,
-	type ProviderSettings,
-	type TokenUsage,
-	type ToolUsage,
-	type ToolName,
-	type ContextCondense,
-	type ContextTruncation,
-	type ClineMessage,
-	type ClineSay,
-	type ClineAsk,
-	type ToolProgressStatus,
-	type HistoryItem,
-	type CreateTaskOptions,
-	type ModelInfo,
-	type ClineApiReqCancelReason,
-	type ClineApiReqInfo,
-	RooCodeEventName,
-	TelemetryEventName,
-	TaskStatus,
-	TodoItem,
-	getApiProtocol,
-	getModelId,
-	isRetiredProvider,
-	isIdleAsk,
-	isInteractiveAsk,
-	isResumableAsk,
-	QueuedMessage,
-	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
-	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
-	MAX_CHECKPOINT_TIMEOUT_SECONDS,
-	MIN_CHECKPOINT_TIMEOUT_SECONDS,
-	ConsecutiveMistakeError,
-	MAX_MCP_TOOLS_THRESHOLD,
-	countEnabledMcpTools,
-} from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
-import { CloudService } from "@roo-code/cloud"
-
+import { type TaskLike, type TaskMetadata, type TaskEvents, type ProviderSettings, type TokenUsage, type ToolUsage, type ToolName, type ContextCondense, type ContextTruncation, type ClineMessage, type ClineSay, type ClineAsk, type ToolProgressStatus, type HistoryItem, type CreateTaskOptions, type ModelInfo, type ClineApiReqCancelReason, type ClineApiReqInfo, RooCodeEventName, TaskStatus, TodoItem, getApiProtocol, getModelId, isRetiredProvider, isIdleAsk, isInteractiveAsk, isResumableAsk, QueuedMessage, DEFAULT_CONSECUTIVE_MISTAKE_LIMIT, DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, MAX_CHECKPOINT_TIMEOUT_SECONDS, MIN_CHECKPOINT_TIMEOUT_SECONDS, ConsecutiveMistakeError, MAX_MCP_TOOLS_THRESHOLD, countEnabledMcpTools } from "@roo-code/types"
 // api
 import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler } from "../../api"
 import { ApiStream, GroundingSource } from "../../api/transform/stream"
@@ -507,14 +467,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this._taskApiConfigName = historyItem.apiConfigName
 			this.taskModeReady = Promise.resolve()
 			this.taskApiConfigReady = Promise.resolve()
-			TelemetryService.instance.captureTaskRestarted(this.taskId)
 		} else {
 			// For new tasks, don't set the mode/apiConfigName yet - wait for async initialization.
 			this._taskMode = undefined
 			this._taskApiConfigName = undefined
 			this.taskModeReady = this.initializeTaskMode(provider)
 			this.taskApiConfigReady = this.initializeTaskApiConfigName(provider)
-			TelemetryService.instance.captureTaskCreated(this.taskId)
 		}
 
 		this.assistantMessageParser = undefined
@@ -1016,16 +974,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.emit(RooCodeEventName.Message, { action: "created", message })
 		await this.saveClineMessages()
 
-		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
-
-		if (shouldCaptureMessage) {
-			CloudService.instance.captureEvent({
-				event: TelemetryEventName.TASK_MESSAGE,
-				properties: { taskId: this.taskId, message },
-			})
-			// Track that this message has been synced to cloud
-			this.cloudSyncedMessageTimestamps.add(message.ts)
-		}
 	}
 
 	public async overwriteClineMessages(newMessages: ClineMessage[]) {
@@ -1048,18 +996,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: message })
 		this.emit(RooCodeEventName.Message, { action: "updated", message })
 
-		// Check if we should sync to cloud and haven't already synced this message
-		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
-		const hasNotBeenSynced = !this.cloudSyncedMessageTimestamps.has(message.ts)
-
-		if (shouldCaptureMessage && hasNotBeenSynced) {
-			CloudService.instance.captureEvent({
-				event: TelemetryEventName.TASK_MESSAGE,
-				properties: { taskId: this.taskId, message },
-			})
-			// Track that this message has been synced to cloud
-			this.cloudSyncedMessageTimestamps.add(message.ts)
-		}
 	}
 
 	private async saveClineMessages(): Promise<boolean> {
@@ -2380,21 +2316,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			}
 
 			if (this.consecutiveMistakeLimit > 0 && this.consecutiveMistakeCount >= this.consecutiveMistakeLimit) {
-				// Track consecutive mistake errors in telemetry via event and PostHog exception tracking.
 				// The reason is "no_tools_used" because this limit is reached via initiateTaskLoop
 				// which increments consecutiveMistakeCount when the model doesn't use any tools.
-				TelemetryService.instance.captureConsecutiveMistakeError(this.taskId)
-				TelemetryService.instance.captureException(
-					new ConsecutiveMistakeError(
-						`Task reached consecutive mistake limit (${this.consecutiveMistakeLimit})`,
-						this.taskId,
-						this.consecutiveMistakeCount,
-						this.consecutiveMistakeLimit,
-						"no_tools_used",
-						this.apiConfiguration.apiProvider,
-						getModelId(this.apiConfiguration),
-					),
-				)
 
 				const { response, text, images } = await this.ask(
 					"mistake_limit_reached",
@@ -2511,7 +2434,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				((currentItem.retryAttempt ?? 0) === 0 && !isEmptyUserContent) || currentItem.userMessageWasRemoved
 			if (shouldAddUserMessage) {
 				await this.addToApiConversationHistory({ role: "user", content: finalUserContent })
-				TelemetryService.instance.captureConversationMessage(this.taskId, "user")
 			}
 
 			// Since we sent off a placeholder api_req_started message to update the
@@ -2980,7 +2902,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 									await this.updateClineMessage(apiReqMessage)
 								}
 
-								// Capture telemetry with provider-aware cost calculation
 								const modelId = getModelId(this.apiConfiguration)
 								const apiProvider = this.apiConfiguration.apiProvider
 								const apiProtocol = getApiProtocol(
@@ -3006,13 +2927,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 												tokens.cacheRead,
 											)
 
-								TelemetryService.instance.captureLlmCompletion(this.taskId, {
-									inputTokens: costResult.totalInputTokens,
-									outputTokens: costResult.totalOutputTokens,
-									cacheWriteTokens: tokens.cacheWrite,
-									cacheReadTokens: tokens.cacheRead,
-									cost: tokens.total ?? costResult.totalCost,
-								})
 							}
 						}
 
@@ -3416,7 +3330,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					)
 					this.assistantMessageSavedToHistory = true
 
-					TelemetryService.instance.captureConversationMessage(this.taskId, "assistant")
 				}
 
 				// Present any partial blocks that were just completed.

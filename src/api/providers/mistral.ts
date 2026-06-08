@@ -9,7 +9,7 @@ import {
 	MISTRAL_DEFAULT_TEMPERATURE,
 	ApiProviderError,
 } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import { ApiHandlerOptions } from "../../shared/api"
 
@@ -106,9 +106,7 @@ export class MistralHandler extends BaseProvider implements SingleCompletionHand
 			response = await this.client.chat.stream(requestOptions)
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "createMessage")
-			TelemetryService.instance.captureException(apiError)
-			throw new Error(`Mistral completion error: ${errorMessage}`)
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "createMessage")			throw new Error(`Mistral completion error: ${errorMessage}`)
 		}
 
 		for await (const event of response) {
@@ -216,9 +214,7 @@ export class MistralHandler extends BaseProvider implements SingleCompletionHand
 			return content || ""
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "completePrompt")
-			TelemetryService.instance.captureException(apiError)
-			throw new Error(`Mistral completion error: ${errorMessage}`)
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "completePrompt")			throw new Error(`Mistral completion error: ${errorMessage}`)
 		}
 	}
 }

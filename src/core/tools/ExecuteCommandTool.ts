@@ -5,7 +5,7 @@ import * as vscode from "vscode"
 import delay from "delay"
 
 import { CommandExecutionStatus, DEFAULT_TERMINAL_OUTPUT_PREVIEW_SIZE, PersistedCommandOutput } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import { Task } from "../task/Task"
 
@@ -397,9 +397,7 @@ export async function executeCommandInTerminal(
 	}
 
 	if (terminalProvider === "vscode") {
-		callbacks.onNoShellIntegration = async (details: ShellIntegrationErrorDetails) => {
-			TelemetryService.instance.captureShellIntegrationError(task.taskId)
-			shellIntegrationError = new ShellIntegrationError(details.message, details.commandSubmitted)
+		callbacks.onNoShellIntegration = async (details: ShellIntegrationErrorDetails) => {			shellIntegrationError = new ShellIntegrationError(details.message, details.commandSubmitted)
 		}
 	}
 

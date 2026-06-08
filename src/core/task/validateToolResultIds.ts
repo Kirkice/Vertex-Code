@@ -1,5 +1,4 @@
 import { Anthropic } from "@anthropic-ai/sdk"
-import { TelemetryService } from "@roo-code/telemetry"
 import { findLastIndex } from "../../shared/array"
 
 /**
@@ -130,40 +129,6 @@ export function validateAndFixToolResultIds(
 	// We have issues - need to fix them
 	const toolResultIdList = toolResults.map((r) => r.tool_use_id)
 	const toolUseIdList = toolUseBlocks.map((b) => b.id)
-
-	// Report missing tool_results to PostHog error tracking
-	if (missingToolUseIds.length > 0 && TelemetryService.hasInstance()) {
-		TelemetryService.instance.captureException(
-			new MissingToolResultError(
-				`Detected missing tool_result blocks. Missing tool_use IDs: [${missingToolUseIds.join(", ")}], existing tool_result IDs: [${toolResultIdList.join(", ")}]`,
-				missingToolUseIds,
-				toolResultIdList,
-			),
-			{
-				missingToolUseIds,
-				existingToolResultIds: toolResultIdList,
-				toolUseCount: toolUseBlocks.length,
-				toolResultCount: toolResults.length,
-			},
-		)
-	}
-
-	// Report ID mismatches to PostHog error tracking
-	if (hasInvalidIds && TelemetryService.hasInstance()) {
-		TelemetryService.instance.captureException(
-			new ToolResultIdMismatchError(
-				`Detected tool_result ID mismatch. tool_result IDs: [${toolResultIdList.join(", ")}], tool_use IDs: [${toolUseIdList.join(", ")}]`,
-				toolResultIdList,
-				toolUseIdList,
-			),
-			{
-				toolResultIds: toolResultIdList,
-				toolUseIds: toolUseIdList,
-				toolResultCount: toolResults.length,
-				toolUseCount: toolUseBlocks.length,
-			},
-		)
-	}
 
 	// Match tool_results to tool_uses by position and fix incorrect IDs
 	const usedToolUseIds = new Set<string>()

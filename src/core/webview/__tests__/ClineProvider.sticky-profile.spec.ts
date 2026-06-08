@@ -1,7 +1,6 @@
 // npx vitest run core/webview/__tests__/ClineProvider.sticky-profile.spec.ts
 
 import * as vscode from "vscode"
-import { TelemetryService } from "@roo-code/telemetry"
 import { ClineProvider } from "../ClineProvider"
 import { ContextProxy } from "../../config/ContextProxy"
 import type { HistoryItem } from "@roo-code/types"
@@ -209,9 +208,6 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 		originalRooCliRuntimeEnv = process.env.ROO_CLI_RUNTIME
 		delete process.env.ROO_CLI_RUNTIME
 
-		if (!TelemetryService.hasInstance()) {
-			TelemetryService.createInstance([])
-		}
 
 		const globalState: Record<string, string | undefined> = {
 			mode: "code",

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import crypto from "crypto"
 
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import { t } from "../../i18n"
 import { ApiHandler, ApiHandlerCreateMessageMetadata } from "../../api"
@@ -267,11 +267,6 @@ export async function summarizeConversation(options: SummarizeConversationOption
 		cwd,
 		rooIgnoreController,
 	} = options
-	TelemetryService.instance.captureContextCondensed(
-		taskId,
-		isAutomaticTrigger ?? false,
-		!!customCondensingPrompt?.trim(),
-	)
 
 	const response: SummarizeResponse = { messages, cost: 0, summary: "" }
 

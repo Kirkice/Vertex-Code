@@ -1,5 +1,5 @@
-import { ProviderSettings, ClineMessage, GlobalState, TelemetryEventName } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+import { ProviderSettings, ClineMessage } from "@roo-code/types"
+
 import { supportPrompt } from "../../shared/support-prompt"
 import { singleCompletionHandler } from "../../utils/single-completion-handler"
 import { ProviderSettingsManager } from "../config/ProviderSettingsManager"
@@ -83,12 +83,12 @@ export class MessageEnhancer {
 				success: true,
 				enhancedText,
 			}
-		} catch (error) {
-			return {
-				success: false,
-				error: error instanceof Error ? error.message : String(error),
-			}
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : String(error),
 		}
+	}
 	}
 
 	/**
@@ -123,21 +123,6 @@ export class MessageEnhancer {
 			// Log error but don't fail the enhancement
 			console.error("Failed to extract task history:", error)
 			return ""
-		}
-	}
-
-	/**
-	 * Captures telemetry for prompt enhancement
-	 * @param taskId Optional task ID for telemetry tracking
-	 * @param includeTaskHistory Whether task history was included in the enhancement
-	 */
-	static captureTelemetry(taskId?: string, includeTaskHistory?: boolean): void {
-		if (TelemetryService.hasInstance()) {
-			// Use captureEvent directly to include the includeTaskHistory property
-			TelemetryService.instance.captureEvent(TelemetryEventName.PROMPT_ENHANCED, {
-				...(taskId && { taskId }),
-				includeTaskHistory: includeTaskHistory ?? false,
-			})
 		}
 	}
 }

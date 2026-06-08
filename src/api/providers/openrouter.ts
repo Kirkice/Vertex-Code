@@ -11,7 +11,7 @@ import {
 	OPEN_ROUTER_PROMPT_CACHING_MODELS,
 	DEEP_SEEK_DEFAULT_TEMPERATURE,
 } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import { NativeToolCallParser } from "../../core/assistant-message/NativeToolCallParser"
 
@@ -199,10 +199,7 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 		const apiError = Object.assign(
 			new ApiProviderError(rawErrorMessage, this.providerName, modelId, operation, error?.code),
 			{ status: error?.code, error },
-		)
-
-		TelemetryService.instance.captureException(apiError)
-
+		)
 		throw new Error(`OpenRouter API Error ${error?.code}: ${rawErrorMessage}`)
 	}
 
@@ -361,16 +358,11 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 						status: openRouterError.error?.code,
 						error: openRouterError.error,
 					},
-				)
-
-				TelemetryService.instance.captureException(apiError)
-				throw handleOpenAIError(error, this.providerName)
+				)				throw handleOpenAIError(error, this.providerName)
 			} else {
 				// Fallback for non-OpenRouter errors
 				const errorMessage = error instanceof Error ? error.message : String(error)
-				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "createMessage")
-				TelemetryService.instance.captureException(apiError)
-				throw handleOpenAIError(error, this.providerName)
+				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "createMessage")				throw handleOpenAIError(error, this.providerName)
 			}
 		}
 
@@ -626,16 +618,11 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 						status: openRouterError.error?.code,
 						error: openRouterError.error,
 					},
-				)
-
-				TelemetryService.instance.captureException(apiError)
-				throw handleOpenAIError(error, this.providerName)
+				)				throw handleOpenAIError(error, this.providerName)
 			} else {
 				// Fallback for non-OpenRouter errors
 				const errorMessage = error instanceof Error ? error.message : String(error)
-				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "completePrompt")
-				TelemetryService.instance.captureException(apiError)
-				throw handleOpenAIError(error, this.providerName)
+				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "completePrompt")				throw handleOpenAIError(error, this.providerName)
 			}
 		}
 

@@ -11,7 +11,7 @@ import {
 	ANTHROPIC_DEFAULT_MAX_TOKENS,
 	ApiProviderError,
 } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+
 
 import type { ApiHandlerOptions } from "../../shared/api"
 
@@ -180,14 +180,6 @@ export class AnthropicHandler extends BaseProvider implements SingleCompletionHa
 						})(),
 					)
 				} catch (error) {
-					TelemetryService.instance.captureException(
-						new ApiProviderError(
-							error instanceof Error ? error.message : String(error),
-							this.providerName,
-							modelId,
-							"createMessage",
-						),
-					)
 					throw error
 				}
 				break
@@ -208,14 +200,6 @@ export class AnthropicHandler extends BaseProvider implements SingleCompletionHa
 						requestParams as Anthropic.Messages.MessageCreateParamsStreaming,
 					)) as any
 				} catch (error) {
-					TelemetryService.instance.captureException(
-						new ApiProviderError(
-							error instanceof Error ? error.message : String(error),
-							this.providerName,
-							modelId,
-							"createMessage",
-						),
-					)
 					throw error
 				}
 				break
@@ -409,16 +393,8 @@ export class AnthropicHandler extends BaseProvider implements SingleCompletionHa
 				stream: false,
 			})
 		} catch (error) {
-			TelemetryService.instance.captureException(
-				new ApiProviderError(
-					error instanceof Error ? error.message : String(error),
-					this.providerName,
-					model,
-					"completePrompt",
-				),
-			)
-			throw error
-		}
+					throw error
+				}
 
 		const content = message.content.find(({ type }) => type === "text")
 		return content?.type === "text" ? content.text : ""
