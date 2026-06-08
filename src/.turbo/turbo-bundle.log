@@ -1,0 +1,21 @@
+ WARN  Unsupported engine: wanted: {"node":"20.20.2"} (current: {"node":"v24.11.1","pnpm":"10.8.1"})
+
+> vertex@3.56.0 bundle H:\Project\AgentProject\src
+> node esbuild.mjs
+
+[extension] Cleaning dist directory: H:\Project\AgentProject\src\dist
+[esbuild-problem-matcher#onStart]
+[copyPaths] Copied ../README.md to README.md
+[copyPaths] Copied ../CHANGELOG.md to CHANGELOG.md
+[copyPaths] Copied ../LICENSE to LICENSE
+[copyPaths] Optional file not found: ../.env
+[copyPaths] Copied 911 files from node_modules/vscode-material-icons/generated to assets/vscode-material-icons
+[copyPaths] Copied 3 files from ../webview-ui/audio to webview-ui/audio
+[copyPaths] Copied 2 files from assets/marketplace to dist/assets/marketplace
+[copyWasms] Copied tiktoken WASMs to H:\Project\AgentProject\src\dist
+[copyWasms] Copied tiktoken WASMs to H:\Project\AgentProject\src\dist\workers
+[copyWasms] Copied tree-sitter.wasm to H:\Project\AgentProject\src\dist
+[copyWasms] Copied 35 tree-sitter language wasms to H:\Project\AgentProject\src\dist
+[copyWasms] Copied 4 esbuild-wasm files to H:\Project\AgentProject\src\dist
+[copyLocales] Copied 126 locale files to H:\Project\AgentProject\src\dist\i18n\locales
+[esbuild-problem-matcher#onEnd]

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema-lm/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="vertexorganization.vertex-3.56.0" Version="3.56.0" Language="en-US" Publisher="VertexOrganization" />
+    <DisplayName>Vertex</DisplayName>
+    <Description xml:space="preserve">A whole dev team of AI agents in your editor.</Description>
+    <Icon>assets/icons/icon.png</Icon>
+    <Tags>cline, claude, dev, mcp, openrouter, coding, agent, autonomous, chatgpt, sonnet, ai, llama, vertex</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Code" />
+  </Installation>
+  <Dependencies />
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.Code.ExtensionDependencies" Path="dist/extension.js" Addressable="true" />
+  </Assets>
+</PackageManifest>

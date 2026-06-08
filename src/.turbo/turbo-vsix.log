@@ -1,0 +1,47 @@
+ WARN  Unsupported engine: wanted: {"node":"20.20.2"} (current: {"node":"v24.11.1","pnpm":"10.8.1"})
+
+> vertex@3.56.0 vsix H:\Project\AgentProject\src
+> mkdirp ../bin && vsce package --no-dependencies --out ../bin
+
+Executing prepublish script 'npm run vscode:prepublish'...
+(node:91512) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+
+> vertex@3.56.0 vscode:prepublish
+> pnpm bundle --production
+
+ WARN  Unsupported engine: wanted: {"node":"20.20.2"} (current: {"node":"v24.11.1","pnpm":"10.8.1"})
+
+> vertex@3.56.0 bundle H:\Project\AgentProject\src
+> node esbuild.mjs "--production"
+
+[extension] Cleaning dist directory: H:\Project\AgentProject\src\dist
+[esbuild-problem-matcher#onStart]
+[copyPaths] Copied ../README.md to README.md
+[copyPaths] Copied ../CHANGELOG.md to CHANGELOG.md
+[copyPaths] Copied ../LICENSE to LICENSE
+[copyPaths] Optional file not found: ../.env
+[copyPaths] Copied 911 files from node_modules/vscode-material-icons/generated to assets/vscode-material-icons
+[copyPaths] Copied 3 files from ../webview-ui/audio to webview-ui/audio
+[copyPaths] Copied 2 files from assets/marketplace to dist/assets/marketplace
+[copyWasms] Copied tiktoken WASMs to H:\Project\AgentProject\src\dist
+[copyWasms] Copied tiktoken WASMs to H:\Project\AgentProject\src\dist\workers
+[copyWasms] Copied tree-sitter.wasm to H:\Project\AgentProject\src\dist
+[copyWasms] Copied 35 tree-sitter language wasms to H:\Project\AgentProject\src\dist
+[copyWasms] Copied 4 esbuild-wasm files to H:\Project\AgentProject\src\dist
+[copyLocales] Copied 126 locale files to H:\Project\AgentProject\src\dist\i18n\locales
+[esbuild-problem-matcher#onEnd]
+ WARNING  This extension consists of 2877 files, out of which 349 are JavaScript files. For performance reasons, you should bundle your extension: https://aka.ms/vscode-bundle-extension. You should also exclude unnecessary files by adding them to your .vscodeignore: https://aka.ms/vscode-vscodeignore.
+
+ WARNING  Neither a .vscodeignore file nor a "files" property in package.json was found. To ensure only necessary files are included in your extension, add a .vscodeignore file or specify the "files" property in package.json. More info: https://aka.ms/vscode-vscodeignore
+
+ INFO  Files included in the VSIX:
+vertex-3.56.0.vsix
+├─ [Content_Types].xml 
+├─ extension.vsixmanifest 
+└─ extension/ (2875 files) [161.93 MB]
+
+=> Run vsce ls --tree to see all included files.
+
+ DONE  Packaged: ..\bin\vertex-3.56.0.vsix (2877 files, 34.48 MB)
