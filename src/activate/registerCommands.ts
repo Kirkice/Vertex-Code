@@ -114,15 +114,6 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			.postMessageToWebview({ type: "action", action: "historyButtonClicked" })
 			.catch((error) => outputChannel.appendLine(`[historyButtonClicked] postMessageToWebview failed: ${error}`))
 	},
-	marketplaceButtonClicked: () => {
-		const visibleProvider = getVisibleProviderOrLog(outputChannel)
-		if (!visibleProvider) return
-		void visibleProvider
-			.postMessageToWebview({ type: "action", action: "marketplaceButtonClicked" })
-			.catch((error) =>
-				outputChannel.appendLine(`[marketplaceButtonClicked] postMessageToWebview failed: ${error}`),
-			)
-	},
 	newTask: handleNewTask,
 	setCustomStoragePath: async () => {
 		const { promptForCustomStoragePath } = await import("../utils/storage")

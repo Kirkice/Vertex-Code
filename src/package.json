@@ -81,11 +81,6 @@
 				"icon": "$(history)"
 			},
 			{
-				"command": "vertex.marketplaceButtonClicked",
-				"title": "%command.marketplace.title%",
-				"icon": "$(extensions)"
-			},
-			{
 				"command": "vertex.popoutButtonClicked",
 				"title": "%command.openInEditor.title%",
 				"icon": "$(link-external)"
@@ -219,11 +214,6 @@
 					"when": "view == vertex.SidebarProvider"
 				},
 				{
-					"command": "vertex.marketplaceButtonClicked",
-					"group": "navigation@3",
-					"when": "view == vertex.SidebarProvider"
-				},
-				{
 					"command": "vertex.historyButtonClicked",
 					"group": "overflow@1",
 					"when": "view == vertex.SidebarProvider"
@@ -243,11 +233,6 @@
 				{
 					"command": "vertex.settingsButtonClicked",
 					"group": "navigation@2",
-					"when": "activeWebviewPanelId == vertex.TabPanelProvider"
-				},
-				{
-					"command": "vertex.marketplaceButtonClicked",
-					"group": "navigation@3",
 					"when": "activeWebviewPanelId == vertex.TabPanelProvider"
 				},
 				{
