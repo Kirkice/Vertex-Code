@@ -238,6 +238,32 @@ export const globalSettingsSchema = z.object({
 	 * Tools in this list will be excluded from prompt generation and rejected at execution time.
 	 */
 	disabledTools: z.array(toolNamesSchema).optional(),
+
+	/**
+	 * Multi-model orchestrator settings
+	 */
+	orchestratorEnabled: z.boolean().optional(),
+	orchestratorConfig: z
+		.object({
+			plannerProfile: z.string().optional(),
+			reviewerProfile: z.string().optional(),
+			workerProfiles: z
+				.object({
+					primary: z.string().optional(),
+					fallback: z.string().optional(),
+				})
+				.optional(),
+			routingPolicy: z
+				.object({
+					highRiskToPlanner: z.boolean().optional(),
+					budgetPressure: z.enum(["low", "medium", "high"]).optional(),
+					maxRepairRounds: z.number().optional(),
+				})
+				.optional(),
+			enabled: z.boolean().optional(),
+		})
+		.optional(),
+	orchestratorSession: z.any().optional(),
 })
 
 export type GlobalSettings = z.infer<typeof globalSettingsSchema>

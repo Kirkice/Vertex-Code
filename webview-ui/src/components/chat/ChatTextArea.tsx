@@ -28,6 +28,7 @@ import Thumbnails from "../common/Thumbnails"
 import { ModeSelector } from "./ModeSelector"
 import { ApiConfigSelector } from "./ApiConfigSelector"
 import { AutoApproveDropdown } from "./AutoApproveDropdown"
+import { OrchestratorDropdown } from "./OrchestratorDropdown"
 import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
 import { IndexingStatusBadge } from "./IndexingStatusBadge"
@@ -97,6 +98,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			commands,
 			enterBehavior,
 			lockApiConfigAcrossModes,
+			orchestratorEnabled,
 		} = useExtensionState()
 
 		// Find the ID and display text for the currently selected API configuration.
@@ -1296,29 +1298,34 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 				<div className="flex items-center gap-2">
 					<div className="flex items-center gap-2 min-w-0 overflow-clip flex-1">
-						<ModeSelector
-							value={mode}
-							title={t("chat:selectMode")}
-							onChange={handleModeChange}
-							triggerClassName="text-ellipsis overflow-hidden flex-shrink-0"
-							modeShortcutText={modeShortcutText}
-							customModes={customModes}
-							customModePrompts={customModePrompts}
-						/>
-						<ApiConfigSelector
-							value={currentConfigId}
-							displayName={displayName}
-							disabled={selectApiConfigDisabled}
-							title={t("chat:selectApiConfig")}
-							onChange={handleApiConfigChange}
-							triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink"
-							listApiConfigMeta={listApiConfigMeta || []}
-							pinnedApiConfigs={pinnedApiConfigs}
-							togglePinnedApiConfig={togglePinnedApiConfig}
-							lockApiConfigAcrossModes={!!lockApiConfigAcrossModes}
-							onToggleLockApiConfig={handleToggleLockApiConfig}
-						/>
+						{!orchestratorEnabled && (
+							<>
+								<ModeSelector
+									value={mode}
+									title={t("chat:selectMode")}
+									onChange={handleModeChange}
+									triggerClassName="text-ellipsis overflow-hidden flex-shrink-0"
+									modeShortcutText={modeShortcutText}
+									customModes={customModes}
+									customModePrompts={customModePrompts}
+								/>
+								<ApiConfigSelector
+									value={currentConfigId}
+									displayName={displayName}
+									disabled={selectApiConfigDisabled}
+									title={t("chat:selectApiConfig")}
+									onChange={handleApiConfigChange}
+									triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink"
+									listApiConfigMeta={listApiConfigMeta || []}
+									pinnedApiConfigs={pinnedApiConfigs}
+									togglePinnedApiConfig={togglePinnedApiConfig}
+									lockApiConfigAcrossModes={!!lockApiConfigAcrossModes}
+									onToggleLockApiConfig={handleToggleLockApiConfig}
+								/>
+							</>
+						)}
 						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
+						<OrchestratorDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none pr-2")}>
 						{isTtsPlaying && (

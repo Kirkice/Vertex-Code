@@ -489,5 +489,15 @@
 		"title": "供应商不再受支持",
 		"message": "此提供商已不可用。请选择受支持的提供商以继续。",
 		"openSettings": "打开设置"
+	},
+	"orchestrator": {
+		"tooltip": "管理多模型任务编排",
+		"title": "多模型编排",
+		"description": "将复杂任务跨专业模型路由，用于规划、执行和审查。",
+		"planner": "规划器",
+		"worker": "工作器",
+		"reviewer": "审查器",
+		"triggerLabelOn": "编排器已开启",
+		"triggerLabelOff": "编排器已关闭"
 	}
 }

@@ -27,6 +27,7 @@
 	},
 	"sections": {
 		"providers": "提供商",
+		"orchestrator": "编排器",
 		"modes": "模式",
 		"mcp": "MCP 服务",
 		"worktrees": "Worktrees",

@@ -17,6 +17,8 @@ import type { OpenAiCodexRateLimitInfo } from "./providers/openai-codex-rate-lim
 import type { SkillMetadata } from "./skills.js"
 import type { TelemetrySetting } from "./telemetry.js"
 import type { WorktreeIncludeStatus } from "./worktree.js"
+import type { OrchestratorProviderConfig } from "./orchestrator-config.js"
+import type { OrchestratorSessionState, OrchestratorTask } from "./orchestrator.js"
 
 /**
  * ExtensionMessage
@@ -99,6 +101,11 @@ export interface ExtensionMessage {
 		| "folderSelected"
 		| "skills"
 		| "fileContent"
+		// Orchestrator message types
+		| "orchestratorSessionUpdate"
+		| "orchestratorTaskUpdate"
+		| "orchestratorReviewResult"
+		| "orchestratorCostUpdate"
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
@@ -385,6 +392,31 @@ export type ExtensionState = Pick<
 	 * (captured during async getStateToPostToWebview) from overwriting newer messages.
 	 */
 	clineMessagesSeq?: number
+
+	// Orchestrator fields
+	orchestratorEnabled?: boolean
+	orchestratorConfig?: OrchestratorProviderConfig
+	orchestratorSession?: OrchestratorSessionSnapshot
+}
+
+/**
+ * Snapshot of an orchestrator session for the webview
+ */
+export interface OrchestratorSessionSnapshot {
+	sessionId: string
+	state: OrchestratorSessionState
+	currentPhase: string
+	tasks: OrchestratorTask[]
+	repairRound: number
+	maxRepairRounds: number
+	planSummary?: string
+	costStats: {
+		totalTokens: number
+		tokensByProvider: Record<string, number>
+		estimatedCostUsd: number
+	}
+	/** Error message when session is in failed state */
+	error?: string
 }
 
 export interface Command {
@@ -586,6 +618,11 @@ export interface WebviewMessage {
 		| "moveSkill"
 		| "updateSkillModes"
 		| "openSkillFile"
+		// Orchestrator messages
+		| "orchestratorSetEnabled"
+		| "orchestratorUpdateConfig"
+		| "orchestratorApprovePlan"
+		| "orchestratorCancel"
 	text?: string
 	taskId?: string
 	editedMessageContent?: string
@@ -695,6 +732,8 @@ export interface WebviewMessage {
 	worktreeForce?: boolean
 	worktreeNewWindow?: boolean
 	worktreeIncludeContent?: string
+	// Orchestrator properties
+	sessionId?: string // For orchestratorApprovePlan and orchestratorCancel
 }
 
 export interface RequestOpenAiCodexRateLimitsMessage {

@@ -115,7 +115,7 @@
 	},
 	"scrollToBottom": "Scroll to bottom of chat",
 	"scrollToLatestCheckpoint": "Scroll to previous checkpoint",
-	"about": "Vertex is a whole AI dev team in your editor",
+"about": "Vertex AI is your dedicated agent for graphics rendering development.",
 	"docs": "Check our <DocsLink>docs</DocsLink> to get started",
 	"onboarding": "What would you like to do?",
 	"rooTips": {
@@ -476,5 +476,15 @@
 		"title": "Provider no longer supported",
 		"message": "This provider is no longer available. Select a supported provider to continue.",
 		"openSettings": "Open Settings"
+	},
+	"orchestrator": {
+		"tooltip": "Manage multi-model task orchestration",
+		"title": "Multi-Model Orchestration",
+		"description": "Route complex tasks across specialized models for planning, execution, and review.",
+		"planner": "Planner",
+		"worker": "Worker",
+		"reviewer": "Reviewer",
+		"triggerLabelOn": "Orchestrator on",
+		"triggerLabelOff": "Orchestrator off"
 	}
 }

@@ -15,9 +15,12 @@ import {
 	type SkillMetadata,
 	type Command,
 	type McpServer,
+	type OrchestratorProviderConfig,
+	type OrchestratorSessionSnapshot,
 	RouterModels,
 	ORGANIZATION_ALLOW_ALL,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
+	DEFAULT_ORCHESTRATOR_CONFIG,
 } from "@roo-code/types"
 
 import { findLastIndex } from "@roo/array"
@@ -144,6 +147,12 @@ export interface ExtensionStateContextType extends ExtensionState {
 	showWorktreesInHomeScreen: boolean
 	setShowWorktreesInHomeScreen: (value: boolean) => void
 	skills?: SkillMetadata[]
+	// Orchestrator state
+	orchestratorEnabled: boolean
+	setOrchestratorEnabled: (value: boolean) => void
+	orchestratorConfig: OrchestratorProviderConfig
+	setOrchestratorConfig: (value: Partial<OrchestratorProviderConfig>) => void
+	orchestratorSession?: OrchestratorSessionSnapshot
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -437,6 +446,27 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					})
 					break
 				}
+				// Orchestrator messages
+				case "orchestratorSessionUpdate": {
+					if (message.payload?.orchestratorSession !== undefined) {
+						setState((prevState) => ({
+							...prevState,
+							orchestratorSession: message.payload.orchestratorSession,
+						}))
+					}
+					break
+				}
+				case "orchestratorCostUpdate": {
+					if (message.payload?.costStats !== undefined) {
+						setState((prevState) => ({
+							...prevState,
+							orchestratorSession: prevState.orchestratorSession
+								? { ...prevState.orchestratorSession, costStats: message.payload.costStats }
+								: prevState.orchestratorSession,
+						}))
+					}
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -590,6 +620,24 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		showWorktreesInHomeScreen: state.showWorktreesInHomeScreen ?? true,
 		setShowWorktreesInHomeScreen: (value) =>
 			setState((prevState) => ({ ...prevState, showWorktreesInHomeScreen: value })),
+		// Orchestrator state
+		orchestratorEnabled: state.orchestratorEnabled ?? false,
+		setOrchestratorEnabled: (value) => {
+			setState((prevState) => ({ ...prevState, orchestratorEnabled: value }))
+			vscode.postMessage({ type: "orchestratorSetEnabled", bool: value })
+		},
+		orchestratorConfig: state.orchestratorConfig ?? DEFAULT_ORCHESTRATOR_CONFIG,
+		setOrchestratorConfig: (value) => {
+			setState((prevState) => ({
+				...prevState,
+				orchestratorConfig: {
+					...(prevState.orchestratorConfig ?? DEFAULT_ORCHESTRATOR_CONFIG),
+					...value,
+				},
+			}))
+			vscode.postMessage({ type: "orchestratorUpdateConfig", values: value })
+		},
+		orchestratorSession: state.orchestratorSession,
 	}
 
 	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>

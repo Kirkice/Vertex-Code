@@ -43,6 +43,7 @@ import { CheckpointWarning } from "./CheckpointWarning"
 import { QueuedMessages } from "./QueuedMessages"
 import { WorktreeSelector } from "./WorktreeSelector"
 import FileChangesPanel from "./FileChangesPanel"
+import { OrchestratorSessionPanel } from "../orchestrator/OrchestratorSessionPanel"
 import { useScrollLifecycle } from "@src/hooks/useScrollLifecycle"
 
 export interface ChatViewProps {
@@ -86,6 +87,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		messageQueue = [],
 		showWorktreesInHomeScreen,
 		telemetrySetting,
+		orchestratorSession,
 	} = useExtensionState()
 
 	// Show a WarningRow when the user sends a message with a retired provider.
@@ -1603,12 +1605,19 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						todos={latestTodos}
 					/>
 
-					{checkpointWarning && (
-						<div className="px-3">
-							<CheckpointWarning warning={checkpointWarning} />
-						</div>
-					)}
-				</>
+				{checkpointWarning && (
+					<div className="px-3">
+						<CheckpointWarning warning={checkpointWarning} />
+					</div>
+				)}
+
+				{/* Orchestrator Session Panel */}
+				{orchestratorSession && (
+					<div className="px-3">
+						<OrchestratorSessionPanel session={orchestratorSession} />
+					</div>
+				)}
+			</>
 			) : (
 				<div className="flex flex-col h-full p-6 min-h-0 overflow-y-auto gap-4 relative">
 					<div className="flex flex-col items-start gap-2 my-auto min-[400px]:px-6">
@@ -1616,7 +1625,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							onClick={() => setShowAnnouncementModal(true)}
 							className="absolute top-2 right-3 z-10"
 						/>
-						<div className="flex flex-col gap-4 w-full">
+<div className="flex flex-col gap-4 w-full items-center">
 							<RooHero />
 							<RooTips />
 							{/* Everyone should see their task history if any */}

@@ -94,6 +94,7 @@ import { getUri } from "./getUri"
 import { REQUESTY_BASE_URL } from "../../shared/utils/requesty"
 import { validateAndFixToolResultIds } from "../task/validateToolResultIds"
 import { PendingEditOperationStore, type PendingEditOperationInput } from "./PendingEditOperationStore"
+import { OrchestratorBridge } from "./orchestratorBridge"
 
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -150,6 +151,7 @@ export class ClineProvider
 	private codeIndexManager?: CodeIndexManager
 	private _workspaceTracker?: WorkspaceTracker // workSpaceTracker read-only for access outside this class
 	protected mcpHub?: McpHub // Change from private to protected
+	public orchestratorBridge?: OrchestratorBridge // Orchestrator session manager bridge
 	protected skillsManager?: SkillsManager
 	private taskCreationCallback: (task: Task) => void
 	private taskEventListeners: WeakMap<Task, Array<() => void>> = new WeakMap()
@@ -2155,6 +2157,8 @@ export class ClineProvider
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
 			lockApiConfigAcrossModes,
+			orchestratorEnabled,
+			orchestratorConfig,
 		} = await this.getState()
 
 		const telemetryKey = process.env.POSTHOG_API_KEY
@@ -2315,6 +2319,8 @@ export class ClineProvider
 			openAiCodexIsAuthenticated: false,
 			...vertexState,
 			debug: vscode.workspace.getConfiguration(Package.name).get<boolean>("debug", false),
+			orchestratorEnabled: orchestratorEnabled ?? false,
+			orchestratorConfig,
 		}
 	}
 
@@ -2462,6 +2468,8 @@ export class ClineProvider
 			imageGenerationProvider: stateValues.imageGenerationProvider,
 			openRouterImageApiKey: stateValues.openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel: stateValues.openRouterImageGenerationSelectedModel,
+			orchestratorEnabled: stateValues.orchestratorEnabled ?? false,
+			orchestratorConfig: stateValues.orchestratorConfig,
 		}
 	}
 

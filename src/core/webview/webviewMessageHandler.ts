@@ -618,30 +618,66 @@ export const webviewMessageHandler = async (
 
 			provider.isViewLaunched = true
 			break
-		case "newTask":
-			// Initializing new instance of Cline will make sure that any
-			// agentically running promises in old instance don't affect our new
-			// task. This essentially creates a fresh slate for the new task.
-			try {
-				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
-				await provider.createTask(
-					resolved.text,
-					resolved.images,
-					undefined,
-					{ taskId: message.taskId },
-					message.taskConfiguration,
-				)
-				// Task created successfully - notify the UI to reset
-				await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
-			} catch (error) {
-				// For all errors, reset the UI and show error
-				await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
-				// Show error to user
-				vscode.window.showErrorMessage(
-					`Failed to create task: ${error instanceof Error ? error.message : String(error)}`,
-				)
+		case "newTask": {
+			// Check if orchestrator mode is enabled - route to orchestrator instead of normal task
+			const orchestratorEnabled = getGlobalState("orchestratorEnabled")
+
+			if (orchestratorEnabled) {
+				// Orchestrator flow: create session via OrchestratorBridge
+				try {
+					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+					provider.log(`[Orchestrator] Routing request to orchestrator (enabled=true)`)
+
+					// Initialize orchestrator bridge if not already done
+					if (!provider.orchestratorBridge) {
+						const { OrchestratorBridge } = await import("./orchestratorBridge")
+						provider.orchestratorBridge = new OrchestratorBridge(provider)
+					}
+
+					// Get active file info for context
+					const activeEditor = vscode.window.activeTextEditor
+					const activeFile = activeEditor?.document.uri.fsPath
+					const selectedText = activeEditor?.selection && !activeEditor.selection.isEmpty
+						? activeEditor.document.getText(activeEditor.selection)
+						: undefined
+
+					provider.log(`[Orchestrator] Starting session with request: ${resolved.text?.substring(0, 100)}...`)
+					const sessionId = await provider.orchestratorBridge.startSession(
+						resolved.text || "",
+						activeFile,
+						selectedText,
+					)
+					provider.log(`[Orchestrator] Session created: ${sessionId}`)
+				} catch (error) {
+					provider.log(`[Orchestrator] Failed to start session: ${error instanceof Error ? error.message : String(error)}`)
+					vscode.window.showErrorMessage(
+						`Orchestrator failed: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			} else {
+				// Normal single-model flow
+				try {
+					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+					await provider.createTask(
+						resolved.text,
+						resolved.images,
+						undefined,
+						{ taskId: message.taskId },
+						message.taskConfiguration,
+					)
+					// Task created successfully - notify the UI to reset
+					await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+				} catch (error) {
+					// For all errors, reset the UI and show error
+					await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+					// Show error to user
+					vscode.window.showErrorMessage(
+						`Failed to create task: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
 			}
 			break
+		}
 		case "customInstructions":
 			await provider.updateCustomInstructions(message.text)
 			break
@@ -3393,6 +3429,68 @@ export const webviewMessageHandler = async (
 				provider.log(`Error opening folder picker: ${errorMessage}`)
 			}
 
+			break
+		}
+
+		// Orchestrator messages
+		case "orchestratorSetEnabled": {
+			const enabled = message.bool ?? false
+			await updateGlobalState("orchestratorEnabled", enabled)
+			await provider.postStateToWebview()
+			break
+		}
+
+		case "orchestratorUpdateConfig": {
+			if (message.values) {
+				const currentConfig = getGlobalState("orchestratorConfig") ?? {}
+				const updatedConfig = { ...currentConfig, ...message.values }
+				await updateGlobalState("orchestratorConfig", updatedConfig)
+				await provider.postStateToWebview()
+			}
+			break
+		}
+
+		case "orchestratorApprovePlan": {
+			const sessionId = message.sessionId
+			if (!sessionId) {
+				provider.log("Orchestrator approve plan: missing sessionId")
+				break
+			}
+
+			try {
+				// Initialize bridge if not already done
+				if (!provider.orchestratorBridge) {
+					const { OrchestratorBridge } = await import("./orchestratorBridge")
+					provider.orchestratorBridge = new OrchestratorBridge(provider)
+				}
+
+				await provider.orchestratorBridge.approvePlan(sessionId)
+				provider.log(`Orchestrator plan approved for session: ${sessionId}`)
+			} catch (error) {
+				provider.log(`Failed to approve orchestrator plan: ${error instanceof Error ? error.message : String(error)}`)
+			}
+			break
+		}
+
+		case "orchestratorCancel": {
+			const sessionId = message.sessionId
+			if (!sessionId) {
+				provider.log("Orchestrator cancel: missing sessionId")
+				break
+			}
+
+			try {
+				// Initialize bridge if not already done
+				if (!provider.orchestratorBridge) {
+					const { OrchestratorBridge } = await import("./orchestratorBridge")
+					provider.orchestratorBridge = new OrchestratorBridge(provider)
+				}
+
+				await provider.orchestratorBridge.cancelSession(sessionId)
+				provider.log(`Orchestrator session cancelled: ${sessionId}`)
+			} catch (error) {
+				provider.log(`Failed to cancel orchestrator session: ${error instanceof Error ? error.message : String(error)}`)
+			}
 			break
 		}
 

@@ -27,6 +27,7 @@
 	},
 	"sections": {
 		"providers": "Providers",
+		"orchestrator": "Orchestrator",
 		"modes": "Modes",
 		"mcp": "MCP Servers",
 		"worktrees": "Worktrees",
