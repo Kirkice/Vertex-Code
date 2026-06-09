@@ -56,7 +56,7 @@
 				{
 					"id": "vertex-ActivityBar",
 					"title": "%views.activitybar.title%",
-					"icon": "assets/icons/icon.svg"
+					"icon": "assets/icons/panel_light_logo.png"
 				}
 			]
 		},
