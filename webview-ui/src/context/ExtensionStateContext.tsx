@@ -450,6 +450,19 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					break
 				}
 				// Orchestrator messages
+				case "orchestratorChatMessage": {
+					// Insert orchestrator chat message into clineMessages so it appears in the chat window
+					if (message.clineMessage) {
+						setState((prevState) => {
+							const clineMessage = message.clineMessage!
+							const insertIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts <= clineMessage.ts) + 1
+							const newClineMessages = [...prevState.clineMessages]
+							newClineMessages.splice(insertIndex, 0, clineMessage)
+							return { ...prevState, clineMessages: newClineMessages }
+						})
+					}
+					break
+				}
 				case "orchestratorSessionUpdate": {
 					if (message.payload?.orchestratorSession !== undefined) {
 						setState((prevState) => ({

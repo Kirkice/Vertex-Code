@@ -61,6 +61,20 @@ export interface SessionManagerEvents {
 	sessionFailed: [sessionId: string, reason: string]
 	sessionCancelled: [sessionId: string]
 	plannerDirectResponse: [sessionId: string, text: string]
+	/** Pushed chat message from orchestrator (plan/worker/review visible in chat) */
+	orchestratorChatMessage: [sessionId: string, message: OrchestratorChatMessage]
+}
+
+/**
+ * Orchestrator chat message — pushed as ClineMessage to webview chat window.
+ */
+export interface OrchestratorChatMessage {
+	/** Message text (markdown) */
+	text: string
+	/** Orchestrator role that produced this */
+	role: "planner" | "worker" | "reviewer"
+	/** Optional sub-label (e.g. task title, review summary) */
+	label?: string
 }
 
 /**
@@ -143,6 +157,10 @@ export class OrchestratorSessionManager extends EventEmitter {
 				// Simple task: direct answer, complete immediately
 				session.setDirectResponse(result.text)
 				this.emit("plannerDirectResponse", session.sessionId, result.text)
+				this.emit("orchestratorChatMessage", session.sessionId, {
+					role: "planner",
+					text: result.text,
+				})
 				session.complete("Planner handled directly")
 				this.emit("sessionCompleted", session.sessionId, "Direct response")
 			} else {
@@ -156,12 +174,20 @@ export class OrchestratorSessionManager extends EventEmitter {
 					session.registerTask({ ...task, sessionId: session.sessionId })
 				}
 
+				// Emit plan summary to chat
+				const taskList = result.plan.tasks
+					.map((t, i) => `${i + 1}. **${t.title}** — ${t.objective}`)
+					.join("\n")
+				this.emit("orchestratorChatMessage", session.sessionId, {
+					role: "planner",
+					text: `### 📋 任务计划\n\n**${result.plan.planSummary}**\n\n${taskList}`,
+				})
+
 				this.emit("sessionStateChanged", session.sessionId, session.state)
 			}
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error)
-			session.transitionTo("failed", `Planning failed: ${reason}`)
-			this.emit("sessionFailed", session.sessionId, reason)
+			session.fail(`Planning failed: ${reason}`)
 		}
 	}
 
@@ -221,6 +247,19 @@ export class OrchestratorSessionManager extends EventEmitter {
 				// Run reviewer
 				const reviewResult = await this.runReviewPhase(session)
 
+			// Emit review result as chat message (visible in chat window)
+				const reviewDecisionIcon = reviewResult.decision === "accept" ? "✅" : reviewResult.decision === "reject" ? "🚫" : "⚠️"
+				const findingsText = reviewResult.findings?.length
+					? "\n\n**发现的问题：**\n" + reviewResult.findings.map((f) => `- ${f.message}`).join("\n")
+					: ""
+				const suggestionsText = reviewResult.suggestions?.length
+					? "\n\n💡 **建议：**\n" + reviewResult.suggestions.map((s) => `- ${s}`).join("\n")
+					: ""
+				this.emit("orchestratorChatMessage", session.sessionId, {
+					role: "reviewer",
+					text: `### 🔍 审核结果：${reviewDecisionIcon} ${reviewResult.decision === "accept" ? "通过" : reviewResult.decision === "reject" ? "拒绝" : "需修复"}\n\n**摘要：** ${reviewResult.summary}${findingsText}${suggestionsText}`,
+				})
+
 				if (reviewResult.decision === "accept") {
 					session.transitionTo("completed", reviewResult.summary)
 					this.emit("sessionCompleted", session.sessionId, reviewResult.summary)
@@ -228,22 +267,19 @@ export class OrchestratorSessionManager extends EventEmitter {
 				}
 
 				if (reviewResult.decision === "reject") {
-					session.transitionTo("failed", reviewResult.summary)
-					this.emit("sessionFailed", session.sessionId, reviewResult.summary)
+					session.fail(reviewResult.summary)
 					return
 				}
 
 				if (reviewResult.decision === "needs_user_confirmation") {
 					this.emit("needsUserConfirmation", session.sessionId, reviewResult.userConfirmationQuestion)
-					session.transitionTo("failed", "User confirmation required but not supported")
-					this.emit("sessionFailed", session.sessionId, "User confirmation required")
+					session.fail("User confirmation required but not supported")
 					return
 				}
 
 				// decision === "repair"
 				if (currentRound >= maxRepairRounds) {
-					session.transitionTo("failed", `Max repair rounds (${maxRepairRounds}) reached`)
-					this.emit("sessionFailed", session.sessionId, "Max repair rounds reached")
+					session.fail(`Max repair rounds (${maxRepairRounds}) reached`)
 					return
 				}
 
@@ -259,12 +295,10 @@ export class OrchestratorSessionManager extends EventEmitter {
 				this.emit("sessionStateChanged", session.sessionId, session.state)
 			}
 
-			session.transitionTo("failed", "Execution loop exited without completion")
-			this.emit("sessionFailed", session.sessionId, "Execution loop exited")
+			session.fail("Execution loop exited without completion")
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error)
-			session.transitionTo("failed", `Execution failed: ${reason}`)
-			this.emit("sessionFailed", session.sessionId, reason)
+			session.fail(`Execution failed: ${reason}`)
 		}
 	}
 
@@ -273,12 +307,21 @@ export class OrchestratorSessionManager extends EventEmitter {
 	 */
 	private async executeReadyTasks(session: OrchestratorSession): Promise<void> {
 		const readyTasks = session.getTasks().filter((t) => t.status === "ready" && t.kind === "exec")
+		const total = readyTasks.length
+		let current = 0
 
 		for (const task of readyTasks) {
 			if (session.state === "cancelled") return
 
+			current++
 			session.updateTaskStatus(task.taskId, "running")
 			this.emit("taskStarted", session.sessionId, task.taskId)
+
+			// Emit progress to chat window
+			this.emit("orchestratorChatMessage", session.sessionId, {
+				role: "worker",
+				text: `⚡ 正在执行：任务 **${current}/${total}** — ${task.title}`,
+			})
 
 			try {
 				const workerProvider = this.router.selectWorkerForTask(task as ExecTask)

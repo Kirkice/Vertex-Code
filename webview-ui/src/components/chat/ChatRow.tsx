@@ -1180,28 +1180,46 @@ export const ChatRowContent = ({
 				}
 				case "api_req_finished":
 					return null // we should never see this message type
-				case "text":
-					return (
-						<div className="group">
-							<div style={headerStyle}>
-								<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
-								<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
-								<div style={{ flexGrow: 1 }} />
-								<OpenMarkdownPreviewButton markdown={message.text} />
-							</div>
-							<div className="pl-6">
-								<Markdown markdown={message.text} partial={message.partial} />
-								{message.images && message.images.length > 0 && (
-									<div style={{ marginTop: "10px" }}>
-										{message.images.map((image, index) => (
-											<ImageBlock key={index} imageData={image} />
-										))}
-									</div>
-								)}
-							</div>
+			case "text": {
+				// Orchestrator role-specific rendering
+				const roleIcons: Record<string, { icon: string; label: string; color: string }> = {
+					planner: { icon: "🧠", label: "计划者", color: "#7c3aed" },
+					worker: { icon: "⚡", label: "执行者", color: "#f59e0b" },
+					reviewer: { icon: "🔍", label: "审核者", color: "#10b981" },
+				}
+				const roleCfg = message.orchestratorRole ? roleIcons[message.orchestratorRole] : undefined
+
+				return (
+					<div className="group">
+						<div style={headerStyle}>
+							{roleCfg ? (
+								<>
+									<span style={{ fontSize: "1.1em" }}>{roleCfg.icon}</span>
+									<span style={{ fontWeight: "bold", color: roleCfg.color }}>{roleCfg.label}</span>
+								</>
+							) : (
+								<>
+									<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
+									<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
+								</>
+							)}
+							<div style={{ flexGrow: 1 }} />
+							<OpenMarkdownPreviewButton markdown={message.text} />
 						</div>
-					)
-				case "user_feedback":
+						<div className="pl-6">
+							<Markdown markdown={message.text} partial={message.partial} />
+							{message.images && message.images.length > 0 && (
+								<div style={{ marginTop: "10px" }}>
+									{message.images.map((image, index) => (
+										<ImageBlock key={index} imageData={image} />
+									))}
+								</div>
+							)}
+						</div>
+					</div>
+				)
+			}
+			case "user_feedback":
 					return (
 						<div className="group">
 							<div style={headerStyle}>

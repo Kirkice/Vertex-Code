@@ -271,6 +271,11 @@ export const clineMessageSchema = z.object({
 	isProtected: z.boolean().optional(),
 	apiProtocol: z.union([z.literal("openai"), z.literal("anthropic")]).optional(),
 	isAnswered: z.boolean().optional(),
+	/**
+	 * Orchestrator role that produced this message.
+	 * "planner" | "worker" | "reviewer" — used by ChatRow to show role icon and color.
+	 */
+	orchestratorRole: z.enum(["planner", "worker", "reviewer"]).optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>

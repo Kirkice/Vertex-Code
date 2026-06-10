@@ -6,11 +6,12 @@
  */
 
 import type { ClineProvider } from "./ClineProvider"
-import type { ProviderSettings } from "@roo-code/types"
+import type { OrchestratorProviderConfig, ProviderSettings, ClineMessage } from "@roo-code/types"
 import {
 	OrchestratorSessionManager,
 	createSessionManager,
 	type SessionManagerConfig,
+	type OrchestratorChatMessage,
 } from "../../orchestrator/session/OrchestratorSessionManager"
 
 export class OrchestratorBridge {
@@ -32,22 +33,81 @@ export class OrchestratorBridge {
 		// Get provider settings from global state
 		const config = await this.provider.getState()
 		const apiConfiguration = config.apiConfiguration
+		const orchestratorConfig = config.orchestratorConfig as OrchestratorProviderConfig | undefined
 
-		// Build Codex provider settings (use current API config as planner/reviewer)
-		const codexProviderSettings: ProviderSettings = {
-			...apiConfiguration,
-		}
+		// Resolve a dedicated planner/reviewer profile when configured.
+		// Fall back to the currently active API config if the profile is missing.
+		const plannerSettings = await this.resolveProfileSettings(orchestratorConfig?.plannerProfile)
+		const reviewerSettings = await this.resolveProfileSettings(orchestratorConfig?.reviewerProfile)
+		const codexProviderSettings: ProviderSettings = plannerSettings ?? reviewerSettings ?? { ...apiConfiguration }
+
+		// Expose worker providers that are actually configured in profiles.
+		const availableWorkerProviders = await this.resolveAvailableWorkerProviders(
+			orchestratorConfig,
+			apiConfiguration.apiProvider,
+		)
 
 		const sessionManagerConfig: SessionManagerConfig = {
 			codexProviderSettings,
-			availableWorkerProviders: [apiConfiguration.apiProvider || "anthropic"],
-			defaultMaxRepairRounds: config.orchestratorConfig?.routingPolicy?.maxRepairRounds ?? 2,
+			availableWorkerProviders,
+			defaultMaxRepairRounds: orchestratorConfig?.routingPolicy?.maxRepairRounds ?? 2,
 		}
 
 		this.sessionManager = createSessionManager(sessionManagerConfig)
 
 		// Forward events to webview
 		this.setupEventForwarding()
+	}
+
+	/**
+	 * Resolve a named provider profile into provider settings.
+	 */
+	private async resolveProfileSettings(profileName?: string): Promise<ProviderSettings | undefined> {
+		if (!profileName) {
+			return undefined
+		}
+
+		try {
+			const profile = await this.provider.providerSettingsManager.getProfile({ name: profileName })
+			const { name: _name, id: _id, ...providerSettings } = profile
+			return providerSettings as ProviderSettings
+		} catch (error) {
+			this.provider.log(
+				`[Orchestrator] Failed to resolve provider profile '${profileName}': ${error instanceof Error ? error.message : String(error)}`,
+			)
+			return undefined
+		}
+	}
+
+	/**
+	 * Build the set of worker provider names from the configured worker profiles.
+	 */
+	private async resolveAvailableWorkerProviders(
+		orchestratorConfig: OrchestratorProviderConfig | undefined,
+		fallbackProvider?: string,
+	): Promise<string[]> {
+		const providers = new Set<string>()
+		const workerProfiles = [
+			orchestratorConfig?.workerProfiles?.primary,
+			orchestratorConfig?.workerProfiles?.fallback,
+		].filter((profileName): profileName is string => Boolean(profileName))
+
+		for (const profileName of workerProfiles) {
+			const settings = await this.resolveProfileSettings(profileName)
+			if (settings?.apiProvider) {
+				providers.add(settings.apiProvider)
+			}
+		}
+
+		if (providers.size === 0 && fallbackProvider) {
+			providers.add(fallbackProvider)
+		}
+
+		if (providers.size === 0) {
+			providers.add("anthropic")
+		}
+
+		return Array.from(providers)
 	}
 
 	/**
@@ -89,6 +149,22 @@ export class OrchestratorBridge {
 
 			await this.pushSessionToWebview(session)
 			this.provider.log(`Orchestrator session cancelled: ${sessionId}`)
+		})
+
+		// Forward orchestrator chat messages to webview chat window
+		this.sessionManager.on("orchestratorChatMessage", async (sessionId: string, chatMsg: OrchestratorChatMessage) => {
+			const clineMessage: ClineMessage = {
+				ts: Date.now(),
+				type: "say",
+				say: "text",
+				text: chatMsg.text,
+				orchestratorRole: chatMsg.role,
+			}
+			await this.provider.postMessageToWebview({
+				type: "orchestratorChatMessage",
+				clineMessage,
+			})
+			this.provider.log(`[Orchestrator] Chat message from ${chatMsg.role}: ${sessionId}`)
 		})
 
 		// Forward planner direct response → push to webview as completed with directResponse
@@ -147,6 +223,7 @@ export class OrchestratorBridge {
 				estimatedCostUsd: 0,
 			},
 			planSummary: plan?.planSummary || plan?.summary,
+			error: session.getError?.(),
 		}
 
 		await this.provider.postMessageToWebview({
