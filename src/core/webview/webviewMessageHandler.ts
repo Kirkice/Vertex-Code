@@ -628,6 +628,19 @@ export const webviewMessageHandler = async (
 					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 					provider.log(`[Orchestrator] Routing request to orchestrator (enabled=true)`)
 
+					// Add user's message to clineMessages so it appears in the chat area
+					const userMessage: ClineMessage = {
+						ts: Date.now(),
+						type: "say",
+						say: "user_feedback",
+						text: resolved.text || "",
+						images: resolved.images,
+					}
+					await provider.postMessageToWebview({
+						type: "messageUpdated",
+						clineMessage: userMessage,
+					})
+
 					// Initialize orchestrator bridge if not already done
 					if (!provider.orchestratorBridge) {
 						const { OrchestratorBridge } = await import("./orchestratorBridge")
@@ -1372,7 +1385,7 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "openKeyboardShortcuts": {
-			// Open VSCode keyboard shortcuts settings and optionally filter to show the Roo Code commands
+			// Open VSCode keyboard shortcuts settings and optionally filter to show the Vertex Code commands
 			const searchQuery = message.text || ""
 			if (searchQuery) {
 				// Open with a search query pre-filled
@@ -2320,11 +2333,42 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "openAiCodexSignIn": {
-			// OpenAI Codex sign-in removed
+			try {
+				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
+				const authUrl = openAiCodexOAuthManager.startAuthorizationFlow()
+
+				// Open the authorization URL in the browser
+				await vscode.env.openExternal(vscode.Uri.parse(authUrl))
+
+				// Wait for the callback in a separate promise (non-blocking)
+				openAiCodexOAuthManager
+					.waitForCallback()
+					.then(async () => {
+						vscode.window.showInformationMessage("Successfully signed in to OpenAI Codex")
+						await provider.postStateToWebview()
+					})
+					.catch((error) => {
+						provider.log(`OpenAI Codex OAuth callback failed: ${error}`)
+						if (!String(error).includes("timed out")) {
+							vscode.window.showErrorMessage(`OpenAI Codex sign in failed: ${error.message || error}`)
+						}
+					})
+			} catch (error) {
+				provider.log(`OpenAI Codex OAuth failed: ${error}`)
+				vscode.window.showErrorMessage("OpenAI Codex sign in failed.")
+			}
 			break
 		}
 		case "openAiCodexSignOut": {
-			// OpenAI Codex sign-out removed
+			try {
+				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
+				await openAiCodexOAuthManager.clearCredentials()
+				vscode.window.showInformationMessage("Signed out from OpenAI Codex")
+				await provider.postStateToWebview()
+			} catch (error) {
+				provider.log(`OpenAI Codex sign out failed: ${error}`)
+				vscode.window.showErrorMessage("OpenAI Codex sign out failed.")
+			}
 			break
 		}
 		case "rooCloudManualUrl": {
@@ -3110,7 +3154,34 @@ export const webviewMessageHandler = async (
 		}
 
 		case "requestOpenAiCodexRateLimits": {
-			provider.postMessageToWebview({ type: "openAiCodexRateLimits", error: "OpenAI Codex removed" })
+			try {
+				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
+				const accessToken = await openAiCodexOAuthManager.getAccessToken()
+
+				if (!accessToken) {
+					provider.postMessageToWebview({
+						type: "openAiCodexRateLimits",
+						error: "Not authenticated with OpenAI Codex",
+					})
+					break
+				}
+
+				const accountId = await openAiCodexOAuthManager.getAccountId()
+				const { fetchOpenAiCodexRateLimitInfo } = await import("../../integrations/openai-codex/rate-limits")
+				const rateLimits = await fetchOpenAiCodexRateLimitInfo(accessToken, { accountId })
+
+				provider.postMessageToWebview({
+					type: "openAiCodexRateLimits",
+					values: rateLimits,
+				})
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error)
+				provider.log(`Error fetching OpenAI Codex rate limits: ${errorMessage}`)
+				provider.postMessageToWebview({
+					type: "openAiCodexRateLimits",
+					error: errorMessage,
+				})
+			}
 			break
 		}
 		case "openDebugApiHistory":

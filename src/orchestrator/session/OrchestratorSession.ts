@@ -110,6 +110,9 @@ export class OrchestratorSession extends EventEmitter {
 	private verificationReport?: VerificationReport
 	private reviewResponse?: ReviewResponsePayload
 	private stats: SessionStats = { ...DEFAULT_STATS }
+	private error?: string
+	private plannerRawResponse?: string
+	private directResponse?: string
 
 	constructor(config: OrchestratorSessionConfig) {
 		super()
@@ -401,10 +404,48 @@ export class OrchestratorSession extends EventEmitter {
 	 * Fail the session
 	 */
 	fail(reason: string): void {
+		this.error = reason
 		if (this.state !== "failed") {
 			this.transitionTo("failed", reason)
 		}
 		this.emit("sessionFailed", reason)
+	}
+
+	/**
+	 * Get the error message if session failed
+	 */
+	getError(): string | undefined {
+		return this.error
+	}
+
+	/**
+	 * Store the raw planner output when planning fails.
+	 */
+	setPlannerRawResponse(rawResponse?: string): void {
+		this.plannerRawResponse = rawResponse
+	}
+
+	/**
+	 * Raw planner output captured during planning failure.
+	 */
+	getPlannerRawResponse(): string | undefined {
+		return this.plannerRawResponse
+	}
+
+	/**
+	 * Store the planner's direct response for simple requests.
+	 * When the planner decides a request is simple enough to answer directly
+	 * (questions, explanations, trivial changes), this holds the natural language response.
+	 */
+	setDirectResponse(text: string): void {
+		this.directResponse = text
+	}
+
+	/**
+	 * Get the planner's direct response, if any.
+	 */
+	getDirectResponse(): string | undefined {
+		return this.directResponse
 	}
 
 	/**

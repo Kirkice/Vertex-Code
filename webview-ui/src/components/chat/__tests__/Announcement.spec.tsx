@@ -46,7 +46,7 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 					"Upstream Vertex handoff: Pulled in the latest upstream sunset merge and related platform updates to keep Vertex aligned with the community handoff work.",
 				"chat:announcement.release.highlight3":
 					"Stability fixes across chat and providers: Fixed MCP sign-in copy, Gemini full-tool requests, OpenAI temperature handling, and Markdown single-tilde rendering.",
-				"chat:announcement.handoff.heading": "The Roo Code plugin is not going away.",
+				"chat:announcement.handoff.heading": "The Vertex Code plugin is not going away.",
 			}
 
 			if (key === "chat:announcement.title" || key === "chat:announcement.finalRelease.title") {

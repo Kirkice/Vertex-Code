@@ -252,7 +252,7 @@ describe("ProviderSettingsManager", () => {
 			expect(storedConfig.migrations.todoListEnabledMigrated).toEqual(true)
 		})
 
-		it("should migrate legacy Roo provider profiles into a setup-needed fallback", async () => {
+		it("should migrate legacy Vertex provider profiles into a setup-needed fallback", async () => {
 			mockSecrets.get.mockResolvedValue(
 				JSON.stringify({
 					currentApiConfigName: "default",
@@ -296,7 +296,7 @@ describe("ProviderSettingsManager", () => {
 			const calls = mockSecrets.store.mock.calls
 			const storedConfig = JSON.parse(calls[calls.length - 1][1])
 
-			// Roo provider configs should be downgraded into an unconfigured fallback state
+			// Vertex provider configs should be downgraded into an unconfigured fallback state
 			expect(storedConfig.apiConfigs.default.apiProvider).toBeUndefined()
 			expect(storedConfig.apiConfigs.default.apiModelId).toBeUndefined()
 			expect(storedConfig.apiConfigs.test.apiProvider).toBeUndefined()
@@ -310,7 +310,7 @@ describe("ProviderSettingsManager", () => {
 			expect(storedConfig.apiConfigs.noProvider.apiModelId).toEqual("roo/code-supernova")
 		})
 
-		it("should downgrade Roo provider when saving a profile", async () => {
+		it("should downgrade Vertex provider when saving a profile", async () => {
 			mockSecrets.get.mockResolvedValue(
 				JSON.stringify({
 					currentApiConfigName: "default",

@@ -15,7 +15,7 @@ items:
       slug: mode-writer
       name: ✍️ Mode Writer
       roleDefinition: |
-        You are Roo, a mode creation and editing specialist focused on designing, implementing, and enhancing custom modes for the Roo-Code project.
+        You are Vertex, a mode creation and editing specialist focused on designing, implementing, and enhancing custom modes for the Vertex-Code project.
 
         Your expertise includes:
         - Understanding the mode system architecture and configuration
@@ -58,7 +58,7 @@ items:
             <mode_management_workflow>
               <overview>
                 This workflow guides you through creating new custom modes or editing existing ones
-                for the Roo Code Software, ensuring comprehensive understanding and cohesive implementation.
+                for the Vertex Code Software, ensuring comprehensive understanding and cohesive implementation.
               </overview>
 
               <mode_scope>
@@ -72,7 +72,7 @@ items:
                 <global_modes>
                   <location>VS Code globalStorage custom modes settings file (location is environment-specific; open it via the product UI)</location>
                   <notes>
-                    Global modes are used system-wide and are created automatically on Roo Code startup.
+                    Global modes are used system-wide and are created automatically on Vertex Code startup.
                   </notes>
                 </global_modes>
 
@@ -123,7 +123,7 @@ items:
                 name: Example Mode
                 description: Short five-word summary
                 roleDefinition: &gt;-
-                  You are Roo Code, a [specialist type] who...
+                  You are Vertex Code, a [specialist type] who...
 
                   Key areas:
                   - Area one
@@ -255,7 +255,7 @@ items:
                       <field name="roleDefinition">
                         <description>Detailed description of the mode's role and expertise</description>
                         <best_practice>
-                          Start with "You are Roo Code, a [specialist type]..."
+                          Start with "You are Vertex Code, a [specialist type]..."
                           List specific areas of expertise
                           Mention key technologies or methodologies
                         </best_practice>
@@ -792,7 +792,7 @@ items:
           content: |
             <mode_configuration_patterns>
               <overview>
-                Common patterns and templates for creating different types of modes, with examples from existing modes in the Roo-Code software.
+                Common patterns and templates for creating different types of modes, with examples from existing modes in the Vertex-Code software.
               </overview>
 
               <mode_types>
@@ -809,7 +809,7 @@ items:
             - slug: api-specialist
               name: 🔌 API Specialist
               roleDefinition: &gt;-
-                You are Roo Code, an API development specialist with expertise in:
+                You are Vertex Code, an API development specialist with expertise in:
                 - RESTful API design and implementation
                 - GraphQL schema design
                 - API documentation with OpenAPI/Swagger
@@ -849,7 +849,7 @@ items:
             - slug: migration-guide
               name: 🔄 Migration Guide
               roleDefinition: &gt;-
-                You are Roo Code, a migration specialist who guides users through
+                You are Vertex Code, a migration specialist who guides users through
                 complex migration processes:
                 - Database schema migrations
                 - Framework version upgrades
@@ -886,7 +886,7 @@ items:
             - slug: security-auditor
               name: 🔒 Security Auditor
               roleDefinition: &gt;-
-                You are Roo Code, a security analysis specialist focused on:
+                You are Vertex Code, a security analysis specialist focused on:
                 - Identifying security vulnerabilities
                 - Analyzing authentication and authorization
                 - Reviewing data validation and sanitization
@@ -924,7 +924,7 @@ items:
             - slug: component-designer
               name: 🎨 Component Designer
               roleDefinition: &gt;-
-                You are Roo Code, a UI component design specialist who creates:
+                You are Vertex Code, a UI component design specialist who creates:
                 - Reusable React/Vue/Angular components
                 - Component documentation and examples
                 - Storybook stories
@@ -1396,7 +1396,7 @@ items:
           content: |
             <complete_examples>
               <overview>
-                Canonical examples for creating and editing Roo Code modes. Each example demonstrates structured workflows, least-privilege configuration, contradiction resolution, and completion formatting, without referencing runtime implementation details.
+                Canonical examples for creating and editing Vertex Code modes. Each example demonstrates structured workflows, least-privilege configuration, contradiction resolution, and completion formatting, without referencing runtime implementation details.
               </overview>
 
               <example name="mode_editing_enhancement">
@@ -1489,7 +1489,7 @@ items:
           content: |
             <mode_testing_validation>
               <overview>
-                Guidelines for testing and validating newly created modes to ensure they function correctly and integrate well with the Roo Code ecosystem.
+                Guidelines for testing and validating newly created modes to ensure they function correctly and integrate well with the Vertex Code ecosystem.
               </overview>
 
               <validation_checklist>
@@ -1885,9 +1885,9 @@ items:
 
                 <global>
                   <file>Global custom modes settings file (stored in VS Code globalStorage; exact path is environment-specific)</file>
-                  <scope>System-wide modes for Roo Code</scope>
+                  <scope>System-wide modes for Vertex Code</scope>
                   <notes>
-                    This file is created automatically on Roo Code startup if it does not exist.
+                    This file is created automatically on Vertex Code startup if it does not exist.
                   </notes>
                 </global>
               </locations>
@@ -1937,7 +1937,7 @@ items:
       slug: skill-writer
       name: 🧩 Skill Writer
       roleDefinition: |-
-        You are Roo, an Agent Skills authoring specialist focused on creating, editing, and validating Agent Skills packages.
+        You are Vertex, an Agent Skills authoring specialist focused on creating, editing, and validating Agent Skills packages.
         Default behavior: keep SKILL.md concise and task-oriented, and use progressive disclosure.
         Create additional files (references/, scripts/, assets/) when they materially improve execution, reduce repetition, or improve safety/verification (and the user agrees).
         Your expertise includes: - The Agent Skills directory and SKILL.md specification (frontmatter requirements, naming constraints) - Writing clear, task-oriented SKILL.md instructions (concise overview + explicit navigation to linked files) - Structuring skills with references/ for long-lived guidance, scripts/ for deterministic automation, and assets/ for templates/examples - Creating both generic skills (skills/) and mode-specific skills (skills-<mode>/) - Maintaining override behavior awareness (project skills vs global skills) - Safety practices for scripts and tool usage
@@ -2086,7 +2086,7 @@ items:
 
                 <guideline priority="high">
                   <rule>Keep SKILL.md as an entrypoint: a concise overview + clear navigation to any linked reference files.</rule>
-                  <rationale>Roo Code does not automatically load linked files; SKILL.md must make it obvious which file to read next (and why).</rationale>
+                  <rationale>Vertex Code does not automatically load linked files; SKILL.md must make it obvious which file to read next (and why).</rationale>
                 </guideline>
 
                 <guideline priority="high">
@@ -2136,7 +2136,7 @@ items:
 
                 <guideline priority="low">
                   <rule>Heuristic size rule: keep SKILL.md skimmable; if it approaches ~500 lines, split detailed content into references/ and link from SKILL.md.</rule>
-                  <rationale>Roo Code does not enforce a SKILL.md line limit, but long entrypoint files increase context cost when the skill is selected.</rationale>
+                  <rationale>Vertex Code does not enforce a SKILL.md line limit, but long entrypoint files increase context cost when the skill is selected.</rationale>
                 </guideline>
 
                 <example_refinement>
@@ -2509,7 +2509,7 @@ items:
       slug: merge-resolver
       name: 🔀 Merge Resolver
       roleDefinition: |
-        You are Roo, a merge conflict resolution specialist with expertise in:
+        You are Vertex, a merge conflict resolution specialist with expertise in:
         - Analyzing pull request merge conflicts using git blame and commit history
         - Understanding code intent through commit messages and diffs
         - Making intelligent decisions about which changes to keep, merge, or discard

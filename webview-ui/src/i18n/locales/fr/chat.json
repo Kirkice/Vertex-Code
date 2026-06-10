@@ -184,8 +184,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex veut éditer ce fichier en dehors de l'espace de travail",
 		"wantsToEditProtected": "Vertex veut éditer un fichier de configuration protégé",
 		"wantsToCreate": "Vertex veut créer un nouveau fichier",
-		"wantsToSearchReplace": "Roo veut effectuer une recherche et remplacement sur ce fichier",
-		"didSearchReplace": "Roo a effectué une recherche et remplacement sur ce fichier",
+		"wantsToSearchReplace": "Vertex veut effectuer une recherche et remplacement sur ce fichier",
+		"didSearchReplace": "Vertex a effectué une recherche et remplacement sur ce fichier",
 		"wantsToInsert": "Vertex veut insérer du contenu dans ce fichier",
 		"wantsToInsertWithLineNumber": "Vertex veut insérer du contenu dans ce fichier à la ligne {{lineNumber}}",
 		"wantsToInsertAtEnd": "Vertex veut ajouter du contenu à la fin de ce fichier",
@@ -198,7 +198,7 @@
 		"didGenerateImage": "Vertex a généré une image"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo veut récupérer des instructions détaillées pour aider à la tâche actuelle"
+		"wantsToFetch": "Vertex veut récupérer des instructions détaillées pour aider à la tâche actuelle"
 	},
 	"directoryOperations": {
 		"wantsToViewTopLevel": "Vertex veut voir les fichiers de premier niveau dans ce répertoire",
@@ -331,8 +331,8 @@
 		"title": "Vertex {{version}} est disponible",
 		"support": "Soutiens Vertex en nous donnant une étoile sur <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Roo Code est de retour ! Désormais comme plugin maintenu par la communauté sous le nom Vertex !!",
-			"description": "Si tu n'as pas suivi, l'équipe Roo Code a récemment annoncé qu'elle arrêtait le développement de Roo Code et archivait le travail accompli. Mais pas de panique : la communauté a pris le relais pour faire vivre l'héritage de Roo Code avec un nouveau nom et un nouveau foyer ! Nous ne sommes plus juste un seul « Roo », nous sommes une communauté, un « Vertex » si tu veux. Vertex est un plugin maintenu par la communauté qui reprend là où Roo Code s'est arrêté, et nous nous engageons à préserver l'esprit de Roo tout en ajoutant de nouvelles fonctionnalités et améliorations. Nous voulons adresser un immense merci à toute l'équipe Roo Code pour son travail incroyable et pour avoir créé un outil aussi formidable pour les développeurs. Nous sommes ravis de poursuivre sur leurs bases et de voir jusqu'où la communauté mènera Vertex.",
+			"heading": "Vertex Code est de retour ! Désormais comme plugin maintenu par la communauté sous le nom Vertex !!",
+			"description": "Si tu n'as pas suivi, l'équipe Vertex Code a récemment annoncé qu'elle arrêtait le développement de Vertex Code et archivait le travail accompli. Mais pas de panique : la communauté a pris le relais pour faire vivre l'héritage de Vertex Code avec un nouveau nom et un nouveau foyer ! Nous ne sommes plus juste un seul « Vertex », nous sommes une communauté, un « Vertex » si tu veux. Vertex est un plugin maintenu par la communauté qui reprend là où Vertex Code s'est arrêté, et nous nous engageons à préserver l'esprit de Vertex tout en ajoutant de nouvelles fonctionnalités et améliorations. Nous voulons adresser un immense merci à toute l'équipe Vertex Code pour son travail incroyable et pour avoir créé un outil aussi formidable pour les développeurs. Nous sommes ravis de poursuivre sur leurs bases et de voir jusqu'où la communauté mènera Vertex.",
 			"readMore": "Voir la nouvelle page d'accueil de Vertex et lire l'annonce complète"
 		},
 		"release": {

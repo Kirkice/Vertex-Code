@@ -305,7 +305,7 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 		}
 
 		// Build a request body for the OpenAI Responses API.
-		// Ensure we explicitly pass max_output_tokens based on Roo's reserved model response calculation
+		// Ensure we explicitly pass max_output_tokens based on Vertex's reserved model response calculation
 		// so requests do not default to very large limits (e.g., 120k).
 		interface ResponsesRequestBody {
 			model: string
@@ -364,7 +364,7 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 				temperature: this.options.modelTemperature ?? OPENAI_NATIVE_DEFAULT_TEMPERATURE,
 			}),
 			// Explicitly include the calculated max output tokens.
-			// Use the per-request reserved output computed by Roo (params.maxTokens from getModelParams).
+			// Use the per-request reserved output computed by Vertex (params.maxTokens from getModelParams).
 			...(model.maxTokens ? { max_output_tokens: model.maxTokens } : {}),
 			// Include tier when selected and supported by the model, or when explicitly "default"
 			...(requestedTier &&
@@ -644,7 +644,8 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 		} catch (error) {
 			const model = this.getModel()
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
+
 			if (error instanceof Error) {
 				// Re-throw with the original error message if it's already formatted
 				if (error.message.includes("Responses API")) {
@@ -1124,7 +1125,8 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 			// This can happen in certain edge cases and shouldn't break the flow
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model.id, "createMessage")
+
 			if (error instanceof Error) {
 				throw new Error(`Error processing response stream: ${error.message}`)
 			}
@@ -1567,7 +1569,8 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 		} catch (error) {
 			const errorModel = this.getModel()
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, errorModel.id, "completePrompt")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, errorModel.id, "completePrompt")
+
 			if (error instanceof Error) {
 				throw new Error(`OpenAI Native completion error: ${error.message}`)
 			}

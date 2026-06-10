@@ -350,8 +350,8 @@
 		"title": "Vertex {{version}} Released",
 		"support": "Please support Vertex by starring us on <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Roo Code is back! Now as a community-maintained plugin called Vertex!!",
-			"description": "If you haven't been following, the Roo Code team recently announced they are sun setting the development of Roo Code and are archiving the work they have done. But fear not, the community has stepped up to continue the legacy of Roo Code with a new name and a new home! We are not just a single \"Roo\" anymore, we are a community, a \"Vertex\" if you will, Vertex is a community-maintained plugin that picks up where Roo Code left off, and we're committed to keeping the spirit of Roo alive while also introducing new features and improvements. We want to give a huge shoutout to the entire Roo Code team for their incredible work and for creating such an amazing tool for developers. We're excited to continue building on their foundation and to see where the community takes Vertex in the future!",
+			"heading": "Vertex Code is back! Now as a community-maintained plugin called Vertex!!",
+			"description": "If you haven't been following, the Vertex Code team recently announced they are sun setting the development of Vertex Code and are archiving the work they have done. But fear not, the community has stepped up to continue the legacy of Vertex Code with a new name and a new home! We are not just a single \"Vertex\" anymore, we are a community, a \"Vertex\" if you will, Vertex is a community-maintained plugin that picks up where Vertex Code left off, and we're committed to keeping the spirit of Vertex alive while also introducing new features and improvements. We want to give a huge shoutout to the entire Vertex Code team for their incredible work and for creating such an amazing tool for developers. We're excited to continue building on their foundation and to see where the community takes Vertex in the future!",
 			"readMore": "See the new home page of Vertex and read the full announcement"
 		},
 		"release": {

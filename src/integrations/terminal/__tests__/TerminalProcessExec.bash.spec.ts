@@ -150,7 +150,7 @@ async function testTerminalCommand(
 			executeCommand: vi.fn(),
 			cwd: vscode.Uri.file("/test/path"),
 		},
-		name: "Roo Code",
+		name: "Vertex Code",
 		processId: Promise.resolve(123),
 		creationOptions: {},
 		exitStatus: undefined,

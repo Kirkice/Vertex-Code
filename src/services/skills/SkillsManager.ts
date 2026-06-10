@@ -604,7 +604,7 @@ Add your skill instructions here.
 			}
 		}
 
-		// Global .roo directories (Roo-specific, higher priority than .agents)
+		// Global .roo directories (Vertex-specific, higher priority than .agents)
 		dirs.push({ dir: path.join(globalRooDir, "skills"), source: "global" })
 		for (const mode of modesList) {
 			dirs.push({ dir: path.join(globalRooDir, `skills-${mode}`), source: "global", mode })

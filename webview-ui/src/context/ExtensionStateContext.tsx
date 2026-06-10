@@ -377,15 +377,18 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 							newClineMessages[lastIndex] = clineMessage
 							return { ...prevState, clineMessages: newClineMessages }
 						}
-						// Log a warning if messageUpdated arrives for a timestamp not in the
-						// frontend's clineMessages. With the seq guard and cloud event isolation
-						// (layers 1+2), this should not happen under normal conditions. If it
-						// does, it signals a state synchronization issue worth investigating.
+						// If the matching message has not been inserted yet, fall back to
+						// inserting the update as a new message so the UI still reflects the
+						// user's action. This covers orchestrator-start messages, which can arrive
+						// before the first clineMessages snapshot is present in the webview.
+						const insertIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts <= clineMessage.ts) + 1
+						const newClineMessages = [...prevState.clineMessages]
+						newClineMessages.splice(insertIndex, 0, clineMessage)
 						console.warn(
-							`[messageUpdated] Received update for unknown message ts=${clineMessage.ts}, dropping. ` +
-								`Frontend has ${prevState.clineMessages.length} messages.`,
+							`[messageUpdated] Received update for unknown message ts=${clineMessage.ts}; inserting fallback entry. ` +
+								`Frontend had ${prevState.clineMessages.length} messages.`,
 						)
-						return prevState
+						return { ...prevState, clineMessages: newClineMessages }
 					})
 					break
 				}

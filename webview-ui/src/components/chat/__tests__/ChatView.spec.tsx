@@ -46,8 +46,18 @@ vi.mock("use-sound", () => ({
 
 // Mock components that use ESM dependencies
 vi.mock("../ChatRow", () => ({
-	default: function MockChatRow({ message }: { message: ClineMessage }) {
-		return <div data-testid="chat-row">{JSON.stringify(message)}</div>
+	default: function MockChatRow({
+		message,
+		apiReqModelId,
+	}: {
+		message: ClineMessage
+		apiReqModelId?: string
+	}) {
+		return (
+			<div data-testid="chat-row" data-model-id={apiReqModelId ?? ""}>
+				{JSON.stringify(message)}
+			</div>
+		)
 	},
 }))
 
@@ -1117,5 +1127,46 @@ describe("ChatView - Context Condensing Indicator Tests", () => {
 			},
 			{ timeout: 2000 },
 		)
+	})
+})
+
+describe("ChatView - Model Tag Tests", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("should pass the latest api_req_started modelId to assistant text rows", async () => {
+		const modelId = "qwen/qwen3-coder-30b-a3b"
+		const { getAllByTestId } = renderChatView()
+
+		mockPostMessage({
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: Date.now() - 3000,
+					text: "Initial task",
+				},
+				{
+					type: "say",
+					say: "api_req_started",
+					ts: Date.now() - 2000,
+					text: JSON.stringify({ apiProtocol: "openai", modelId }),
+				},
+				{
+					type: "say",
+					say: "text",
+					ts: Date.now() - 1000,
+					text: "Hello from assistant",
+				},
+			],
+		})
+
+		await waitFor(() => {
+			const rows = getAllByTestId("chat-row")
+			const assistantRow = Array.from(rows).find((row) => row.textContent?.includes("Hello from assistant"))
+			expect(assistantRow).toBeTruthy()
+			expect(assistantRow).toHaveAttribute("data-model-id", modelId)
+		})
 	})
 })

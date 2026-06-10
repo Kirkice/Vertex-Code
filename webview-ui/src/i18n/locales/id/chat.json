@@ -221,7 +221,7 @@
 		"didLoad": "Vertex telah memuat keterampilan"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo ingin mengambil instruksi detail untuk membantu tugas saat ini"
+		"wantsToFetch": "Vertex ingin mengambil instruksi detail untuk membantu tugas saat ini"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex ingin membaca file ini",
@@ -238,8 +238,8 @@
 		"wantsToGenerateImageProtected": "Vertex ingin menghasilkan gambar di lokasi yang dilindungi",
 		"didGenerateImage": "Vertex telah menghasilkan gambar",
 		"wantsToCreate": "Vertex ingin membuat file baru",
-		"wantsToSearchReplace": "Roo ingin mencari dan mengganti di file ini",
-		"didSearchReplace": "Roo melakukan pencarian dan penggantian pada file ini",
+		"wantsToSearchReplace": "Vertex ingin mencari dan mengganti di file ini",
+		"didSearchReplace": "Vertex melakukan pencarian dan penggantian pada file ini",
 		"wantsToInsert": "Vertex ingin menyisipkan konten ke file ini",
 		"wantsToInsertWithLineNumber": "Vertex ingin menyisipkan konten ke file ini di baris {{lineNumber}}",
 		"wantsToInsertAtEnd": "Vertex ingin menambahkan konten ke akhir file ini"
@@ -360,8 +360,8 @@
 		"title": "Vertex {{version}} Dirilis",
 		"support": "Dukung Vertex dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Roo Code kembali! Sekarang sebagai plugin yang dikelola komunitas bernama Vertex!!",
-			"description": "Kalau kamu belum mengikuti kabarnya, tim Roo Code baru-baru ini mengumumkan bahwa mereka menghentikan pengembangan Roo Code dan mengarsipkan pekerjaan yang telah mereka lakukan. Tapi jangan khawatir, komunitas telah melangkah maju untuk melanjutkan warisan Roo Code dengan nama baru dan rumah baru! Kita bukan lagi satu \"Roo\" saja, kita adalah sebuah komunitas, sebuah \"Vertex\" kalau boleh dibilang. Vertex adalah plugin yang dikelola komunitas dan melanjutkan dari titik terakhir Roo Code, dan kami berkomitmen menjaga semangat Roo tetap hidup sambil menghadirkan fitur dan peningkatan baru. Kami juga ingin memberi apresiasi besar kepada seluruh tim Roo Code atas kerja luar biasa mereka dan karena telah menciptakan alat yang luar biasa untuk para developer. Kami antusias melanjutkan fondasi mereka dan melihat ke mana komunitas akan membawa Vertex ke depannya!",
+			"heading": "Vertex Code kembali! Sekarang sebagai plugin yang dikelola komunitas bernama Vertex!!",
+			"description": "Kalau kamu belum mengikuti kabarnya, tim Vertex Code baru-baru ini mengumumkan bahwa mereka menghentikan pengembangan Vertex Code dan mengarsipkan pekerjaan yang telah mereka lakukan. Tapi jangan khawatir, komunitas telah melangkah maju untuk melanjutkan warisan Vertex Code dengan nama baru dan rumah baru! Kita bukan lagi satu \"Vertex\" saja, kita adalah sebuah komunitas, sebuah \"Vertex\" kalau boleh dibilang. Vertex adalah plugin yang dikelola komunitas dan melanjutkan dari titik terakhir Vertex Code, dan kami berkomitmen menjaga semangat Vertex tetap hidup sambil menghadirkan fitur dan peningkatan baru. Kami juga ingin memberi apresiasi besar kepada seluruh tim Vertex Code atas kerja luar biasa mereka dan karena telah menciptakan alat yang luar biasa untuk para developer. Kami antusias melanjutkan fondasi mereka dan melihat ke mana komunitas akan membawa Vertex ke depannya!",
 			"readMore": "Lihat halaman beranda baru Vertex dan baca pengumuman lengkapnya"
 		},
 		"release": {

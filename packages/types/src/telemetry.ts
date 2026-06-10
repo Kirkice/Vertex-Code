@@ -487,7 +487,7 @@ export function extractApiProviderErrorProperties(error: ApiProviderError): Reco
 export type ConsecutiveMistakeReason = "no_tools_used" | "tool_repetition" | "unknown"
 
 /**
- * Error class for "Roo is having trouble" consecutive mistake scenarios.
+ * Error class for "Vertex is having trouble" consecutive mistake scenarios.
  * Triggered when the task reaches the configured consecutive mistake limit.
  * Used for structured exception tracking via PostHog.
  */

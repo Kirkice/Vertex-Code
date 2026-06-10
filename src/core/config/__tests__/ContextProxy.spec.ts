@@ -435,7 +435,7 @@ describe("ContextProxy", () => {
 	})
 
 	describe("invalid apiProvider migration", () => {
-		it("should clear Roo provider state during initialization", async () => {
+		it("should clear Vertex provider state during initialization", async () => {
 			vi.clearAllMocks()
 			mockGlobalState.get.mockImplementation((key: string) => {
 				if (key === "apiProvider") {

@@ -177,7 +177,7 @@
 		"current": "Actual"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo vol obtenir instruccions detallades per ajudar amb la tasca actual."
+		"wantsToFetch": "Vertex vol obtenir instruccions detallades per ajudar amb la tasca actual."
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex vol llegir aquest fitxer",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex vol editar aquest fitxer fora de l'espai de treball",
 		"wantsToEditProtected": "Vertex vol editar un fitxer de configuració protegit",
 		"wantsToCreate": "Vertex vol crear un nou fitxer",
-		"wantsToSearchReplace": "Roo vol realitzar cerca i substitució en aquest fitxer",
-		"didSearchReplace": "Roo ha realitzat cerca i substitució en aquest fitxer",
+		"wantsToSearchReplace": "Vertex vol realitzar cerca i substitució en aquest fitxer",
+		"didSearchReplace": "Vertex ha realitzat cerca i substitució en aquest fitxer",
 		"wantsToInsert": "Vertex vol inserir contingut en aquest fitxer",
 		"wantsToInsertWithLineNumber": "Vertex vol inserir contingut a la línia {{lineNumber}} d'aquest fitxer",
 		"wantsToInsertAtEnd": "Vertex vol afegir contingut al final d'aquest fitxer",
@@ -331,8 +331,8 @@
 		"title": "S'ha publicat Vertex {{version}}",
 		"support": "Dona suport a Vertex fent-nos una estrella a <githubLink>GitHub</githubLink>.",
 		"handoff": {
-			"heading": "Roo Code ha tornat! Ara com a connector mantingut per la comunitat anomenat Vertex!!",
-			"description": "Per si no ho havies seguit, l'equip de Roo Code ha anunciat fa poc que deixa de desenvolupar Roo Code i n'arxiva la feina feta. Però no pateixis: la comunitat ha fet un pas endavant per continuar el llegat de Roo Code amb un nom nou i una llar nova! Ja no som només un sol \"Roo\", som una comunitat, un \"Vertex\" si vols. Vertex és un connector mantingut per la comunitat que reprèn el camí on Roo Code ho va deixar, i ens comprometem a mantenir viu l'esperit de Roo mentre també hi incorporem funcions i millores noves. Volem donar un enorme agraïment a tot l'equip de Roo Code per la feina increïble que han fet i per haver creat una eina tan extraordinària per als desenvolupadors. Ens fa molta il·lusió continuar construint sobre la seva base i veure fins on porta la comunitat Vertex en el futur!",
+			"heading": "Vertex Code ha tornat! Ara com a connector mantingut per la comunitat anomenat Vertex!!",
+			"description": "Per si no ho havies seguit, l'equip de Vertex Code ha anunciat fa poc que deixa de desenvolupar Vertex Code i n'arxiva la feina feta. Però no pateixis: la comunitat ha fet un pas endavant per continuar el llegat de Vertex Code amb un nom nou i una llar nova! Ja no som només un sol \"Vertex\", som una comunitat, un \"Vertex\" si vols. Vertex és un connector mantingut per la comunitat que reprèn el camí on Vertex Code ho va deixar, i ens comprometem a mantenir viu l'esperit de Vertex mentre també hi incorporem funcions i millores noves. Volem donar un enorme agraïment a tot l'equip de Vertex Code per la feina increïble que han fet i per haver creat una eina tan extraordinària per als desenvolupadors. Ens fa molta il·lusió continuar construint sobre la seva base i veure fins on porta la comunitat Vertex en el futur!",
 			"readMore": "Mira la nova pàgina principal de Vertex i llegeix l'anunci complet"
 		},
 		"release": {

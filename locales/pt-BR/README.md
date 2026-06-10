@@ -16,19 +16,19 @@
 
         ## Somos Vertex
 
-> Você pode ter visto o [anúncio recente](https://x.com/mattrubens/status/2046636598859559114) da equipe do Roo 🦘🦘🦘. O resumo é que a equipe está reduzindo gradualmente o desenvolvimento ativo do Roo Code enquanto se concentra no [Roomote](https://roomote.dev/). Essa notícia foi difícil para muitos usuários do Roo; esse plugin significa muito para esta comunidade.
+> Você pode ter visto o [anúncio recente](https://x.com/mattrubens/status/2046636598859559114) da equipe do Vertex 🦘🦘🦘. O resumo é que a equipe está reduzindo gradualmente o desenvolvimento ativo do Vertex Code enquanto se concentra no [Roomote](https://roomote.dev/). Essa notícia foi difícil para muitos usuários do Vertex; esse plugin significa muito para esta comunidade.
 >
-> Queremos agradecer a toda a equipe do Roo pelo trabalho que colocou neste plugin. Não vamos citar cada pessoa pelo nome aqui, mas todos podemos concordar que eles são desenvolvedores excepcionais e, tão importante quanto isso, pessoas incríveis. Obrigado à equipe do Roo.
+> Queremos agradecer a toda a equipe do Vertex pelo trabalho que colocou neste plugin. Não vamos citar cada pessoa pelo nome aqui, mas todos podemos concordar que eles são desenvolvedores excepcionais e, tão importante quanto isso, pessoas incríveis. Obrigado à equipe do Vertex.
 >
-> Os usuários do Roo vêm de todos os tipos de contextos. Alguns usam profissionalmente no trabalho do dia a dia, outros usam para montar workflows inimaginavelmente complexos. Alguns usam para melhorar o próprio Roo, enquanto outros usam para melhorar os próprios modelos que o Roo utiliza (super meta). O ponto é que a comunidade é diversa e, embora um canguru 🦘🦘🦘 seja um animal distinto e nobre, sentimos que um "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 refletia melhor essa diversidade dos usuários do plugin.
+> Os usuários do Vertex vêm de todos os tipos de contextos. Alguns usam profissionalmente no trabalho do dia a dia, outros usam para montar workflows inimaginavelmente complexos. Alguns usam para melhorar o próprio Vertex, enquanto outros usam para melhorar os próprios modelos que o Vertex utiliza (super meta). O ponto é que a comunidade é diversa e, embora um canguru 🦘🦘🦘 seja um animal distinto e nobre, sentimos que um "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 refletia melhor essa diversidade dos usuários do plugin.
 >
-> Por isso, queremos anunciar que **Vertex** continuará o desenvolvimento deste projeto importante. A equipe principal é formada por desenvolvedores que já contribuíram com o Roo antes e se importam profundamente com esse plugin. Vamos continuar fazendo atualizações de modelos, corrigindo bugs e lançando recursos. Mas, acima de tudo, queremos ouvir vocês, a comunidade que tornou esse plugin tão especial. Então fique à vontade para entrar no nosso [Discord](https://discord.gg/VxfP4Vx3gX), no nosso [Reddit](https://www.reddit.com/r/Vertex), ou [abrir um PR ou uma issue](https://github.com/Kirkice/Vertex-Code); mas, mais do que tudo, pedimos que você continue envolvido, conectado e ativo como comunidade.
+> Por isso, queremos anunciar que **Vertex** continuará o desenvolvimento deste projeto importante. A equipe principal é formada por desenvolvedores que já contribuíram com o Vertex antes e se importam profundamente com esse plugin. Vamos continuar fazendo atualizações de modelos, corrigindo bugs e lançando recursos. Mas, acima de tudo, queremos ouvir vocês, a comunidade que tornou esse plugin tão especial. Então fique à vontade para entrar no nosso [Discord](https://discord.gg/VxfP4Vx3gX), no nosso [Reddit](https://www.reddit.com/r/Vertex), ou [abrir um PR ou uma issue](https://github.com/Kirkice/Vertex-Code); mas, mais do que tudo, pedimos que você continue envolvido, conectado e ativo como comunidade.
 >
 > _-Vertex Team_
 
-## Migração do Roo Code para o Vertex
+## Migração do Vertex Code para o Vertex
 
-Você encontra um guia rápido para migrar do Roo Code para o Vertex no [guia de migração Roo→Vertex](https://docs.vertex.dev/roo-to-zoo-migration). Queremos ajudar os usuários durante essa transição da melhor forma possível, e é exatamente para isso que temos nosso [Reddit](https://www.reddit.com/r/Vertex) e nosso [Discord](https://discord.gg/VxfP4Vx3gX). Se você tiver algum problema ou dúvida, apareça por lá e pergunte.
+Você encontra um guia rápido para migrar do Vertex Code para o Vertex no [guia de migração Vertex→Vertex](https://docs.vertex.dev/roo-to-zoo-migration). Queremos ajudar os usuários durante essa transição da melhor forma possível, e é exatamente para isso que temos nosso [Reddit](https://www.reddit.com/r/Vertex) e nosso [Discord](https://discord.gg/VxfP4Vx3gX). Se você tiver algum problema ou dúvida, apareça por lá e pergunte.
 
 ## Novidades na v3.56.0
 
@@ -38,7 +38,7 @@ Você encontra um guia rápido para migrar do Roo Code para o Vertex no [guia de
 - Corrigidos IDs de modelo personalizado do Gemini que eram ignorados e voltavam ao padrão
 - Corrigido o truncamento de diffs do Grok por marcadores ausentes
 - Corrigida a detecção do PowerShell no Windows sem perfil de shell configurado
-- Corrigidas as code actions do VS Code que ainda exibiam o nome Roo Code; localizadas em todos os idiomas suportados
+- Corrigidas as code actions do VS Code que ainda exibiam o nome Vertex Code; localizadas em todos os idiomas suportados
 - Corrigido o aviso do Vertex AI quando o campo de credenciais do Google Cloud recebe um caminho de arquivo
 - Seis atualizações de segurança de dependências (diff, i18next-http-backend, fast-xml-parser, simple-git, uuid, turbo)
 

@@ -16,19 +16,19 @@
 
         ## Chúng tôi là Vertex
 
-> Có thể bạn đã thấy [thông báo gần đây](https://x.com/mattrubens/status/2046636598859559114) từ đội ngũ Roo 🦘🦘🦘. Tóm lại, đội ngũ đang dần giảm việc phát triển Roo Code một cách tích cực để tập trung vào [Roomote](https://roomote.dev/). Tin này thật khó chấp nhận với nhiều người dùng Roo; plugin này có ý nghĩa rất lớn với cộng đồng này.
+> Có thể bạn đã thấy [thông báo gần đây](https://x.com/mattrubens/status/2046636598859559114) từ đội ngũ Vertex 🦘🦘🦘. Tóm lại, đội ngũ đang dần giảm việc phát triển Vertex Code một cách tích cực để tập trung vào [Roomote](https://roomote.dev/). Tin này thật khó chấp nhận với nhiều người dùng Vertex; plugin này có ý nghĩa rất lớn với cộng đồng này.
 >
-> Chúng tôi muốn cảm ơn toàn bộ đội ngũ Roo vì công sức họ đã dành cho plugin này. Chúng tôi sẽ không nêu tên từng người ở đây, nhưng tất cả chúng ta đều có thể đồng ý rằng họ là những nhà phát triển xuất sắc và, quan trọng không kém, là những con người tuyệt vời. Cảm ơn đội ngũ Roo.
+> Chúng tôi muốn cảm ơn toàn bộ đội ngũ Vertex vì công sức họ đã dành cho plugin này. Chúng tôi sẽ không nêu tên từng người ở đây, nhưng tất cả chúng ta đều có thể đồng ý rằng họ là những nhà phát triển xuất sắc và, quan trọng không kém, là những con người tuyệt vời. Cảm ơn đội ngũ Vertex.
 >
-> Người dùng Roo đến từ đủ mọi kiểu khác nhau. Có người dùng nó chuyên nghiệp trong công việc hằng ngày, có người dùng nó để nghĩ ra những workflow phức tạp đến khó tin. Có người dùng nó để cải thiện chính Roo, trong khi người khác dùng nó để cải thiện những model mà Roo đang sử dụng (siêu meta). Điều chúng tôi muốn nói là cộng đồng rất đa dạng, và dù một chú kangaroo 🦘🦘🦘 là một loài vật cao quý và nổi bật, chúng tôi cảm thấy một "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 với nhiều loài khác nhau phản ánh sự đa dạng đó tốt hơn.
+> Người dùng Vertex đến từ đủ mọi kiểu khác nhau. Có người dùng nó chuyên nghiệp trong công việc hằng ngày, có người dùng nó để nghĩ ra những workflow phức tạp đến khó tin. Có người dùng nó để cải thiện chính Vertex, trong khi người khác dùng nó để cải thiện những model mà Vertex đang sử dụng (siêu meta). Điều chúng tôi muốn nói là cộng đồng rất đa dạng, và dù một chú kangaroo 🦘🦘🦘 là một loài vật cao quý và nổi bật, chúng tôi cảm thấy một "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 với nhiều loài khác nhau phản ánh sự đa dạng đó tốt hơn.
 >
-> Vì vậy, chúng tôi muốn thông báo rằng **Vertex** sẽ tiếp tục phát triển dự án quan trọng này. Đội ngũ nòng cốt gồm những nhà phát triển từng đóng góp cho Roo trước đây và thực sự quan tâm đến plugin này. Chúng tôi sẽ tiếp tục cập nhật model, sửa lỗi và phát hành tính năng. Nhưng trên hết, chúng tôi muốn lắng nghe bạn, cộng đồng đã làm cho plugin này trở nên đặc biệt. Vì vậy, hãy tham gia [Discord](https://discord.gg/VxfP4Vx3gX), [Reddit](https://www.reddit.com/r/Vertex) của chúng tôi, hoặc [tạo PR hay issue](https://github.com/Kirkice/Vertex-Code); nhưng hơn hết, chúng tôi mong bạn tiếp tục gắn bó, kết nối và năng động cùng cộng đồng.
+> Vì vậy, chúng tôi muốn thông báo rằng **Vertex** sẽ tiếp tục phát triển dự án quan trọng này. Đội ngũ nòng cốt gồm những nhà phát triển từng đóng góp cho Vertex trước đây và thực sự quan tâm đến plugin này. Chúng tôi sẽ tiếp tục cập nhật model, sửa lỗi và phát hành tính năng. Nhưng trên hết, chúng tôi muốn lắng nghe bạn, cộng đồng đã làm cho plugin này trở nên đặc biệt. Vì vậy, hãy tham gia [Discord](https://discord.gg/VxfP4Vx3gX), [Reddit](https://www.reddit.com/r/Vertex) của chúng tôi, hoặc [tạo PR hay issue](https://github.com/Kirkice/Vertex-Code); nhưng hơn hết, chúng tôi mong bạn tiếp tục gắn bó, kết nối và năng động cùng cộng đồng.
 >
 > _-Vertex Team_
 
-## Chuyển từ Roo Code sang Vertex
+## Chuyển từ Vertex Code sang Vertex
 
-Bạn có thể xem hướng dẫn nhanh để chuyển từ Roo Code sang Vertex trong [hướng dẫn chuyển đổi Roo→Vertex](https://docs.vertex.dev/roo-to-zoo-migration). Chúng tôi muốn hỗ trợ người dùng nhiều nhất có thể trong quá trình chuyển đổi, và đó chính là lý do chúng tôi có [Reddit](https://www.reddit.com/r/Vertex) và [Discord](https://discord.gg/VxfP4Vx3gX). Nếu bạn gặp vấn đề hoặc có câu hỏi, cứ vào hỏi nhé.
+Bạn có thể xem hướng dẫn nhanh để chuyển từ Vertex Code sang Vertex trong [hướng dẫn chuyển đổi Vertex→Vertex](https://docs.vertex.dev/roo-to-zoo-migration). Chúng tôi muốn hỗ trợ người dùng nhiều nhất có thể trong quá trình chuyển đổi, và đó chính là lý do chúng tôi có [Reddit](https://www.reddit.com/r/Vertex) và [Discord](https://discord.gg/VxfP4Vx3gX). Nếu bạn gặp vấn đề hoặc có câu hỏi, cứ vào hỏi nhé.
 
 ## Điểm mới trong v3.56.0
 
@@ -38,7 +38,7 @@ Bạn có thể xem hướng dẫn nhanh để chuyển từ Roo Code sang Verte
 - Sửa lỗi ID model tùy chỉnh của Gemini bị bỏ qua và rơi về mặc định
 - Sửa lỗi diff Grok bị cắt ngắn do thiếu marker
 - Sửa lỗi phát hiện PowerShell trên Windows khi không có shell profile
-- Sửa lỗi code action của VS Code vẫn hiển thị thương hiệu Roo Code; đã bản địa hóa sang tất cả ngôn ngữ được hỗ trợ
+- Sửa lỗi code action của VS Code vẫn hiển thị thương hiệu Vertex Code; đã bản địa hóa sang tất cả ngôn ngữ được hỗ trợ
 - Sửa cảnh báo Vertex AI khi trường Google Cloud Credentials nhận đường dẫn file
 - Sáu bản cập nhật bảo mật phụ thuộc (diff, i18next-http-backend, fast-xml-parser, simple-git, uuid, turbo)
 

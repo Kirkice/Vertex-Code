@@ -92,7 +92,7 @@ export class ContextProxy {
 		// Migration: Check for old nested image generation settings and migrate them
 		await this.migrateImageGenerationSettings()
 
-		// Migration: Downgrade legacy Roo Code Router state before generic sanitization.
+		// Migration: Downgrade legacy Vertex Code Router state before generic sanitization.
 		await this.migrateLegacyRooApiProvider()
 
 		// Migration: Sanitize invalid/removed API providers
@@ -228,7 +228,7 @@ export class ContextProxy {
 	}
 
 	/**
-	 * Migrates legacy Roo Code Router selections into a setup-needed state.
+	 * Migrates legacy Vertex Code Router selections into a setup-needed state.
 	 */
 	private async migrateLegacyRooApiProvider() {
 		try {
@@ -240,7 +240,7 @@ export class ContextProxy {
 				return
 			}
 
-			logger.info("[ContextProxy] Migrating legacy Roo Code Router state to setup-needed fallback")
+			logger.info("[ContextProxy] Migrating legacy Vertex Code Router state to setup-needed fallback")
 			this.stateCache = migratedState as GlobalState
 			await Promise.all([
 				this.originalContext.globalState.update("apiProvider", undefined),
@@ -249,7 +249,7 @@ export class ContextProxy {
 			])
 		} catch (error) {
 			logger.error(
-				`Error during Roo Code Router migration: ${error instanceof Error ? error.message : String(error)}`,
+				`Error during Vertex Code Router migration: ${error instanceof Error ? error.message : String(error)}`,
 			)
 		}
 	}
@@ -437,7 +437,8 @@ export class ContextProxy {
 		try {
 			return globalSettingsSchema.parse(values)
 		} catch (error) {
-			if (error instanceof ZodError) {			}
+			if (error instanceof ZodError) {
+			}
 
 			return GLOBAL_SETTINGS_KEYS.reduce((acc, key) => ({ ...acc, [key]: values[key] }), {} as GlobalSettings)
 		}
@@ -459,7 +460,8 @@ export class ContextProxy {
 		try {
 			return providerSettingsSchema.parse(sanitizedValues)
 		} catch (error) {
-			if (error instanceof ZodError) {			}
+			if (error instanceof ZodError) {
+			}
 
 			return PROVIDER_SETTINGS_KEYS.reduce(
 				(acc, key) => ({ ...acc, [key]: sanitizedValues[key] }),
@@ -569,7 +571,8 @@ export class ContextProxy {
 
 			return Object.fromEntries(Object.entries(globalSettings).filter(([_, value]) => value !== undefined))
 		} catch (error) {
-			if (error instanceof ZodError) {			}
+			if (error instanceof ZodError) {
+			}
 
 			return undefined
 		}

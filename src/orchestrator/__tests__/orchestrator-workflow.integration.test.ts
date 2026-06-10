@@ -114,6 +114,11 @@ describe("Orchestrator Workflow Integration", () => {
 		},
 		availableWorkerProviders: ["openai", "anthropic"],
 		defaultMaxRepairRounds: 2,
+		createTaskFn: async (text: string) => ({
+			taskId: "test-task",
+			waitForCompletion: async () => ({ success: true, changedFiles: [] as string[], summary: "done" }),
+		}),
+		getProviderSettings: () => undefined,
 	}
 
 	beforeEach(() => {

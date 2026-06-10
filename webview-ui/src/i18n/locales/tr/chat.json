@@ -177,7 +177,7 @@
 		"current": "Mevcut"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo mevcut göreve yardımcı olmak için ayrıntılı talimatlar almak istiyor"
+		"wantsToFetch": "Vertex mevcut göreve yardımcı olmak için ayrıntılı talimatlar almak istiyor"
 	},
 	"fileOperations": {
 		"wantsToRead": "Vertex bu dosyayı okumak istiyor",
@@ -187,8 +187,8 @@
 		"wantsToEditOutsideWorkspace": "Vertex çalışma alanı dışındaki bu dosyayı düzenlemek istiyor",
 		"wantsToEditProtected": "Vertex korumalı bir yapılandırma dosyasını düzenlemek istiyor",
 		"wantsToCreate": "Vertex yeni bir dosya oluşturmak istiyor",
-		"wantsToSearchReplace": "Roo bu dosyada arama ve değiştirme yapmak istiyor",
-		"didSearchReplace": "Roo bu dosyada arama ve değiştirme yaptı",
+		"wantsToSearchReplace": "Vertex bu dosyada arama ve değiştirme yapmak istiyor",
+		"didSearchReplace": "Vertex bu dosyada arama ve değiştirme yaptı",
 		"wantsToInsert": "Vertex bu dosyaya içerik eklemek istiyor",
 		"wantsToInsertWithLineNumber": "Vertex bu dosyanın {{lineNumber}}. satırına içerik eklemek istiyor",
 		"wantsToInsertAtEnd": "Vertex bu dosyanın sonuna içerik eklemek istiyor",
@@ -332,8 +332,8 @@
 		"title": "Vertex {{version}} yayınlandı",
 		"support": "Lütfen <githubLink>GitHub</githubLink>'da bize yıldız vererek Vertex'u destekle.",
 		"handoff": {
-			"heading": "Roo Code geri döndü! Artık Vertex adlı, topluluk tarafından sürdürülen bir eklenti!!",
-			"description": "Takip etmiyorsan kaçırmış olabilirsin: Roo Code ekibi kısa süre önce Roo Code geliştirmesini aşamalı olarak sonlandırdığını ve yaptıkları çalışmaları arşivlediğini duyurdu. Ama endişelenme; topluluk, Roo Code mirasını yeni bir ad ve yeni bir yuva ile sürdürmek için öne çıktı! Artık sadece tek bir \"Roo\" değiliz; bir topluluğuz, istersen bir \"Vertex\" diyebilirsin. Vertex, Roo Code'un bıraktığı yerden devam eden, topluluk tarafından sürdürülen bir eklenti ve Roo'nun ruhunu korurken yeni özellikler ve iyileştirmeler sunmaya kararlıyız. Geliştiriciler için böylesine harika bir araç yarattıkları ve yaptıkları inanılmaz iş için tüm Roo Code ekibine kocaman bir teşekkür göndermek istiyoruz. Onların temeli üzerine inşa etmeyi sürdürmekten ve topluluğun gelecekte Vertex'u nereye taşıyacağını görmekten heyecan duyuyoruz!",
+			"heading": "Vertex Code geri döndü! Artık Vertex adlı, topluluk tarafından sürdürülen bir eklenti!!",
+			"description": "Takip etmiyorsan kaçırmış olabilirsin: Vertex Code ekibi kısa süre önce Vertex Code geliştirmesini aşamalı olarak sonlandırdığını ve yaptıkları çalışmaları arşivlediğini duyurdu. Ama endişelenme; topluluk, Vertex Code mirasını yeni bir ad ve yeni bir yuva ile sürdürmek için öne çıktı! Artık sadece tek bir \"Vertex\" değiliz; bir topluluğuz, istersen bir \"Vertex\" diyebilirsin. Vertex, Vertex Code'un bıraktığı yerden devam eden, topluluk tarafından sürdürülen bir eklenti ve Vertex'nun ruhunu korurken yeni özellikler ve iyileştirmeler sunmaya kararlıyız. Geliştiriciler için böylesine harika bir araç yarattıkları ve yaptıkları inanılmaz iş için tüm Vertex Code ekibine kocaman bir teşekkür göndermek istiyoruz. Onların temeli üzerine inşa etmeyi sürdürmekten ve topluluğun gelecekte Vertex'u nereye taşıyacağını görmekten heyecan duyuyoruz!",
 			"readMore": "Vertex'un yeni ana sayfasına göz at ve tam duyuruyu oku"
 		},
 		"release": {

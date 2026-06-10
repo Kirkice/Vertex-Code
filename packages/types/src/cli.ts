@@ -3,7 +3,7 @@ import { z } from "zod"
 import { rooCodeSettingsSchema } from "./global-settings.js"
 
 /**
- * Roo CLI stdin commands
+ * Vertex CLI stdin commands
  */
 
 export const rooCliCommandNames = ["start", "message", "cancel", "ping", "shutdown"] as const
@@ -71,7 +71,7 @@ export const rooCliInputCommandSchema = z.discriminatedUnion("command", [
 export type RooCliInputCommand = z.infer<typeof rooCliInputCommandSchema>
 
 /**
- * Roo CLI stream-json output
+ * Vertex CLI stream-json output
  */
 
 export const rooCliOutputFormats = ["text", "json", "stream-json"] as const

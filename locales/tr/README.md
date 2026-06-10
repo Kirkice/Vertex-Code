@@ -16,19 +16,19 @@
 
         ## Biz Vertex'uz
 
-> Roo ekibinin 🦘🦘🦘 [son duyurusunu](https://x.com/mattrubens/status/2046636598859559114) görmüş olabilirsin. Kısacası ekip, [Roomote](https://roomote.dev/) üzerine odaklanırken Roo Code'un aktif gelişimini kademeli olarak azaltıyor. Bu haber birçok Roo kullanıcısı için zordu; bu eklenti bu topluluk için çok şey ifade ediyor.
+> Vertex ekibinin 🦘🦘🦘 [son duyurusunu](https://x.com/mattrubens/status/2046636598859559114) görmüş olabilirsin. Kısacası ekip, [Roomote](https://roomote.dev/) üzerine odaklanırken Vertex Code'un aktif gelişimini kademeli olarak azaltıyor. Bu haber birçok Vertex kullanıcısı için zordu; bu eklenti bu topluluk için çok şey ifade ediyor.
 >
-> Bu eklentiye verdikleri emek için tüm Roo ekibine teşekkür etmek istiyoruz. Burada herkesin adını tek tek anmayacağız, ama hepimiz onların olağanüstü geliştiriciler ve aynı derecede inanılmaz insanlar olduğu konusunda hemfikiriz. Roo ekibine teşekkürler.
+> Bu eklentiye verdikleri emek için tüm Vertex ekibine teşekkür etmek istiyoruz. Burada herkesin adını tek tek anmayacağız, ama hepimiz onların olağanüstü geliştiriciler ve aynı derecede inanılmaz insanlar olduğu konusunda hemfikiriz. Vertex ekibine teşekkürler.
 >
-> Roo kullanıcıları her türden geliyor. Bazıları bunu günlük işlerinde profesyonel olarak kullanıyor, bazılarıysa akıl almaz derecede karmaşık iş akışları tasarlamak için kullanıyor. Bazıları Roo'nun kendisini geliştirirken, bazıları da Roo'nun kullandığı modelleri geliştiriyor (tam anlamıyla meta). Demek istediğimiz şu: topluluk çok çeşitli ve bir kanguru 🦘🦘🦘 seçkin ve asil bir hayvan olsa da farklı türlerden oluşan bir "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 bu eklentinin kullanıcı çeşitliliğini daha iyi yansıtıyor.
+> Vertex kullanıcıları her türden geliyor. Bazıları bunu günlük işlerinde profesyonel olarak kullanıyor, bazılarıysa akıl almaz derecede karmaşık iş akışları tasarlamak için kullanıyor. Bazıları Vertex'nun kendisini geliştirirken, bazıları da Vertex'nun kullandığı modelleri geliştiriyor (tam anlamıyla meta). Demek istediğimiz şu: topluluk çok çeşitli ve bir kanguru 🦘🦘🦘 seçkin ve asil bir hayvan olsa da farklı türlerden oluşan bir "Vertex" 🐘🦡🦒🦓🦛🦧🦭🦦 bu eklentinin kullanıcı çeşitliliğini daha iyi yansıtıyor.
 >
-> Bu yüzden **Vertex**'un bu önemli projenin geliştirilmesini sürdüreceğini duyurmak istiyoruz. Çekirdek ekip, daha önce Roo'ya katkıda bulunmuş ve bu eklentiye gerçekten önem veren geliştiricilerden oluşuyor. Model güncellemeleri yapmaya, hataları düzeltmeye ve özellikler yayınlamaya devam edeceğiz. Ama her şeyden önce, bu eklentiyi özel kılan topluluğun sesi olan seni dinlemek istiyoruz. Bu yüzden [Discord](https://discord.gg/VxfP4Vx3gX) sunucumuza, [Reddit](https://www.reddit.com/r/Vertex) topluluğumuza katılabilir ya da [PR veya issue açabilirsin](https://github.com/Kirkice/Vertex-Code); ama en önemlisi, topluluk olarak ilgili, bağlantıda ve aktif kalmanı istiyoruz.
+> Bu yüzden **Vertex**'un bu önemli projenin geliştirilmesini sürdüreceğini duyurmak istiyoruz. Çekirdek ekip, daha önce Vertex'ya katkıda bulunmuş ve bu eklentiye gerçekten önem veren geliştiricilerden oluşuyor. Model güncellemeleri yapmaya, hataları düzeltmeye ve özellikler yayınlamaya devam edeceğiz. Ama her şeyden önce, bu eklentiyi özel kılan topluluğun sesi olan seni dinlemek istiyoruz. Bu yüzden [Discord](https://discord.gg/VxfP4Vx3gX) sunucumuza, [Reddit](https://www.reddit.com/r/Vertex) topluluğumuza katılabilir ya da [PR veya issue açabilirsin](https://github.com/Kirkice/Vertex-Code); ama en önemlisi, topluluk olarak ilgili, bağlantıda ve aktif kalmanı istiyoruz.
 >
 > _-Vertex Team_
 
-## Roo Code'dan Vertex'a geçiş
+## Vertex Code'dan Vertex'a geçiş
 
-Roo Code'dan Vertex'a geçmek için hızlı bir rehberi [Roo→Vertex geçiş rehberinde](https://docs.vertex.dev/roo-to-zoo-migration) bulabilirsin. Geçiş sürecinde kullanıcılara elimizden geldiğince yardımcı olmak istiyoruz ve bunun için [Reddit](https://www.reddit.com/r/Vertex) ile [Discord](https://discord.gg/VxfP4Vx3gX) topluluklarımız var. Bir sorun yaşarsan ya da sorunun olursa gel ve sor.
+Vertex Code'dan Vertex'a geçmek için hızlı bir rehberi [Vertex→Vertex geçiş rehberinde](https://docs.vertex.dev/roo-to-zoo-migration) bulabilirsin. Geçiş sürecinde kullanıcılara elimizden geldiğince yardımcı olmak istiyoruz ve bunun için [Reddit](https://www.reddit.com/r/Vertex) ile [Discord](https://discord.gg/VxfP4Vx3gX) topluluklarımız var. Bir sorun yaşarsan ya da sorunun olursa gel ve sor.
 
 ## v3.56.0'daki Yenilikler
 
@@ -38,7 +38,7 @@ Roo Code'dan Vertex'a geçmek için hızlı bir rehberi [Roo→Vertex geçiş re
 - Gemini özel model ID'lerinin yok sayılarak varsayılana geri dönmesi düzeltildi
 - Eksik işaretçilerden kaynaklanan Grok diff kesintileri düzeltildi
 - Yapılandırılmış shell profili olmayan Windows'ta PowerShell algılama düzeltildi
-- VS Code code action'larının hâlâ Roo Code markasını göstermesi düzeltildi; tüm desteklenen dillere yerelleştirildi
+- VS Code code action'larının hâlâ Vertex Code markasını göstermesi düzeltildi; tüm desteklenen dillere yerelleştirildi
 - Google Cloud Credentials alanına dosya yolu girildiğinde Vertex AI uyarısı düzeltildi
 - Altı güvenlik bağımlılık güncellemesi (diff, i18next-http-backend, fast-xml-parser, simple-git, uuid, turbo)
 

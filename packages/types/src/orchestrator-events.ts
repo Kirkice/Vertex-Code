@@ -388,6 +388,8 @@ export interface ReviewResponsePayload {
 	/** 发现的问题 */
 	findings: ReviewFinding[]
 	/** 修复任务（当 decision === "repair" 时） */
+	/** 非阻塞性建议（优化、改进等，不影响审核通过） */
+	suggestions?: string[]
 	repairTasks?: ExecTask[]
 	/** 需要用户确认的问题（当 decision === "needs_user_confirmation" 时） */
 	userConfirmationQuestion?: string

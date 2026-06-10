@@ -23,6 +23,7 @@ import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 import { isMcpTool } from "../../utils/mcp-name"
 import { sanitizeOpenAiCallId } from "../../utils/tool-id"
+import { openAiCodexOAuthManager } from "../../integrations/openai-codex/oauth"
 import { t } from "../../i18n"
 
 export type OpenAiCodexModel = ReturnType<OpenAiCodexHandler["getModel"]>
@@ -162,7 +163,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		this.streamedToolCallIds.clear()
 
 		// Get access token from OAuth manager
-		let accessToken: string | null = null
+		let accessToken = await openAiCodexOAuthManager.getAccessToken()
 		if (!accessToken) {
 			throw new Error(
 				t("common:errors.openAiCodex.notAuthenticated", {
@@ -194,7 +195,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 
 				if (attempt === 0 && isAuthFailure) {
 					// Force refresh the token for retry
-					const refreshed: string | null = null
+					const refreshed = await openAiCodexOAuthManager.forceRefreshAccessToken()
 					if (!refreshed) {
 						throw new Error(
 							t("common:errors.openAiCodex.notAuthenticated", {
@@ -352,15 +353,15 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			// is consistent across providers.
 			try {
 				// Get ChatGPT account ID for organization subscriptions
-				const accountId: string | null = null
+				const accountId = await openAiCodexOAuthManager.getAccountId()
 
 				// Build Codex-specific headers. Authorization is provided by the SDK apiKey.
-			const codexHeaders: Record<string, string> = {
-				originator: "vertex",
-				session_id: taskId || this.sessionId,
-				"User-Agent": `vertex/${Package.version} (${os.platform()} ${os.release()}; ${os.arch()}) node/${process.version.slice(1)}`,
-				...(accountId ? { "ChatGPT-Account-Id": accountId as string } : {} as Record<string, string>),
-			}
+				const codexHeaders: Record<string, string> = {
+					originator: "vertex",
+					session_id: taskId || this.sessionId,
+					"User-Agent": `vertex/${Package.version} (${os.platform()} ${os.release()}; ${os.arch()}) node/${process.version.slice(1)}`,
+					...(accountId ? { "ChatGPT-Account-Id": accountId } : {}),
+				}
 
 				// Allow tests to inject a client. If none is injected, create one for this request.
 				const client =
@@ -495,7 +496,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		const url = `${CODEX_API_BASE_URL}/responses`
 
 		// Get ChatGPT account ID for organization subscriptions
-		const accountId: string | null = null
+		const accountId = await openAiCodexOAuthManager.getAccountId()
 
 		// Build headers with required Codex-specific fields
 		const headers: Record<string, string> = {
@@ -1154,7 +1155,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			const model = this.getModel()
 
 			// Get access token
-			let accessToken: string | null = null
+			const accessToken = await openAiCodexOAuthManager.getAccessToken()
 			if (!accessToken) {
 				throw new Error(
 					t("common:errors.openAiCodex.notAuthenticated", {
@@ -1189,7 +1190,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 			const url = `${CODEX_API_BASE_URL}/responses`
 
 			// Get ChatGPT account ID for organization subscriptions
-			const accountId: string | null = null
+			const accountId = await openAiCodexOAuthManager.getAccountId()
 
 			// Build headers with required Codex-specific fields
 			const headers: Record<string, string> = {

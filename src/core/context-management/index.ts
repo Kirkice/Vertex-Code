@@ -64,7 +64,8 @@ export type TruncationResult = {
  * @param {string} taskId - The task ID for the conversation, used for telemetry
  * @returns {TruncationResult} Object containing the tagged messages, truncation ID, and count of messages removed.
  */
-export function truncateConversation(messages: ApiMessage[], fracToRemove: number, taskId: string): TruncationResult {
+export function truncateConversation(messages: ApiMessage[], fracToRemove: number, taskId: string): TruncationResult {
+
 	const truncationId = crypto.randomUUID()
 
 	// Filter to only visible messages (those not already truncated)
@@ -220,8 +221,8 @@ export type ContextManagementOptions = {
 	/** Optional metadata to pass through to the condensing API call (tools, taskId, etc.) */
 	metadata?: ApiHandlerCreateMessageMetadata
 	/** Optional environment details string to include in the condensed summary */
-	environmentDetails?: string
-	/** Optional array of file paths read by Roo during the task (will be folded via tree-sitter) */
+	environmentDetails?: stringVertex
+	/** Optional array of file paths read by Vertex during the task (will be folded via tree-sitter) */
 	filesReadByRoo?: string[]
 	/** Optional current working directory for resolving file paths (required if filesReadByRoo is provided) */
 	cwd?: string

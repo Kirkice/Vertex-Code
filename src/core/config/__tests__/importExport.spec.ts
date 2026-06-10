@@ -894,7 +894,7 @@ describe("importExport", () => {
 				expect(importedProfiles.apiConfigs["another-invalid"].apiProvider).toBeUndefined()
 			})
 
-			it("should downgrade imported Roo profiles without failing the import", async () => {
+			it("should downgrade imported Vertex profiles without failing the import", async () => {
 				;(vscode.window.showOpenDialog as Mock).mockResolvedValue([{ fsPath: "/mock/path/settings.json" }])
 
 				const mockFileContent = JSON.stringify({
@@ -926,7 +926,7 @@ describe("importExport", () => {
 				})
 
 				expect(result.success).toBe(true)
-				expect((result as { warnings?: string[] }).warnings?.[0]).toContain("Roo Code Router was removed")
+				expect((result as { warnings?: string[] }).warnings?.[0]).toContain("Vertex Code Router was removed")
 
 				const importedProfiles = mockProviderSettingsManager.import.mock.calls[0][0]
 				expect(importedProfiles.currentApiConfigName).toBe("router-profile")

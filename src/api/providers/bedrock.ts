@@ -741,7 +741,8 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 
 			// Capture error in telemetry before processing
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, modelConfig.id, "createMessage")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, modelConfig.id, "createMessage")
+
 			// Check if this is a throttling error that should trigger retry logic
 			const errorType = this.getErrorType(error)
 
@@ -853,7 +854,8 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 			// Capture error in telemetry
 			const model = this.getModel()
 			const telemetryErrorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(telemetryErrorMessage, this.providerName, model.id, "completePrompt")
+			const apiError = new ApiProviderError(telemetryErrorMessage, this.providerName, model.id, "completePrompt")
+
 			// Use the extracted error handling method for all errors
 			const errorResult = this.handleBedrockError(error, false) // false for non-streaming context
 			// Since we're in a non-streaming context, we know the result is a string
@@ -965,9 +967,9 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 		info: { maxTokens: 0, contextWindow: 0, supportsPromptCache: false, supportsImages: false },
 	}
 
-	private parseArn(arn: string, region?: string) {
+	private VertexseArn(arn: string, region?: string) {
 		/*
-		 * VIA Roo analysis: platform-independent Regex. It's designed to parse Amazon Bedrock ARNs and doesn't rely on any platform-specific features
+		 * VIA Vertex analysis: platform-independent Regex. It's designed to parse Amazon Bedrock ARNs and doesn't rely on any platform-specific features
 		 * like file path separators, line endings, or case sensitivity behaviors. The forward slashes in the regex are properly escaped and
 		 * represent literal characters in the AWS ARN format, not filesystem paths. This regex will function consistently across Windows,
 		 * macOS, Linux, and any other operating system where JavaScript runs.
