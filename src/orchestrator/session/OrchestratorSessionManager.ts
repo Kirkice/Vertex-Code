@@ -19,7 +19,7 @@ import type {
 } from "@roo-code/types"
 import type { ProviderSettings } from "@roo-code/types"
 import { OrchestratorSession, type OrchestratorSessionConfig } from "./OrchestratorSession"
-import { CodexPlanner, type CodexPlannerConfig } from "../planner/CodexPlanner"
+import { CodexPlanner, type CodexPlannerConfig, type PlannerResult } from "../planner/CodexPlanner"
 import { buildContextBundle, buildMinimalContext } from "../context/ContextBundleBuilder"
 import { TaskRouter, createDefaultRouter, type RuntimeSignals } from "../router/TaskRouter"
 import { ExecTaskRunner, type ExecTaskRunnerConfig } from "../worker/ExecTaskRunner"
@@ -60,6 +60,7 @@ export interface SessionManagerEvents {
 	sessionCompleted: [sessionId: string, summary: string]
 	sessionFailed: [sessionId: string, reason: string]
 	sessionCancelled: [sessionId: string]
+	plannerDirectResponse: [sessionId: string, text: string]
 }
 
 /**
@@ -115,7 +116,10 @@ export class OrchestratorSessionManager extends EventEmitter {
 	}
 
 	/**
-	 * Run the planning phase for a session
+	 * Run the planning phase for a session.
+	 * Handles PlannerResult routing:
+	 *   - "direct" → set direct response, complete immediately
+	 *   - "plan"   → set plan, register tasks, wait for approval
 	 */
 	private async runPlanningPhase(session: OrchestratorSession): Promise<void> {
 		try {
@@ -131,17 +135,29 @@ export class OrchestratorSessionManager extends EventEmitter {
 			)
 			session.setContextBundle(context)
 
-			// Generate plan
-			const plan = await this.planner.plan(session.userRequest, context)
-			session.setPlan(plan)
+			// Generate plan (returns PlannerResult)
+			const result: PlannerResult = await this.planner.plan(session.userRequest, context)
 			session.updateStats({ planningDurationMs: Date.now() - startTime })
 
-			// Register tasks
-			for (const task of plan.tasks) {
-				session.registerTask({ ...task, sessionId: session.sessionId })
-			}
+			if (result.type === "direct") {
+				// Simple task: direct answer, complete immediately
+				session.setDirectResponse(result.text)
+				this.emit("plannerDirectResponse", session.sessionId, result.text)
+				session.complete("Planner handled directly")
+				this.emit("sessionCompleted", session.sessionId, "Direct response")
+			} else {
+				// Complex task: set plan, register tasks, wait for approval
+				session.setPlan(result.plan)
+				if (result.rawResponse) {
+					session.setPlannerRawResponse(result.rawResponse)
+				}
 
-			this.emit("sessionStateChanged", session.sessionId, session.state)
+				for (const task of result.plan.tasks) {
+					session.registerTask({ ...task, sessionId: session.sessionId })
+				}
+
+				this.emit("sessionStateChanged", session.sessionId, session.state)
+			}
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error)
 			session.transitionTo("failed", `Planning failed: ${reason}`)

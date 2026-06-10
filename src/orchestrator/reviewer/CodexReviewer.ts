@@ -155,6 +155,7 @@ export class CodexReviewer {
 			decision,
 			summary: (parsed.summary as string) || "",
 			findings: (parsed.findings as ReviewFinding[]) || [],
+			suggestions: (parsed.suggestions as string[]) || undefined,
 			repairTasks: parsed.repairTasks as ExecTask[] | undefined,
 			userConfirmationQuestion: parsed.userConfirmationQuestion as string | undefined,
 		}

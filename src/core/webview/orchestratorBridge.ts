@@ -90,16 +90,47 @@ export class OrchestratorBridge {
 			await this.pushSessionToWebview(session)
 			this.provider.log(`Orchestrator session cancelled: ${sessionId}`)
 		})
+
+		// Forward planner direct response → push to webview as completed with directResponse
+		this.sessionManager.on("plannerDirectResponse", async (sessionId: string, text: string) => {
+			const session = this.sessionManager?.getSession(sessionId)
+			if (!session) return
+
+			await this.provider.postMessageToWebview({
+				type: "orchestratorSessionUpdate",
+				payload: {
+					orchestratorSession: {
+						sessionId,
+						state: "completed",
+						currentPhase: "planner_direct",
+						directResponse: text,
+						tasks: [],
+						repairRound: 0,
+					maxRepairRounds: session.userSettings?.maxRepairRounds ?? 2,
+					costStats: (session as any).costStats ?? {
+						totalTokens: 0,
+						tokensByProvider: {},
+						estimatedCostUsd: 0,
+					},
+					planSummary: null,
+					},
+				},
+			})
+
+			this.provider.log(`Orchestrator planner direct response: ${sessionId}`)
+		})
 	}
 
 	/**
 	 * Push current session state to webview
 	 */
 	private async pushSessionToWebview(session: any): Promise<void> {
+		const plan = session.getPlan?.() || session.plan
 		const snapshot = {
 			sessionId: session.sessionId,
 			state: session.state,
 			currentPhase: session.state,
+			directResponse: session.getDirectResponse?.(),
 			tasks: session.getTasks().map((t: any) => ({
 				taskId: t.taskId,
 				kind: t.kind,
@@ -110,12 +141,12 @@ export class OrchestratorBridge {
 			})),
 			repairRound: session.repairRound,
 			maxRepairRounds: session.userSettings?.maxRepairRounds ?? 2,
-			costStats: session.costStats || {
+			costStats: (session as any).costStats ?? {
 				totalTokens: 0,
 				tokensByProvider: {},
 				estimatedCostUsd: 0,
 			},
-			planSummary: session.plan?.summary,
+			planSummary: plan?.planSummary || plan?.summary,
 		}
 
 		await this.provider.postMessageToWebview({

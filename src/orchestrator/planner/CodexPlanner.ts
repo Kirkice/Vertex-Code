@@ -36,6 +36,14 @@ export interface CodexPlannerConfig {
 }
 
 /**
+ * PlannerResult — the output of CodexPlanner.plan().
+ * Either a direct answer (simple task) or a structured plan (complex task).
+ */
+export type PlannerResult =
+	| { type: "direct"; text: string }
+	| { type: "plan"; plan: PlanResponsePayload; rawResponse: string }
+
+/**
  * Default planning policy
  */
 const DEFAULT_POLICY: PlanningPolicy = {
@@ -63,9 +71,10 @@ export class CodexPlanner {
 	}
 
 	/**
-	 * Generate a task plan from user request and context
+	 * Generate a task plan from user request and context.
+	 * Returns PlannerResult — either a direct answer or a structured plan.
 	 */
-	async plan(userRequest: string, context: ContextBundle): Promise<PlanResponsePayload> {
+	async plan(userRequest: string, context: ContextBundle): Promise<PlannerResult> {
 		const requestPayload: PlanRequestPayload = {
 			type: "plan.request",
 			userRequest,
@@ -80,8 +89,7 @@ export class CodexPlanner {
 		for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
 			try {
 				const response = await this.callCodex(userPrompt)
-				const plan = this.parsePlanResponse(response, context.bundleId)
-				return plan
+				return this.parsePlanResponse(response, context.bundleId)
 			} catch (error) {
 				lastError = error instanceof Error ? error : new Error(String(error))
 				console.warn(`[CodexPlanner] Planning attempt ${attempt} failed:`, lastError.message)
@@ -121,11 +129,43 @@ export class CodexPlanner {
 	}
 
 	/**
-	 * Parse Codex response into structured PlanResponsePayload
+	 * Parse Codex response into PlannerResult.
+	 * Handles 4 cases:
+	 *   1. [DIRECT] prefix → direct answer
+	 *   2. [PLAN] prefix   → parse JSON plan
+	 *   3. No prefix but contains JSON → backward-compatible plan
+	 *   4. Pure text       → treat as direct answer
 	 */
-	private parsePlanResponse(responseText: string, contextBundleId: string): PlanResponsePayload {
-		// Try to extract JSON from response
-		const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/\{[\s\S]*\}/)
+	private parsePlanResponse(responseText: string, contextBundleId: string): PlannerResult {
+		const trimmed = responseText.trim()
+
+		// Case 1: [DIRECT] prefix → direct answer
+		if (trimmed.startsWith("[DIRECT]")) {
+			return { type: "direct", text: trimmed.slice(8).trim() }
+		}
+
+		// Case 2: [PLAN] prefix → parse JSON plan
+		if (trimmed.startsWith("[PLAN]")) {
+			const plan = this.parsePlanJson(trimmed.slice(6).trim(), contextBundleId)
+			return { type: "plan", plan, rawResponse: responseText }
+		}
+
+		// Case 3: No prefix but contains JSON → backward-compatible plan
+		if (trimmed.match(/```json/) || trimmed.match(/\{[\s\S]*\}/)) {
+			const plan = this.parsePlanJson(trimmed, contextBundleId)
+			return { type: "plan", plan, rawResponse: responseText }
+		}
+
+		// Case 4: Pure text → treat as direct answer
+		return { type: "direct", text: trimmed }
+	}
+
+	/**
+	 * Parse JSON text into a PlanResponsePayload.
+	 * Extracts JSON from markdown code fences or raw object literals.
+	 */
+	private parsePlanJson(text: string, contextBundleId: string): PlanResponsePayload {
+		const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/)
 
 		if (!jsonMatch) {
 			throw new Error("Planner response does not contain valid JSON")
