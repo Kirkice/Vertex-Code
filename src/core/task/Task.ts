@@ -2416,12 +2416,23 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.maybeWaitForProviderRateLimit(currentItem.retryAttempt ?? 0)
 			Task.lastGlobalApiRequestTime = performance.now()
 
-			await this.say(
-				"api_req_started",
-				JSON.stringify({
-					apiProtocol,
-				}),
-			)
+			const orchestratorMeta = this.getCurrentOrchestratorMessageMeta()
+			if (orchestratorMeta) {
+				await this.sayWithOrchestratorMeta(
+					"api_req_started",
+					JSON.stringify({
+						apiProtocol,
+					}),
+					orchestratorMeta,
+				)
+			} else {
+				await this.say(
+					"api_req_started",
+					JSON.stringify({
+						apiProtocol,
+					}),
+				)
+			}
 
 			const provider = this.providerRef.deref()
 			const state = provider ? await provider.getState() : undefined
@@ -4292,6 +4303,42 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		return checkpointSave(this, force, suppressMessage)
 	}
 
+	private getCurrentOrchestratorMessageMeta():
+		| { orchestratorRole: "planner" | "worker" | "reviewer"; orchestratorModelId: string }
+		| undefined {
+		if (!this.orchestratorMode) {
+			return undefined
+		}
+
+		const phase = this.orchestratorState?.phase
+		if (!phase) {
+			return undefined
+		}
+
+		if (phase === "planning" || phase === "awaiting_approval") {
+			return {
+				orchestratorRole: "planner",
+				orchestratorModelId: this.orchestratorMode.planner.profile,
+			}
+		}
+
+		if (phase === "executing" || phase === "repairing") {
+			return {
+				orchestratorRole: "worker",
+				orchestratorModelId: this.orchestratorMode.worker.profile,
+			}
+		}
+
+		if (phase === "reviewing" || phase === "completed") {
+			return {
+				orchestratorRole: "reviewer",
+				orchestratorModelId: this.orchestratorMode.reviewer.profile,
+			}
+		}
+
+		return undefined
+	}
+
 	private buildCleanConversationHistory(
 		messages: ApiMessage[],
 	): Array<
@@ -4305,8 +4352,38 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		const cleanConversationHistory: (Anthropic.Messages.MessageParam | ReasoningItemForRequest)[] = []
+		const preserveReasoningProvider = this.api.getModel().info.preserveReasoning === true
+		const degradedToolCalls = new Map<string, { name: string }>()
+
+		const stringifyToolResultContent = (content: Anthropic.ToolResultBlockParam["content"]): string => {
+			if (typeof content === "string") {
+				return content
+			}
+
+			if (Array.isArray(content)) {
+				return content
+					.map((block) => {
+						if (block.type === "text") {
+							return block.text
+						}
+						if (block.type === "image") {
+							return "(image)"
+						}
+						return ""
+					})
+					.filter((text) => text.length > 0)
+					.join("\n")
+			}
+
+			return ""
+		}
 
 		for (const msg of messages) {
+			const preservedReasoningContent =
+				typeof (msg as any).reasoning_content === "string" && (msg as any).reasoning_content.trim().length > 0
+					? (msg as any).reasoning_content
+					: undefined
+
 			// Standalone reasoning: send encrypted, skip plain text
 			if (msg.type === "reasoning") {
 				if (msg.encrypted_content) {
@@ -4333,6 +4410,32 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						: []
 
 				const [first, ...rest] = contentArray
+				const toolUseBlocks = contentArray.filter(
+					(block): block is Anthropic.Messages.ToolUseBlock => block.type === "tool_use",
+				)
+
+				// DeepSeek/MiMo/Z.ai thinking mode rejects foreign tool-call history that lacks
+				// reasoning_content. When we switch from another provider into a reasoning-preserving
+				// provider, flatten those legacy assistant tool calls into plain text context instead.
+				if (preserveReasoningProvider && !preservedReasoningContent && toolUseBlocks.length > 0) {
+					const textParts = contentArray
+						.filter((block): block is Anthropic.Messages.TextBlockParam => block.type === "text")
+						.map((block) => block.text)
+					const toolSummaries = toolUseBlocks.map((block) => {
+						degradedToolCalls.set(block.id, { name: block.name })
+						const serializedInput =
+							block.input && Object.keys(block.input).length > 0 ? ` ${JSON.stringify(block.input)}` : ""
+						return `[Tool used: ${block.name}${serializedInput}]`
+					})
+					const flattenedContent = [...textParts, ...toolSummaries].join("\n\n")
+
+					cleanConversationHistory.push({
+						role: "assistant",
+						content: flattenedContent,
+					})
+
+					continue
+				}
 
 				// Check if this message has reasoning_details (OpenRouter format for Gemini 3, etc.)
 				const msgWithDetails = msg
@@ -4353,6 +4456,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						role: "assistant",
 						content: assistantContent,
 						reasoning_details: msgWithDetails.reasoning_details,
+						...(preservedReasoningContent ? { reasoning_content: preservedReasoningContent } : {}),
 					} as any)
 
 					continue
@@ -4389,6 +4493,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					cleanConversationHistory.push({
 						role: "assistant",
 						content: assistantContent,
+						...(preservedReasoningContent ? { reasoning_content: preservedReasoningContent } : {}),
 					} satisfies Anthropic.Messages.MessageParam)
 
 					continue
@@ -4416,8 +4521,40 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					cleanConversationHistory.push({
 						role: "assistant",
 						content: assistantContent,
+						...(shouldPreserveForApi &&
+						(preservedReasoningContent || (first as any).text)
+							? { reasoning_content: preservedReasoningContent || (first as any).text }
+							: {}),
 					} satisfies Anthropic.Messages.MessageParam)
 
+					continue
+				}
+			}
+
+			if (preserveReasoningProvider && msg.role === "user" && Array.isArray(msg.content)) {
+				let degradedLegacyToolResult = false
+				const normalizedUserContent = msg.content.map((block) => {
+					if (block.type === "tool_result") {
+						const toolMeta = degradedToolCalls.get(block.tool_use_id)
+						if (toolMeta) {
+							degradedLegacyToolResult = true
+							degradedToolCalls.delete(block.tool_use_id)
+							const resultText = stringifyToolResultContent(block.content)
+							return {
+								type: "text" as const,
+								text: `[Tool result: ${toolMeta.name}]\n${resultText}`.trim(),
+							}
+						}
+					}
+
+					return block
+				})
+
+				if (degradedLegacyToolResult) {
+					cleanConversationHistory.push({
+						role: "user",
+						content: normalizedUserContent,
+					})
 					continue
 				}
 			}
@@ -4427,6 +4564,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				cleanConversationHistory.push({
 					role: msg.role,
 					content: msg.content as Anthropic.Messages.ContentBlockParam[] | string,
+					...(msg.role === "assistant" && preservedReasoningContent
+						? { reasoning_content: preservedReasoningContent }
+						: {}),
 				})
 			}
 		}

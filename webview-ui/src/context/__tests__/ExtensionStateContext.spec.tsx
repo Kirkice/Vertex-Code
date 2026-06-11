@@ -347,21 +347,42 @@ describe("mergeExtensionState", () => {
 		it("rejects stale clineMessages when seq is not newer", () => {
 			const newerMessages = [makeMessage(1, "hello"), makeMessage(2, "world")]
 			const staleMessages = [makeMessage(1, "hello")]
+			const currentOrchestratorSession = {
+				sessionId: "task-1",
+				state: "executing",
+				currentPhase: "reviewing",
+				repairRound: 0,
+				maxRepairRounds: 2,
+				costStats: { totalTokens: 100, tokensByProvider: {}, estimatedCostUsd: 0.01 },
+				stages: [],
+			}
+			const staleOrchestratorSession = {
+				sessionId: "task-1",
+				state: "planning",
+				currentPhase: "awaiting_approval",
+				repairRound: 0,
+				maxRepairRounds: 2,
+				costStats: { totalTokens: 10, tokensByProvider: {}, estimatedCostUsd: 0.001 },
+				stages: [],
+			}
 
 			const prevState: ExtensionState = {
 				...baseState,
 				clineMessages: newerMessages,
 				clineMessagesSeq: 5,
+				orchestratorSession: currentOrchestratorSession as any,
 			}
 
 			const result = mergeExtensionState(prevState, {
 				clineMessages: staleMessages,
 				clineMessagesSeq: 3, // stale seq
+				orchestratorSession: staleOrchestratorSession as any,
 			})
 
 			// Should keep the newer messages
 			expect(result.clineMessages).toBe(newerMessages)
 			expect(result.clineMessagesSeq).toBe(5)
+			expect(result.orchestratorSession).toBe(currentOrchestratorSession)
 		})
 
 		it("rejects clineMessages when seq equals current (not strictly greater)", () => {
@@ -400,6 +421,45 @@ describe("mergeExtensionState", () => {
 
 			expect(result.clineMessages).toBe(newMessages)
 			expect(result.clineMessagesSeq).toBe(4)
+		})
+
+		it("rejects a late stale snapshot even if its seq is higher", () => {
+			const newerMessages = [makeMessage(1, "planner"), makeMessage(2, "worker")]
+			const staleMessages = [makeMessage(1, "planner")]
+			const currentOrchestratorSession = {
+				sessionId: "task-1",
+				state: "executing",
+				currentPhase: "executing",
+				repairRound: 0,
+				maxRepairRounds: 2,
+				costStats: { totalTokens: 200, tokensByProvider: {}, estimatedCostUsd: 0.02 },
+				stages: [],
+			}
+
+			const prevState: ExtensionState = {
+				...baseState,
+				clineMessages: newerMessages,
+				clineMessagesSeq: 5,
+				orchestratorSession: currentOrchestratorSession as any,
+			}
+
+			const result = mergeExtensionState(prevState, {
+				clineMessages: staleMessages,
+				clineMessagesSeq: 6, // sent later, but snapshot content is older
+				orchestratorSession: {
+					sessionId: "task-1",
+					state: "planning",
+					currentPhase: "awaiting_approval",
+					repairRound: 0,
+					maxRepairRounds: 2,
+					costStats: { totalTokens: 10, tokensByProvider: {}, estimatedCostUsd: 0.001 },
+					stages: [],
+				} as any,
+			})
+
+			expect(result.clineMessages).toBe(newerMessages)
+			expect(result.clineMessagesSeq).toBe(5)
+			expect(result.orchestratorSession).toBe(currentOrchestratorSession)
 		})
 
 		it("preserves clineMessages when newState does not include them (cloud event path)", () => {

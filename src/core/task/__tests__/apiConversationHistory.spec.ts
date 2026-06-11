@@ -39,7 +39,9 @@ describe("prepareApiConversationMessage", () => {
 		const result = prepareApiConversationMessage({
 			message: { role: "assistant", content: "answer" },
 			reasoning: "visible reasoning",
-			api: {} as any,
+			api: {
+				getModel: () => ({ info: { preserveReasoning: true } }),
+			} as any,
 			apiConfiguration: { apiProvider: "openrouter", openRouterModelId: "openai/gpt-4" } as any,
 			apiConversationHistory: [],
 		}) as any
@@ -48,6 +50,21 @@ describe("prepareApiConversationMessage", () => {
 			{ type: "reasoning", text: "visible reasoning", summary: [] },
 			{ type: "text", text: "answer" },
 		])
+		expect(result.reasoning_content).toBe("visible reasoning")
+	})
+
+	it("does not add top-level reasoning_content when provider does not preserve reasoning", () => {
+		const result = prepareApiConversationMessage({
+			message: { role: "assistant", content: "answer" },
+			reasoning: "visible reasoning",
+			api: {
+				getModel: () => ({ info: { preserveReasoning: false } }),
+			} as any,
+			apiConfiguration: { apiProvider: "openrouter", openRouterModelId: "openai/gpt-4" } as any,
+			apiConversationHistory: [],
+		}) as any
+
+		expect(result.reasoning_content).toBeUndefined()
 	})
 
 	it("falls back to generic reasoning blocks for Anthropic messages without thought signatures", () => {

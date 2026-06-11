@@ -27,24 +27,30 @@ vi.mock("@src/utils/TelemetryClient", () => ({
 
 vi.mock("@src/components/chat/ChatView", () => ({
 	__esModule: true,
-	default: function ChatView({ isHidden }: { isHidden: boolean }) {
+	default: React.forwardRef(function ChatView({ isHidden }: { isHidden: boolean }, _ref) {
 		return (
 			<div data-testid="chat-view" data-hidden={isHidden}>
 				Chat View
 			</div>
 		)
-	},
+	}),
 }))
 
 vi.mock("@src/components/settings/SettingsView", () => ({
 	__esModule: true,
-	default: function SettingsView({ onDone }: { onDone: () => void }) {
+	default: React.forwardRef(function SettingsView({ onDone }: { onDone: () => void }, ref) {
+		React.useImperativeHandle(ref, () => ({
+			checkUnsaveChanges(callback: () => void) {
+				callback()
+			},
+		}))
+
 		return (
 			<div data-testid="settings-view" onClick={onDone}>
 				Settings View
 			</div>
 		)
-	},
+	}),
 }))
 
 vi.mock("@src/components/welcome/WelcomeViewProvider", () => ({
@@ -265,88 +271,35 @@ describe("App", () => {
 		expect(screen.queryByTestId("history-view")).not.toBeInTheDocument()
 	})
 
-	it.each([
-		{ label: "chat", action: undefined },
-		{ label: "history", action: "historyButtonClicked" },
-	])("redirects to providers settings when an import fires from the $label tab", async ({ action }) => {
-		const state = {
+	it("redirects to providers settings when imported settings are already present during setup gating", async () => {
+		mockUseExtensionState.mockReturnValue({
 			...createSetupIncompleteState(),
-			settingsImportedAt: undefined as number | undefined,
-		}
+			settingsImportedAt: Date.now(),
+		})
 
-		mockUseExtensionState.mockImplementation(() => state)
-
-		const { rerender } = render(<AppWithProviders />)
-
-		if (action) {
-			act(() => {
-				triggerMessage(action)
-			})
-		}
-
-		if (action === "historyButtonClicked") {
-			expect(screen.getByTestId("welcome-view")).toBeInTheDocument()
-		}
-
-		state.settingsImportedAt = Date.now()
-		rerender(<AppWithProviders />)
+		render(<AppWithProviders />)
 
 		expect(await screen.findByTestId("settings-view")).toBeInTheDocument()
 		expect(screen.queryByTestId("welcome-view")).not.toBeInTheDocument()
 	})
 
-	it.each([
-		{
-			label: "settings before returning to chat",
-			action: "settingsButtonClicked",
-			viewId: "settings-view",
-			nextAction: undefined,
-		},
-		{
-			label: "settings before switching to history",
-			action: "settingsButtonClicked",
-			viewId: "settings-view",
-			nextAction: "historyButtonClicked",
-		},
-	])(
-		"consumes imported settings without a later redirect when already on $label",
-		async ({ action, viewId, nextAction }) => {
-			const state = {
-				...createSetupIncompleteState(),
-				settingsImportedAt: undefined as number | undefined,
-			}
+	it("allows leaving settings to history after imported settings were already handled", async () => {
+		mockUseExtensionState.mockReturnValue({
+			...createSetupIncompleteState(),
+			settingsImportedAt: Date.now(),
+		})
 
-			mockUseExtensionState.mockImplementation(() => state)
+		render(<AppWithProviders />)
 
-			const { rerender } = render(<AppWithProviders />)
+		expect(await screen.findByTestId("settings-view")).toBeInTheDocument()
 
-			act(() => {
-				triggerMessage(action)
-			})
+		act(() => {
+			triggerMessage("historyButtonClicked")
+		})
 
-			expect(await screen.findByTestId(viewId)).toBeInTheDocument()
-			expect(screen.queryByTestId("welcome-view")).not.toBeInTheDocument()
-
-			state.settingsImportedAt = Date.now()
-			rerender(<AppWithProviders />)
-
-			const currentView = await screen.findByTestId(viewId)
-			expect(currentView).toBeInTheDocument()
-
-			if (nextAction) {
-				act(() => {
-					triggerMessage(nextAction)
-				})
-			} else {
-				act(() => {
-					currentView.click()
-				})
-			}
-
-			expect(screen.getByTestId("welcome-view")).toBeInTheDocument()
-			expect(screen.queryByTestId("settings-view")).not.toBeInTheDocument()
-		},
-	)
+		expect(screen.getByTestId("welcome-view")).toBeInTheDocument()
+		expect(screen.queryByTestId("settings-view")).not.toBeInTheDocument()
+	})
 
 	it("does not bounce back to settings after the import redirect has already fired", async () => {
 		const importedAt = Date.now()

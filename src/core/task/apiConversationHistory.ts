@@ -12,6 +12,7 @@ type ApiHistoryHandler = ApiHandler & {
 	getEncryptedContent?: () => { encrypted_content: string; id?: string } | undefined
 	getThoughtSignature?: () => string | undefined
 	getReasoningDetails?: () => any[] | undefined
+	getModel?: () => { info?: { preserveReasoning?: boolean } }
 }
 
 interface PrepareApiConversationMessageOptions {
@@ -54,11 +55,18 @@ function prepareAssistantMessage(
 		modelId,
 	)
 	const isAnthropicProtocol = apiProtocol === "anthropic"
+	const preserveReasoning = handler.getModel?.()?.info?.preserveReasoning === true
 
 	const messageWithTs: any = {
 		...message,
 		...(responseId ? { id: responseId } : {}),
 		ts: Date.now(),
+	}
+
+	// Preserve top-level reasoning_content for providers like DeepSeek/Z.ai
+	// that require it to be echoed back during tool-call continuation.
+	if (preserveReasoning && reasoning && !messageWithTs.reasoning_content) {
+		messageWithTs.reasoning_content = reasoning
 	}
 
 	if (reasoningDetails) {

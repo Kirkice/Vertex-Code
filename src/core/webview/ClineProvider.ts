@@ -2008,7 +2008,12 @@ export class ClineProvider
 	 */
 	async postStateToWebviewWithoutClineMessages(): Promise<void> {
 		const state = await this.getStateToPostToWebview()
-		const { clineMessages: _omitMessages, taskHistory: _omitHistory, ...rest } = state
+		const {
+			clineMessages: _omitMessages,
+			taskHistory: _omitHistory,
+			orchestratorSession: _omitOrchestratorSession,
+			...rest
+		} = state
 		this.postMessageToWebview({ type: "state", state: rest })
 	}
 
@@ -2339,6 +2344,9 @@ export class ClineProvider
 				// Build stages array from orchestrator config + message statistics
 				const currentPhase = oState.phase
 				const messages = task.clineMessages
+				const latestOrchestratorRole = [...messages]
+					.reverse()
+					.find((msg) => msg.orchestratorRole)?.orchestratorRole
 
 				// Helper to count tokens/cost for messages with a specific orchestratorRole
 				const getStageStats = (role: string) => {
@@ -2356,14 +2364,16 @@ export class ClineProvider
 					return { tokens, cost }
 				}
 
-				const isActive = (role: string) => {
-					const phaseMap: Record<string, string[]> = {
-						planner: ["planning", "awaiting_approval"],
-						worker: ["executing", "repairing"],
-						reviewer: ["reviewing"],
-					}
-					return (phaseMap[role] || []).includes(currentPhase)
+				const phaseRoleMap: Record<string, string> = {
+					planning: "planner",
+					awaiting_approval: "planner",
+					executing: "worker",
+					repairing: "worker",
+					reviewing: "reviewer",
+					completed: "reviewer",
 				}
+				const effectiveActiveRole = phaseRoleMap[currentPhase] ?? latestOrchestratorRole
+				const isActive = (role: string) => effectiveActiveRole === role
 
 				const stages: import("@roo-code/types").OrchestratorStageInfo[] = [
 					{

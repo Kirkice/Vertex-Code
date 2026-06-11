@@ -171,20 +171,38 @@ export const mergeExtensionState = (prevState: ExtensionState, newState: Partial
 	const customModePrompts = { ...prevCustomModePrompts, ...(newCustomModePrompts ?? {}) }
 	const experiments = { ...prevExperiments, ...(newExperiments ?? {}) }
 	const rest = { ...prevRest, ...newRest }
+	const prevMessages = prevState.clineMessages ?? []
+	const incomingMessages = newState.clineMessages
+	const prevLastMessageTs = prevMessages.at(-1)?.ts ?? 0
+	const incomingLastMessageTs = incomingMessages?.at(-1)?.ts ?? 0
+	const hasIncomingOlderMessages =
+		incomingMessages !== undefined &&
+		(incomingMessages.length < prevMessages.length || incomingLastMessageTs < prevLastMessageTs)
 
-	// Protect clineMessages from stale state pushes using sequence numbering.
+	// Protect chat-derived state from stale state pushes using sequence numbering.
 	// Multiple async event sources (cloud auth, settings, task streaming) can trigger
 	// concurrent state pushes. If a stale push arrives after a newer one, its clineMessages
 	// would overwrite the newer messages. The sequence number prevents this by only applying
 	// clineMessages when the incoming seq is strictly greater than the last applied seq.
+	//
+	// OrchestratorSession is derived from the current Task snapshot in the same state payloads.
+	// If we allow a stale payload to overwrite it, the stage highlight can jump backward
+	// (for example, Worker/Reviewer reverting to Planner). Keep it in sync with the same
+	// stale-payload guard used for clineMessages.
+	//
+	// We also compare message timestamps/length because state sequence numbers are assigned
+	// when a payload is sent, not when its snapshot was captured. A slow older snapshot can
+	// therefore arrive later with a higher seq and still be stale.
 	if (
-		newState.clineMessagesSeq !== undefined &&
-		prevState.clineMessagesSeq !== undefined &&
-		newState.clineMessagesSeq <= prevState.clineMessagesSeq &&
-		newState.clineMessages !== undefined
+		newState.clineMessages !== undefined &&
+		((newState.clineMessagesSeq !== undefined &&
+			prevState.clineMessagesSeq !== undefined &&
+			newState.clineMessagesSeq <= prevState.clineMessagesSeq) ||
+			hasIncomingOlderMessages)
 	) {
 		rest.clineMessages = prevState.clineMessages
 		rest.clineMessagesSeq = prevState.clineMessagesSeq
+		rest.orchestratorSession = prevState.orchestratorSession
 	}
 
 	// Note that we completely replace the previous apiConfiguration and customSupportPrompts objects

@@ -509,4 +509,103 @@ describe("Task reasoning preservation", () => {
 			text: assistantText,
 		})
 	})
+
+	it("should preserve top-level reasoning_content when rebuilding history for reasoning providers", async () => {
+		const task = new Task({
+			provider: mockProvider as ClineProvider,
+			apiConfiguration: mockApiConfiguration,
+			task: "Test task",
+			startTask: false,
+		})
+
+		task.api = {
+			getModel: vi.fn().mockReturnValue({
+				id: "deepseek-v4-pro",
+				info: {
+					contextWindow: 16000,
+					supportsPromptCache: true,
+					preserveReasoning: true,
+				},
+			}),
+		} as any
+
+		const rebuilt = (task as any).buildCleanConversationHistory([
+			{
+				role: "assistant",
+				content: [{ type: "text", text: "I will call a tool next." }],
+				reasoning_content: "Need to inspect the workspace first.",
+			},
+		])
+
+		expect(rebuilt).toHaveLength(1)
+		expect((rebuilt[0] as any).reasoning_content).toBe("Need to inspect the workspace first.")
+	})
+
+	it("should flatten legacy assistant tool calls when switching into a reasoning-preserving provider", async () => {
+		const task = new Task({
+			provider: mockProvider as ClineProvider,
+			apiConfiguration: mockApiConfiguration,
+			task: "Test task",
+			startTask: false,
+		})
+
+		task.api = {
+			getModel: vi.fn().mockReturnValue({
+				id: "deepseek-v4-flash",
+				info: {
+					contextWindow: 16000,
+					supportsPromptCache: true,
+					preserveReasoning: true,
+				},
+			}),
+		} as any
+
+		const rebuilt = (task as any).buildCleanConversationHistory([
+			{
+				role: "assistant",
+				content: [
+					{
+						type: "tool_use",
+						id: "call_switch",
+						name: "switch_mode",
+						input: { mode_slug: "code", reason: "Need to implement the change" },
+					},
+				],
+			},
+			{
+				role: "user",
+				content: [
+					{
+						type: "tool_result",
+						tool_use_id: "call_switch",
+						content: "Successfully switched to code mode.",
+					},
+					{
+						type: "text",
+						text: "<environment_details>Current Mode: code</environment_details>",
+					},
+				],
+			},
+		])
+
+		expect(rebuilt).toEqual([
+			{
+				role: "assistant",
+				content: '[Tool used: switch_mode {"mode_slug":"code","reason":"Need to implement the change"}]',
+			},
+			{
+				role: "user",
+				content: [
+					{
+						type: "text",
+						text: "[Tool result: switch_mode]\nSuccessfully switched to code mode.",
+					},
+					{
+						type: "text",
+						text: "<environment_details>Current Mode: code</environment_details>",
+					},
+				],
+			},
+		])
+	})
 })
