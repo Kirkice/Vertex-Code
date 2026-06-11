@@ -449,40 +449,12 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					})
 					break
 				}
-				// Orchestrator messages
-				case "orchestratorChatMessage": {
-					// Insert orchestrator chat message into clineMessages so it appears in the chat window
-					if (message.clineMessage) {
-						setState((prevState) => {
-							const clineMessage = message.clineMessage!
-							const insertIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts <= clineMessage.ts) + 1
-							const newClineMessages = [...prevState.clineMessages]
-							newClineMessages.splice(insertIndex, 0, clineMessage)
-							return { ...prevState, clineMessages: newClineMessages }
-						})
-					}
-					break
-				}
-				case "orchestratorSessionUpdate": {
-					if (message.payload?.orchestratorSession !== undefined) {
-						setState((prevState) => ({
-							...prevState,
-							orchestratorSession: message.payload.orchestratorSession,
-						}))
-					}
-					break
-				}
-				case "orchestratorCostUpdate": {
-					if (message.payload?.costStats !== undefined) {
-						setState((prevState) => ({
-							...prevState,
-							orchestratorSession: prevState.orchestratorSession
-								? { ...prevState.orchestratorSession, costStats: message.payload.costStats }
-								: prevState.orchestratorSession,
-						}))
-					}
-					break
-				}
+				// orchestratorChatMessage removed: orchestrator messages are now written directly
+				// to clineMessages via task.sayWithOrchestratorMeta(), so they appear naturally
+				// in the chat without needing a separate insertion mechanism.
+				// orchestratorSessionUpdate and orchestratorCostUpdate removed:
+				// Orchestrator state is now derived from the current Task's orchestratorState
+				// and pushed via the regular state message (see getStateToPostToWebview).
 			}
 		},
 		[setListApiConfigMeta],

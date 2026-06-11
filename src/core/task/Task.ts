@@ -93,6 +93,8 @@ import { MessageManager } from "../message-manager"
 import { validateAndFixToolResultIds } from "./validateToolResultIds"
 import { mergeConsecutiveApiMessages } from "./mergeConsecutiveApiMessages"
 import { prepareApiConversationMessage } from "./apiConversationHistory"
+import { OrchestratorEngine } from "./OrchestratorEngine"
+import type { OrchestratorModeConfig, OrchestratorModeState } from "@roo-code/types"
 
 const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
 const DEFAULT_USAGE_COLLECTION_TIMEOUT_MS = 5000 // 5 seconds
@@ -378,6 +380,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// MessageManager for high-level message operations (lazy initialized)
 	private _messageManager?: MessageManager
 
+	// Orchestrator Mode
+	/** Orchestrator mode configuration (set when task runs in orchestrator mode) */
+	readonly orchestratorMode?: OrchestratorModeConfig
+	/** Orchestrator engine instance (created when orchestrator mode is enabled) */
+	private orchestratorEngine?: OrchestratorEngine
+	/** Current orchestrator state (updated by engine) */
+	private _orchestratorState?: OrchestratorModeState
+
 	constructor({
 		provider,
 		apiConfiguration,
@@ -397,6 +407,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		initialTodos,
 		workspacePath,
 		initialStatus,
+		orchestratorMode,
 	}: TaskOptions) {
 		super()
 
@@ -521,6 +532,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.TOKEN_USAGE_EMIT_INTERVAL_MS,
 			{ leading: true, trailing: true, maxWait: this.TOKEN_USAGE_EMIT_INTERVAL_MS },
 		)
+
+		// Initialize orchestrator mode if configured
+		if (orchestratorMode?.enabled) {
+			this.orchestratorMode = orchestratorMode
+			this.orchestratorEngine = new OrchestratorEngine(this, orchestratorMode)
+		}
 
 		onCreated?.(this)
 
@@ -1067,7 +1084,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// simply removes the reference to this instance, but the instance is
 		// still alive until this promise resolves or rejects.)
 		if (this.abort) {
-			throw new Error(`[RooCode#ask] task ${this.taskId}.${this.instanceId} aborted`)
+			throw new Error(`[VertexCode#ask] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
 		let askTs: number
@@ -1556,7 +1573,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		contextTruncation?: ContextTruncation,
 	): Promise<undefined> {
 		if (this.abort) {
-			throw new Error(`[RooCode#say] task ${this.taskId}.${this.instanceId} aborted`)
+			throw new Error(`[VertexCode#say] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
 		if (partial !== undefined) {
@@ -2268,6 +2285,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.emit(RooCodeEventName.TaskStarted)
 
+		// Orchestrator mode: run the orchestrator engine instead of the normal agent loop
+		if (this.orchestratorMode?.enabled && this.orchestratorEngine) {
+			// Extract the user's original message text from the content blocks
+			const userMessageText = nextUserContent
+				.filter((block): block is Anthropic.TextBlockParam => block.type === "text")
+				.map((block) => block.text)
+				.join("\n")
+			await this.orchestratorEngine.run(userMessageText)
+			return
+		}
+
 		while (!this.abort) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
 			includeFileDetails = false // We only need file details the first time.
@@ -2312,7 +2340,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			if (this.abort) {
-				throw new Error(`[RooCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`)
+				throw new Error(`[VertexCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`)
 			}
 
 			if (this.consecutiveMistakeLimit > 0 && this.consecutiveMistakeCount >= this.consecutiveMistakeLimit) {
@@ -3083,7 +3111,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// Need to call here in case the stream was aborted.
 				if (this.abort || this.abandoned) {
 					throw new Error(
-						`[RooCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
+						`[VertexCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
 					)
 				}
 
@@ -3366,7 +3394,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 					if (this.abort || this.abandoned) {
 						throw new Error(
-							`[RooCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
+							`[VertexCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
 						)
 					}
 
@@ -4485,6 +4513,86 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this._messageManager = new MessageManager(this)
 		}
 		return this._messageManager
+	}
+
+	// ============================================================================
+	// Orchestrator Mode
+	// ============================================================================
+
+	/**
+	 * Get the ClineProvider instance (used by OrchestratorEngine)
+	 */
+	public getProvider(): ClineProvider {
+		const provider = this.providerRef.deref()
+		if (!provider) {
+			throw new Error("Provider reference lost")
+		}
+		return provider
+	}
+
+	/**
+	 * Get current provider settings (fallback for orchestrator profile resolution)
+	 */
+	public getCurrentProviderSettings(): ProviderSettings {
+		return this.apiConfiguration
+	}
+
+	/**
+	 * Log a message through the provider (used by OrchestratorEngine)
+	 */
+	public log(message: string): void {
+		this.providerRef.deref()?.log(message)
+	}
+
+	/**
+	 * Get current orchestrator state (for UI panel)
+	 */
+	public get orchestratorState(): OrchestratorModeState | undefined {
+		return this.orchestratorEngine?.getState()
+	}
+
+	/**
+	 * Approve the orchestrator plan and start execution.
+	 * Called when user clicks "Approve Plan" in the webview.
+	 */
+	public async approveOrchestratorPlan(): Promise<void> {
+		if (!this.orchestratorEngine) {
+			throw new Error("Task is not in orchestrator mode")
+		}
+		await this.orchestratorEngine.approvePlan()
+	}
+
+	/**
+	 * Cancel the orchestrator run.
+	 * Called when user clicks "Cancel" in the webview.
+	 */
+	public cancelOrchestrator(): void {
+		this.orchestratorEngine?.cancel()
+	}
+
+	/**
+	 * Say with orchestrator metadata.
+	 * Convenience method used by OrchestratorEngine to write messages
+	 * with orchestratorRole and orchestratorModelId fields.
+	 */
+	public async sayWithOrchestratorMeta(
+		type: ClineSay,
+		text: string | undefined,
+		orchestratorMeta: { orchestratorRole?: string; orchestratorModelId?: string },
+	): Promise<void> {
+		const sayTs = Date.now()
+		this.lastMessageTs = sayTs
+
+		const message: ClineMessage = {
+			ts: sayTs,
+			type: "say",
+			say: type,
+			text,
+			orchestratorRole: orchestratorMeta.orchestratorRole as "planner" | "worker" | "reviewer" | undefined,
+			orchestratorModelId: orchestratorMeta.orchestratorModelId,
+		}
+
+		await this.addToClineMessages(message)
 	}
 
 	/**

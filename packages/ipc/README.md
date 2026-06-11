@@ -12,7 +12,7 @@ Starts a new task with optional configuration and initial message.
 
 **Parameters:**
 
-- `configuration`: RooCode settings object
+- `configuration`: VertexCode settings object
 - `text`: Initial task message (string)
 - `images`: Array of image data URIs (optional)
 - `newTab`: Whether to open in a new tab (boolean, optional)
@@ -64,7 +64,7 @@ client.sendCommand({
 	commandName: "StartNewTask",
 	data: {
 		configuration: {
-			/* RooCode settings */
+			/* VertexCode settings */
 		},
 		text: "Hello, world!",
 		images: [],

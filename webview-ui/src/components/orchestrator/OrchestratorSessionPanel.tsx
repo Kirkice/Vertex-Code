@@ -59,14 +59,12 @@ export const OrchestratorSessionPanel: React.FC<OrchestratorSessionPanelProps> =
 	const handleApprovePlan = () => {
 		vscode.postMessage({
 			type: "orchestratorApprovePlan",
-			sessionId: session.sessionId,
 		})
 	}
 
 	const handleCancel = () => {
 		vscode.postMessage({
 			type: "orchestratorCancel",
-			sessionId: session.sessionId,
 		})
 	}
 

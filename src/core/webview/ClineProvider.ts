@@ -94,7 +94,6 @@ import { getUri } from "./getUri"
 import { REQUESTY_BASE_URL } from "../../shared/utils/requesty"
 import { validateAndFixToolResultIds } from "../task/validateToolResultIds"
 import { PendingEditOperationStore, type PendingEditOperationInput } from "./PendingEditOperationStore"
-import { OrchestratorBridge } from "./orchestratorBridge"
 
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -151,7 +150,6 @@ export class ClineProvider
 	private codeIndexManager?: CodeIndexManager
 	private _workspaceTracker?: WorkspaceTracker // workSpaceTracker read-only for access outside this class
 	protected mcpHub?: McpHub // Change from private to protected
-	public orchestratorBridge?: OrchestratorBridge // Orchestrator session manager bridge
 	protected skillsManager?: SkillsManager
 	private taskCreationCallback: (task: Task) => void
 	private taskEventListeners: WeakMap<Task, Array<() => void>> = new WeakMap()
@@ -2328,6 +2326,29 @@ export class ClineProvider
 			debug: vscode.workspace.getConfiguration(Package.name).get<boolean>("debug", false),
 			orchestratorEnabled: orchestratorEnabled ?? false,
 			orchestratorConfig,
+			// Derive orchestrator session snapshot from the current Task's orchestrator state.
+			// This pushes the orchestrator state via the regular state message,
+			// replacing the old orchestratorSessionUpdate message.
+			orchestratorSession: (() => {
+				const task = this.getCurrentTask()
+				const oState = task?.orchestratorState
+				if (!oState) return undefined
+				return {
+					sessionId: task!.taskId,
+					state: oState.phase === "awaiting_approval" ? "planning" : (oState.phase === "completed" ? "completed" : oState.phase === "failed" ? "failed" : "executing") as any,
+					currentPhase: oState.phase,
+					tasks: oState.tasks,
+					repairRound: oState.repairRound,
+					maxRepairRounds: task!.orchestratorMode?.maxRepairRounds ?? 2,
+					costStats: {
+						totalTokens: 0,
+						tokensByProvider: {},
+						estimatedCostUsd: 0,
+					},
+					planSummary: oState.plan?.planSummary,
+					error: oState.error,
+				}
+			})(),
 		}
 	}
 

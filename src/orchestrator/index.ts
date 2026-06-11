@@ -2,43 +2,24 @@
  * Orchestrator Module
  *
  * Multi-model orchestration system for VSCode extension.
+ * The orchestrator is now integrated as a workflow mode within Task
+ * (see src/core/task/OrchestratorEngine.ts). This module provides the
+ * reusable components (Planner, Reviewer, Worker, Router, Context, Verifier).
  *
  * Architecture:
- * - OrchestratorSession: Manages single session lifecycle
- * - OrchestratorSessionManager: Manages multiple sessions
+ * - OrchestratorEngine: Drives the Plan → Approve → Execute → Review → Repair loop inside Task
  * - CodexPlanner: Generates structured task plans (Codex)
  * - TaskRouter: Routes tasks to appropriate models
  * - CodexReviewer: Reviews execution results (Codex)
  * - VerificationRunner: Runs verification commands
  *
  * Integration:
- * - ClineProvider creates OrchestratorSessionManager
- * - Sessions coordinate with existing Task system for execution
+ * - Task creates OrchestratorEngine when orchestratorMode is enabled
  * - Planner/Reviewer use SingleCompletionHandler (no full agent loop)
  */
 
 // Protocol (re-exports from @roo-code/types)
 export * from "./protocol"
-
-// Session
-export { OrchestratorSession, type OrchestratorSessionConfig, type SessionStats } from "./session/OrchestratorSession"
-export {
-	OrchestratorSessionManager,
-	type SessionManagerConfig,
-	type StartSessionOptions,
-	createSessionManager,
-} from "./session/OrchestratorSessionManager"
-export {
-	OrchestratorStateMachine,
-	type StateTransitionResult,
-	resolveNextState,
-} from "./session/stateMachine"
-export {
-	evaluateRepairNeed,
-	generateRepairTasksFromFindings,
-	prepareRepairRound,
-	type RepairLoopResult,
-} from "./session/repairLoop"
 
 // Planner
 export { CodexPlanner, type CodexPlannerConfig } from "./planner/CodexPlanner"

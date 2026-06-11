@@ -1196,6 +1196,11 @@ export const ChatRowContent = ({
 								<>
 									<span style={{ fontSize: "1.1em" }}>{roleCfg.icon}</span>
 									<span style={{ fontWeight: "bold", color: roleCfg.color }}>{roleCfg.label}</span>
+									{message.orchestratorModelId && (
+										<span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 6 }}>
+											· {message.orchestratorModelId}
+										</span>
+									)}
 								</>
 							) : (
 								<>

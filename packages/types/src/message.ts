@@ -276,6 +276,12 @@ export const clineMessageSchema = z.object({
 	 * "planner" | "worker" | "reviewer" — used by ChatRow to show role icon and color.
 	 */
 	orchestratorRole: z.enum(["planner", "worker", "reviewer"]).optional(),
+	/**
+	 * Model identifier used by the orchestrator role that produced this message.
+	 * e.g. "qwen-max", "deepseek-chat", "gpt-4o"
+	 * Displayed next to the role label in ChatRow.
+	 */
+	orchestratorModelId: z.string().optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>
