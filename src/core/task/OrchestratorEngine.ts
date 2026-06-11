@@ -22,12 +22,17 @@ import type {
 	ReviewResponsePayload,
 	ProviderSettings,
 	VerifyResponsePayload,
+	CommandResult,
 } from "@roo-code/types"
 import { CodexPlanner, type CodexPlannerConfig, type PlannerResult } from "../../orchestrator/planner/CodexPlanner"
 import { buildMinimalContext } from "../../orchestrator/context/ContextBundleBuilder"
 import { ExecTaskRunner, type ExecTaskRunnerConfig } from "../../orchestrator/worker/ExecTaskRunner"
 import { CodexReviewer, type CodexReviewerConfig } from "../../orchestrator/reviewer/CodexReviewer"
 import { createDefaultRouter } from "../../orchestrator/router/TaskRouter"
+import {
+	createVerificationRunner,
+	determineVerificationProfile,
+} from "../../orchestrator/verifier/VerificationRunner"
 
 /**
  * Orchestrator Engine
@@ -392,13 +397,61 @@ export class OrchestratorEngine {
 			(t) => t.kind === "exec" || t.kind === "repair",
 		) as ExecTask[]
 
+		// Run verification for each succeeded exec task
+		const runner = createVerificationRunner(this.task.cwd)
+		const allCommandResults: CommandResult[] = []
+		let overallStatus: "passed" | "failed" | "partial" = "passed"
+
+		const succeededTasks = execTasks.filter((t) => t.status === "succeeded")
+		if (succeededTasks.length > 0) {
+			await this.task.sayWithOrchestratorMeta("text", "🔧 **正在运行验证检查...**", {
+				orchestratorRole: "reviewer",
+				orchestratorModelId: this.config.reviewerProfile,
+			})
+
+			for (const task of succeededTasks) {
+				const profile = determineVerificationProfile(task)
+				try {
+					const report = await runner.verify(task.taskId, this.task.taskId, [], profile)
+					allCommandResults.push(...report.commandResults)
+					if (report.status === "failed") {
+						overallStatus = "failed"
+					} else if (report.status === "partial" && overallStatus !== "failed") {
+						overallStatus = "partial"
+					}
+				} catch (error) {
+					allCommandResults.push({
+						reportId: "",
+						sessionId: this.task.taskId,
+						command: `verification for ${task.taskId}`,
+						exitCode: -1,
+						summary: `Verification error: ${error instanceof Error ? error.message : String(error)}`,
+						generatedAt: new Date().toISOString(),
+					} as any)
+					overallStatus = "failed"
+				}
+			}
+		}
+
+		const passedCount = allCommandResults.filter((r) => r.exitCode === 0).length
 		const verification: VerifyResponsePayload = {
 			type: "verify.response",
 			taskId: this.task.taskId,
-			overallStatus: "passed",
-			commandResults: [{ command: "skip", exitCode: 0, stdout: "", stderr: "", durationMs: 0 }],
-			summary: "Verification skipped for now",
+			overallStatus,
+			commandResults: allCommandResults.length > 0
+				? allCommandResults.map((r) => ({
+					command: r.command,
+					exitCode: r.exitCode,
+					stdout: "",
+					stderr: "",
+					durationMs: 0,
+				}))
+				: [{ command: "skip", exitCode: 0, stdout: "", stderr: "", durationMs: 0 }],
+			summary: allCommandResults.length > 0
+				? `${passedCount}/${allCommandResults.length} checks passed (${overallStatus})`
+				: "No verification commands executed",
 		}
+
 		return this.reviewer.review({
 			originalUserRequest: this.task.metadata.task ?? "",
 			planSummary: this.state.plan?.planSummary ?? "",

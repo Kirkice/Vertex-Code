@@ -101,12 +101,11 @@ export interface ExtensionMessage {
 		| "folderSelected"
 		| "skills"
 		| "fileContent"
-		// Orchestrator message types
-		| "orchestratorSessionUpdate"
-		| "orchestratorTaskUpdate"
-		| "orchestratorReviewResult"
-		| "orchestratorCostUpdate"
-		| "orchestratorChatMessage"
+		// Orchestrator message types (legacy — most removed after refactor into Task)
+		// orchestratorSessionUpdate, orchestratorTaskUpdate, orchestratorReviewResult,
+		// orchestratorCostUpdate, orchestratorChatMessage were removed.
+		// Orchestrator state is now derived from Task.orchestratorState and pushed
+		// via the regular "state" message (see ClineProvider.getStateToPostToWebview).
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
