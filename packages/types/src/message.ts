@@ -282,6 +282,12 @@ export const clineMessageSchema = z.object({
 	 * Displayed next to the role label in ChatRow.
 	 */
 	orchestratorModelId: z.string().optional(),
+	/**
+	 * Model identifier used to produce this message (for non-orchestrator messages).
+	 * e.g. "claude-3-5-sonnet-20241022", "gpt-4o", "deepseek-chat"
+	 * Displayed in the message header in ChatRow.
+	 */
+	modelId: z.string().optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>

@@ -1206,6 +1206,11 @@ export const ChatRowContent = ({
 								<>
 									<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
 									<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
+									{message.modelId && (
+										<span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 6 }}>
+											· {message.modelId}
+										</span>
+									)}
 								</>
 							)}
 							<div style={{ flexGrow: 1 }} />

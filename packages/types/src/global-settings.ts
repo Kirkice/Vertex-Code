@@ -241,12 +241,16 @@ export const globalSettingsSchema = z.object({
 
 	/**
 	 * Multi-model orchestrator settings
+	 * Each stage has a Mode (determines system prompt/tools) and a Profile (determines model)
 	 */
 	orchestratorEnabled: z.boolean().optional(),
 	orchestratorConfig: z
 		.object({
+			plannerMode: z.string().optional(),
 			plannerProfile: z.string().optional(),
+			workerMode: z.string().optional(),
 			reviewerProfile: z.string().optional(),
+			reviewerMode: z.string().optional(),
 			workerProfiles: z
 				.object({
 					primary: z.string().optional(),

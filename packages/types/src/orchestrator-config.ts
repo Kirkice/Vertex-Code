@@ -30,14 +30,24 @@ export interface OrchestratorWorkerProfiles {
 /**
  * Orchestrator provider configuration
  *
- * Maps orchestrator components to provider profiles.
+ * Maps orchestrator components to provider profiles and modes.
  * Integrates with existing ProviderSettingsManager + modeApiConfigs.
+ *
+ * Each stage has a Mode (e.g., "architect", "code") and a Profile (model name).
+ * Mode determines system prompt, tool access, and behavior.
+ * Profile determines which LLM model is used.
  */
 export interface OrchestratorProviderConfig {
+	/** Mode slug for Planner stage (default: "architect") */
+	plannerMode?: string
 	/** Provider profile for Planner (task planning) */
 	plannerProfile: string
+	/** Mode slug for Worker stage (default: "code") */
+	workerMode?: string
 	/** Provider profile for Reviewer (acceptance review) */
 	reviewerProfile: string
+	/** Mode slug for Reviewer stage (default: "architect") */
+	reviewerMode?: string
 	/** Provider profiles for Worker execution */
 	workerProfiles: OrchestratorWorkerProfiles
 	/** Routing policy */

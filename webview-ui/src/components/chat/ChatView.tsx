@@ -1612,8 +1612,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					</div>
 				)}
 
-				{/* Orchestrator Session Panel */}
-				{orchestratorSession && (
+				{/* Orchestrator Session Panel — only show when orchestrator is enabled */}
+				{orchestratorEnabled && orchestratorSession && (
 					<div className="px-3">
 						<OrchestratorSessionPanel session={orchestratorSession} />
 					</div>

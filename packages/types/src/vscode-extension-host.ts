@@ -400,23 +400,56 @@ export type ExtensionState = Pick<
 }
 
 /**
- * Snapshot of an orchestrator session for the webview
+ * Information about a single orchestrator stage (Planner/Worker/Reviewer).
+ * Used by the UI to render stage cards with per-stage statistics.
+ */
+export interface OrchestratorStageInfo {
+	/** Stage identifier: "planner" | "worker" | "reviewer" */
+	name: string
+	/** Display label (e.g. "🧠 规划器") */
+	label: string
+	/** Mode slug (e.g. "architect", "code") */
+	mode: string
+	/** Provider profile name (e.g. "qwen-max", "deepseek") */
+	profile: string
+	/** Token usage for this stage */
+	tokens: number
+	/** Estimated cost in USD for this stage */
+	cost: number
+	/** Whether this stage is currently active */
+	active: boolean
+}
+
+/**
+ * Snapshot of an orchestrator session for the webview.
+ *
+ * In Mode chain architecture, the orchestrator state is simplified:
+ * - No sub-task tracking (tasks are managed by the Mode chain itself)
+ * - Phase tracks the current stage (planning/awaiting_approval/executing/reviewing/repairing/completed/failed)
+ * - State maps phase to the legacy OrchestratorSessionState for UI compatibility
  */
 export interface OrchestratorSessionSnapshot {
 	sessionId: string
+	/** Legacy state mapping for UI compatibility */
 	state: OrchestratorSessionState
+	/** Current orchestrator phase */
 	currentPhase: string
-	tasks: OrchestratorTask[]
+	/** Current repair round (0-indexed) */
 	repairRound: number
+	/** Maximum repair rounds allowed */
 	maxRepairRounds: number
-	planSummary?: string
+	/** Cost statistics */
 	costStats: {
 		totalTokens: number
 		tokensByProvider: Record<string, number>
 		estimatedCostUsd: number
 	}
+	/** Plan summary text (shown when plan is ready for approval) */
+	planSummary?: string
 	/** Error message when session is in failed state */
 	error?: string
+	/** Per-stage information for rendering stage cards */
+	stages: OrchestratorStageInfo[]
 }
 
 export interface Command {

@@ -632,14 +632,26 @@ export const webviewMessageHandler = async (
 				// If orchestrator mode is enabled, pass config to Task
 				if (orchestratorEnabled) {
 					const orchestratorConfig = getGlobalState("orchestratorConfig")
+					// Use current active API config as fallback when profile is not configured
+					// This prevents setProviderProfile("") from failing silently
+					const currentApiConfigName = getGlobalState("currentApiConfigName") ?? "default"
 					taskOptions.orchestratorMode = {
 						enabled: true,
-						plannerProfile: orchestratorConfig?.plannerProfile,
-						workerProfile: orchestratorConfig?.workerProfiles?.primary,
-						reviewerProfile: orchestratorConfig?.reviewerProfile,
+						planner: {
+							mode: orchestratorConfig?.plannerMode ?? "architect",
+							profile: orchestratorConfig?.plannerProfile || currentApiConfigName,
+						},
+						worker: {
+							mode: orchestratorConfig?.workerMode ?? "code",
+							profile: orchestratorConfig?.workerProfiles?.primary || currentApiConfigName,
+						},
+						reviewer: {
+							mode: orchestratorConfig?.reviewerMode ?? "architect",
+							profile: orchestratorConfig?.reviewerProfile || currentApiConfigName,
+						},
 						maxRepairRounds: orchestratorConfig?.routingPolicy?.maxRepairRounds ?? 2,
 					}
-					provider.log(`[Orchestrator] Creating task in orchestrator mode`)
+					provider.log(`[Orchestrator] Creating task in orchestrator mode (Mode chain), planner=${taskOptions.orchestratorMode.planner.profile}, worker=${taskOptions.orchestratorMode.worker.profile}, reviewer=${taskOptions.orchestratorMode.reviewer.profile}`)
 				}
 
 				await provider.createTask(

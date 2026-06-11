@@ -534,9 +534,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		)
 
 		// Initialize orchestrator mode if configured
+		const _orchProvider = this.providerRef.deref()
+		if (_orchProvider) {
+			_orchProvider.log(`[Task] Constructor orchestratorMode received: enabled=${orchestratorMode?.enabled}, planner=${orchestratorMode?.planner?.profile}, worker=${orchestratorMode?.worker?.profile}`)
+		}
 		if (orchestratorMode?.enabled) {
 			this.orchestratorMode = orchestratorMode
 			this.orchestratorEngine = new OrchestratorEngine(this, orchestratorMode)
+			if (_orchProvider) {
+				_orchProvider.log(`[Task] OrchestratorEngine CREATED successfully`)
+			}
+		} else if (_orchProvider) {
+			_orchProvider.log(`[Task] Orchestrator mode NOT enabled (orchestratorMode=${JSON.stringify(orchestratorMode)})`)
 		}
 
 		onCreated?.(this)
@@ -1576,6 +1585,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			throw new Error(`[VertexCode#say] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
+		// Get current model ID for display in chat bubbles (only for non-orchestrator messages)
+		const currentModelId = getModelId(this.apiConfiguration)
+
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 
@@ -1589,6 +1601,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					lastMessage.images = images
 					lastMessage.partial = partial
 					lastMessage.progressStatus = progressStatus
+					// Update modelId if not already set (e.g., for orchestrator messages)
+					if (!lastMessage.modelId && !lastMessage.orchestratorModelId) {
+						lastMessage.modelId = currentModelId
+					}
 					this.updateClineMessage(lastMessage)
 				} else {
 					// This is a new partial message, so add it with partial state.
@@ -1607,6 +1623,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						partial,
 						contextCondense,
 						contextTruncation,
+						modelId: currentModelId,
 					})
 				}
 			} else {
@@ -1622,6 +1639,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					lastMessage.images = images
 					lastMessage.partial = false
 					lastMessage.progressStatus = progressStatus
+					// Update modelId if not already set (e.g., for orchestrator messages)
+					if (!lastMessage.modelId && !lastMessage.orchestratorModelId) {
+						lastMessage.modelId = currentModelId
+					}
 
 					// Instead of streaming partialMessage events, we do a save
 					// and post like normal to persist to disk.
@@ -1645,6 +1666,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						images,
 						contextCondense,
 						contextTruncation,
+						modelId: currentModelId,
 					})
 				}
 			}
@@ -1669,6 +1691,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				checkpoint,
 				contextCondense,
 				contextTruncation,
+				modelId: currentModelId,
 			})
 		}
 	}
@@ -2286,7 +2309,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.emit(RooCodeEventName.TaskStarted)
 
 		// Orchestrator mode: run the orchestrator engine instead of the normal agent loop
+		// Orchestrator mode: run the orchestrator engine instead of the normal agent loop
+		this.log(`[initiateTaskLoop] orchestratorMode.enabled=${this.orchestratorMode?.enabled}, hasEngine=${!!this.orchestratorEngine}`)
 		if (this.orchestratorMode?.enabled && this.orchestratorEngine) {
+			this.log(`[initiateTaskLoop] Using ORCHESTRATOR engine path`)
 			// Extract the user's original message text from the content blocks
 			const userMessageText = nextUserContent
 				.filter((block): block is Anthropic.TextBlockParam => block.type === "text")

@@ -2327,26 +2327,87 @@ export class ClineProvider
 			orchestratorEnabled: orchestratorEnabled ?? false,
 			orchestratorConfig,
 			// Derive orchestrator session snapshot from the current Task's orchestrator state.
-			// This pushes the orchestrator state via the regular state message,
-			// replacing the old orchestratorSessionUpdate message.
+			// Only build snapshot when orchestratorEnabled is true — this ensures the panel
+			// hides immediately when the user disables orchestrator mode.
 			orchestratorSession: (() => {
+				if (!(orchestratorEnabled ?? false)) return undefined
 				const task = this.getCurrentTask()
 				const oState = task?.orchestratorState
-				if (!oState) return undefined
+				const oConfig = task?.orchestratorMode
+				if (!oState || !oConfig) return undefined
+
+				// Build stages array from orchestrator config + message statistics
+				const currentPhase = oState.phase
+				const messages = task.clineMessages
+
+				// Helper to count tokens/cost for messages with a specific orchestratorRole
+				const getStageStats = (role: string) => {
+					let tokens = 0
+					let cost = 0
+					for (const msg of messages) {
+						if (msg.orchestratorRole === role && msg.say === "api_req_started") {
+							try {
+								const info = JSON.parse(msg.text || "{}")
+								tokens += (info.tokensIn || 0) + (info.tokensOut || 0)
+								cost += info.cost || 0
+							} catch { /* ignore parse errors */ }
+						}
+					}
+					return { tokens, cost }
+				}
+
+				const isActive = (role: string) => {
+					const phaseMap: Record<string, string[]> = {
+						planner: ["planning", "awaiting_approval"],
+						worker: ["executing", "repairing"],
+						reviewer: ["reviewing"],
+					}
+					return (phaseMap[role] || []).includes(currentPhase)
+				}
+
+				const stages: import("@roo-code/types").OrchestratorStageInfo[] = [
+					{
+						name: "planner",
+						label: "🧠 Planner",
+						mode: oConfig.planner.mode,
+						profile: oConfig.planner.profile,
+						...getStageStats("planner"),
+						active: isActive("planner"),
+					},
+					{
+						name: "worker",
+						label: "⚡ Worker",
+						mode: oConfig.worker.mode,
+						profile: oConfig.worker.profile,
+						...getStageStats("worker"),
+						active: isActive("worker"),
+					},
+					{
+						name: "reviewer",
+						label: "🔍 Reviewer",
+						mode: oConfig.reviewer.mode,
+						profile: oConfig.reviewer.profile,
+						...getStageStats("reviewer"),
+						active: isActive("reviewer"),
+					},
+				]
+
+				const totalTokens = stages.reduce((sum, s) => sum + s.tokens, 0)
+				const totalCost = stages.reduce((sum, s) => sum + s.cost, 0)
+
 				return {
-					sessionId: task!.taskId,
+					sessionId: task.taskId,
 					state: oState.phase === "awaiting_approval" ? "planning" : (oState.phase === "completed" ? "completed" : oState.phase === "failed" ? "failed" : "executing") as any,
 					currentPhase: oState.phase,
-					tasks: oState.tasks,
 					repairRound: oState.repairRound,
-					maxRepairRounds: task!.orchestratorMode?.maxRepairRounds ?? 2,
+					maxRepairRounds: oConfig.maxRepairRounds ?? 2,
 					costStats: {
-						totalTokens: 0,
+						totalTokens,
 						tokensByProvider: {},
-						estimatedCostUsd: 0,
+						estimatedCostUsd: totalCost,
 					},
-					planSummary: oState.plan?.planSummary,
 					error: oState.error,
+					stages,
 				}
 			})(),
 		}

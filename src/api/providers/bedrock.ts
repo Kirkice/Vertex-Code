@@ -1641,4 +1641,89 @@ Please check:
 			return `Bedrock completion error: ${errorMessage}`
 		}
 	}
+
+	/**
+	 * Parse an AWS Bedrock ARN and extract model information.
+	 *
+	 * ARN formats:
+	 * - Foundation model: arn:aws:bedrock:region::foundation-model/model-id
+	 * - Inference profile: arn:aws:bedrock:region:account-id:inference-profile/profile-name
+	 * - Prompt router: arn:aws:bedrock:region:account-id:prompt-router/router-name
+	 *
+	 * @param arn - The ARN string to parse
+	 * @param selectedRegion - The user-selected region (for mismatch detection)
+	 * @returns Parsed ARN information including modelType, modelId, region, and validity
+	 */
+	private parseArn(
+		arn: string,
+		selectedRegion?: string,
+	): {
+		isValid: boolean
+		modelType?: string
+		modelId?: string
+		region?: string
+		crossRegionInference: boolean
+		errorMessage?: string
+		awsUseCrossRegionInference?: boolean
+	} {
+		const invalidResult = {
+			isValid: false,
+			crossRegionInference: false,
+			errorMessage: "Invalid ARN format. Expected format: arn:aws:bedrock:region:account-id:resource-type/resource-name",
+		}
+
+		// ARN format: arn:aws:bedrock:region:account-id:resource-type/resource-name
+		// Foundation models may not have account-id: arn:aws:bedrock:region::foundation-model/model-id
+		const arnRegex = /^arn:aws:bedrock:([^:]*):([^:]*):([^/]+)\/(.+)$/
+		const match = arn.match(arnRegex)
+
+		if (!match) {
+			return invalidResult
+		}
+
+		const [, arnRegion, , resourceType, resourceId] = match
+
+		// Validate resource type
+		const validResourceTypes = ["foundation-model", "inference-profile", "prompt-router"]
+		if (!validResourceTypes.includes(resourceType)) {
+			return {
+				...invalidResult,
+				errorMessage: `Invalid ARN resource type '${resourceType}'. Expected one of: ${validResourceTypes.join(", ")}`,
+			}
+		}
+
+		// Check for cross-region inference prefix in the model ID
+		// Cross-region prefixes: us., eu., apac., ap.
+		const crossRegionPrefixRegex = /^(us|eu|apac|ap)\./
+		const prefixMatch = resourceId.match(crossRegionPrefixRegex)
+		const isCrossRegion = prefixMatch !== null
+		const modelId = isCrossRegion ? resourceId.replace(crossRegionPrefixRegex, "") : resourceId
+
+		const result: {
+			isValid: boolean
+			modelType: string
+			modelId: string
+			region: string
+			crossRegionInference: boolean
+			errorMessage?: string
+			awsUseCrossRegionInference?: boolean
+		} = {
+			isValid: true,
+			modelType: resourceType,
+			modelId,
+			region: arnRegion,
+			crossRegionInference: isCrossRegion,
+		}
+
+		if (isCrossRegion) {
+			result.awsUseCrossRegionInference = true
+		}
+
+		// Check for region mismatch between ARN and user-selected region
+		if (selectedRegion && arnRegion && arnRegion !== selectedRegion) {
+			result.errorMessage = `Region mismatch between selected region (${selectedRegion}) and ARN region (${arnRegion}). Using ARN region.`
+		}
+
+		return result
+	}
 }

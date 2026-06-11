@@ -79,7 +79,7 @@ import { SlashCommandsSettings } from "./SlashCommandsSettings"
 import { SkillsSettings } from "./SkillsSettings"
 import { UISettings } from "./UISettings"
 import { OrchestratorSettings } from "../orchestrator/OrchestratorSettings"
-import { DEFAULT_ORCHESTRATOR_CONFIG } from "@roo-code/types"
+import { DEFAULT_ORCHESTRATOR_CONFIG, DEFAULT_MODES } from "@roo-code/types"
 import ModesView from "../modes/ModesView"
 import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
@@ -128,7 +128,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const { t } = useAppTranslation()
 
 	const extensionState = useExtensionState()
-	const { currentApiConfigName, listApiConfigMeta, uriScheme, settingsImportedAt } = extensionState
+	const { currentApiConfigName, listApiConfigMeta, uriScheme, settingsImportedAt, customModes } = extensionState
 
 	const [isDiscardDialogShow, setDiscardDialogShow] = useState(false)
 	const [isChangeDetected, setChangeDetected] = useState(false)
@@ -806,6 +806,10 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 										enabled={cachedState.orchestratorEnabled ?? false}
 										config={cachedState.orchestratorConfig ?? DEFAULT_ORCHESTRATOR_CONFIG}
 										apiConfigs={listApiConfigMeta ?? []}
+										modes={[
+											...DEFAULT_MODES.map((m) => ({ slug: m.slug, name: m.name })),
+											...(customModes || []).map((m) => ({ slug: m.slug, name: m.name })),
+										]}
 										onChange={(partialConfig) => {
 											setCachedState((prev) => ({
 												...prev,

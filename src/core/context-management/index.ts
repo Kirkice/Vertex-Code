@@ -221,7 +221,7 @@ export type ContextManagementOptions = {
 	/** Optional metadata to pass through to the condensing API call (tools, taskId, etc.) */
 	metadata?: ApiHandlerCreateMessageMetadata
 	/** Optional environment details string to include in the condensed summary */
-	environmentDetails?: stringVertex
+	environmentDetails?: string
 	/** Optional array of file paths read by Vertex during the task (will be folded via tree-sitter) */
 	filesReadByRoo?: string[]
 	/** Optional current working directory for resolving file paths (required if filesReadByRoo is provided) */
