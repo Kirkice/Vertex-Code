@@ -9,6 +9,21 @@ type ToolMessage = OpenAI.Chat.ChatCompletionToolMessageParam
 type Message = OpenAI.Chat.ChatCompletionMessageParam
 type AnthropicMessage = Anthropic.Messages.MessageParam
 
+function extractThinkBlock(text: string): { content: string; reasoning?: string } {
+	const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/i)
+	if (!thinkMatch) {
+		return { content: text }
+	}
+
+	const reasoning = thinkMatch[1]?.trim()
+	const content = text.replace(/<think>[\s\S]*?<\/think>\s*/i, "").trim()
+
+	return {
+		content,
+		...(reasoning ? { reasoning } : {}),
+	}
+}
+
 /**
  * Extended assistant message type to support DeepSeek's interleaved thinking.
  * DeepSeek's API returns reasoning_content alongside content and tool_calls,
@@ -176,7 +191,13 @@ export function convertToR1Format(
 
 				for (const part of message.content) {
 					if (part.type === "text") {
-						textParts.push(part.text)
+						const parsedText = extractThinkBlock(part.text)
+						if (parsedText.content) {
+							textParts.push(parsedText.content)
+						}
+						if (!extractedReasoning && parsedText.reasoning) {
+							extractedReasoning = parsedText.reasoning
+						}
 					} else if (part.type === "tool_use") {
 						toolCalls.push({
 							id: options?.normalizeToolCallId ? options.normalizeToolCallId(part.id) : part.id,
@@ -222,22 +243,24 @@ export function convertToR1Format(
 				}
 			} else {
 				// Simple string content
+				const parsedMessage = extractThinkBlock(message.content)
+				const finalReasoning = reasoningContent || parsedMessage.reasoning
 				const lastMessage = result[result.length - 1]
 				if (lastMessage?.role === "assistant" && !(lastMessage as any).tool_calls) {
 					if (typeof lastMessage.content === "string") {
-						lastMessage.content += `\n${message.content}`
+						lastMessage.content += `\n${parsedMessage.content}`
 					} else {
-						lastMessage.content = message.content
+						lastMessage.content = parsedMessage.content
 					}
 					// Preserve reasoning_content from the new message if present
-					if (reasoningContent) {
-						;(lastMessage as DeepSeekAssistantMessage).reasoning_content = reasoningContent
+					if (finalReasoning) {
+						;(lastMessage as DeepSeekAssistantMessage).reasoning_content = finalReasoning
 					}
 				} else {
 					const assistantMessage: DeepSeekAssistantMessage = {
 						role: "assistant",
-						content: message.content,
-						...(reasoningContent && { reasoning_content: reasoningContent }),
+						content: parsedMessage.content,
+						...(finalReasoning && { reasoning_content: finalReasoning }),
 					}
 					result.push(assistantMessage)
 				}

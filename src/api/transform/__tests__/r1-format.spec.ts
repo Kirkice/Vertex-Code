@@ -303,6 +303,44 @@ describe("convertToR1Format", () => {
 			expect((result[1] as any).reasoning_content).toBe("Let me analyze step by step...")
 		})
 
+		it("should extract reasoning_content from think tags in assistant string messages", () => {
+			const input: Anthropic.Messages.MessageParam[] = [
+				{ role: "user", content: "Hello" },
+				{
+					role: "assistant",
+					content: "<think>Need to reason first</think>\nFinal answer",
+				},
+			]
+
+			const result = convertToR1Format(input)
+
+			expect(result).toHaveLength(2)
+			expect(result[1]).toEqual({
+				role: "assistant",
+				content: "Final answer",
+				reasoning_content: "Need to reason first",
+			})
+		})
+
+		it("should extract reasoning_content from think tags in assistant text blocks", () => {
+			const input: Anthropic.Messages.MessageParam[] = [
+				{ role: "user", content: "Hello" },
+				{
+					role: "assistant",
+					content: [{ type: "text", text: "<think>Plan</think>\nAnswer body" }],
+				},
+			]
+
+			const result = convertToR1Format(input)
+
+			expect(result).toHaveLength(2)
+			expect(result[1]).toEqual({
+				role: "assistant",
+				content: "Answer body",
+				reasoning_content: "Plan",
+			})
+		})
+
 		it("should handle mixed tool_result and text in user message", () => {
 			const input: Anthropic.Messages.MessageParam[] = [
 				{
