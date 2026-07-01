@@ -134,6 +134,23 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize OpenAI Codex OAuth manager for ChatGPT subscription-based access.
 	openAiCodexOAuthManager.initialize(context, (message) => outputChannel.appendLine(message))
 
+	// Create the shared context proxy immediately so the sidebar can register
+	// before slower migrations / secret reads finish.
+	const contextProxy = ContextProxy.createInstance(context)
+
+	// Initialize code index managers for all workspace folders.
+	const codeIndexManagers: CodeIndexManager[] = []
+
+	// Initialize the provider early so Reload Window can render the sidebar
+	// even if follow-up startup work is slow or flaky.
+	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {
+			webviewOptions: { retainContextWhenHidden: true },
+		}),
+	)
+
 	// Initialize Vertex auth service for extension session token management.
 	await initVertexAuth(context)
 
@@ -145,10 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.globalState.update("allowedCommands", defaultCommands)
 	}
 
-	const contextProxy = await ContextProxy.getInstance(context)
-
-	// Initialize code index managers for all workspace folders.
-	const codeIndexManagers: CodeIndexManager[] = []
+	await contextProxy.whenReady()
 
 	if (vscode.workspace.workspaceFolders) {
 		for (const folder of vscode.workspace.workspaceFolders) {
@@ -169,15 +183,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			}
 		}
 	}
-
-	// Initialize the provider.
-	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
-
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		}),
-	)
 
 	// Check for worktree auto-open path (set when switching to a worktree)
 	await checkWorktreeAutoOpen(context, outputChannel)

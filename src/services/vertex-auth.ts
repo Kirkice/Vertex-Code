@@ -31,15 +31,19 @@ export async function initVertexAuth(context: vscode.ExtensionContext): Promise<
 	_cachedUserEmail = await secretStorage.get(VERTEX_USER_EMAIL_KEY)
 	_cachedUserImage = await secretStorage.get(VERTEX_USER_IMAGE_KEY)
 
-	// Validate persisted auth state on init before reporting the user as connected.
+	// Validate persisted auth state in the background so extension activation
+	// is not blocked by a network request (which can take up to 10s).
 	// Network errors / 5xx ("unreachable") leave the cached session in place so a
 	// transient backend blip doesn't force users to sign in again.
 	if (_cachedToken) {
-		const result = await verifyVertexToken()
-		if (result === "invalid") {
-			await clearVertexUserInfo()
-			await clearVertexToken()
-		}
+		void verifyVertexToken().then(async (result) => {
+			if (result === "invalid") {
+				await clearVertexUserInfo()
+				await clearVertexToken()
+			}
+		}).catch((err) => {
+			console.warn("[VertexAuth] Background token verification failed:", err)
+		})
 	}
 
 	// Watch for secret changes and update cache

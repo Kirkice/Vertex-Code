@@ -759,10 +759,17 @@ export class ClineProvider
 			localResourceRoots: resourceRoots,
 		}
 
-		webviewView.webview.html =
-			this.contextProxy.extensionMode === vscode.ExtensionMode.Development
-				? await this.getHMRHtmlContent(webviewView.webview)
-				: await this.getHtmlContent(webviewView.webview)
+		try {
+			webviewView.webview.html =
+				this.contextProxy.extensionMode === vscode.ExtensionMode.Development
+					? await this.getHMRHtmlContent(webviewView.webview)
+					: await this.getHtmlContent(webviewView.webview)
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			this.log(`[resolveWebviewView] Failed to render webview HTML: ${message}`)
+			webviewView.webview.html = this.getStartupErrorHtml(message)
+			return
+		}
 
 		// Sets up an event listener to listen for messages passed from the webview view context
 		// and executes code based on the message that is received.
@@ -842,6 +849,45 @@ export class ClineProvider
 		void this.ensureVertexGatewayProfileSeeded().catch((err) => {
 			this.log(`[ensureVertexGatewayProfileSeeded] Error: ${err instanceof Error ? err.message : String(err)}`)
 		})
+	}
+
+	private getStartupErrorHtml(message: string): string {
+		const escapedMessage = message
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;")
+
+		return /*html*/ `
+			<!DOCTYPE html>
+			<html lang="en">
+				<head>
+					<meta charset="utf-8">
+					<meta name="viewport" content="width=device-width,initial-scale=1">
+					<style>
+						body {
+							font-family: var(--vscode-font-family);
+							color: var(--vscode-foreground);
+							background: var(--vscode-editor-background);
+							padding: 16px;
+						}
+						pre {
+							white-space: pre-wrap;
+							word-break: break-word;
+							padding: 12px;
+							border-radius: 6px;
+							background: var(--vscode-textBlockQuote-background);
+						}
+					</style>
+					<title>Vertex Code</title>
+				</head>
+				<body>
+					<h3>Vertex Code failed to start</h3>
+					<pre>${escapedMessage}</pre>
+				</body>
+			</html>
+		`
 	}
 
 	/**

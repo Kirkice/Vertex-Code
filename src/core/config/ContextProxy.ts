@@ -44,6 +44,7 @@ export class ContextProxy {
 	private stateCache: GlobalState
 	private secretCache: SecretState
 	private _isInitialized = false
+	private initializationPromise?: Promise<void>
 
 	constructor(context: vscode.ExtensionContext) {
 		this.originalContext = context
@@ -57,6 +58,26 @@ export class ContextProxy {
 	}
 
 	public async initialize() {
+		if (this._isInitialized) {
+			return
+		}
+
+		if (this.initializationPromise) {
+			return this.initializationPromise
+		}
+
+		this.initializationPromise = this.doInitialize().finally(() => {
+			this.initializationPromise = undefined
+		})
+
+		return this.initializationPromise
+	}
+
+	public async whenReady() {
+		await this.initialize()
+	}
+
+	private async doInitialize() {
 		for (const key of GLOBAL_STATE_KEYS) {
 			try {
 				// Revert to original assignment
@@ -609,11 +630,21 @@ export class ContextProxy {
 
 	static async getInstance(context: vscode.ExtensionContext) {
 		if (this._instance) {
+			await this._instance.whenReady()
 			return this._instance
 		}
 
 		this._instance = new ContextProxy(context)
-		await this._instance.initialize()
+		await this._instance.whenReady()
+
+		return this._instance
+	}
+
+	static createInstance(context: vscode.ExtensionContext) {
+		if (!this._instance) {
+			this._instance = new ContextProxy(context)
+			void this._instance.initialize()
+		}
 
 		return this._instance
 	}
