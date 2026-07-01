@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { type ExtensionMessage } from "@roo-code/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
+import { MarketplaceViewStateManager } from "./components/marketplace/MarketplaceViewStateManager"
 
 import { vscode } from "./utils/vscode"
 import { telemetryClient } from "./utils/TelemetryClient"
@@ -14,6 +15,7 @@ import ChatView, { ChatViewRef } from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
 import SettingsView, { SettingsViewRef } from "./components/settings/SettingsView"
 import WelcomeView from "./components/welcome/WelcomeViewProvider"
+import { MarketplaceView } from "./components/marketplace/MarketplaceView"
 import { CheckpointRestoreDialog } from "./components/chat/CheckpointRestoreDialog"
 import { DeleteMessageDialog, EditMessageDialog } from "./components/chat/MessageModificationConfirmationDialog"
 import ErrorBoundary from "./components/ErrorBoundary"
@@ -21,7 +23,7 @@ import { useAddNonInteractiveClickListener } from "./components/ui/hooks/useNonI
 import { TooltipProvider } from "./components/ui/tooltip"
 import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 
-type Tab = "settings" | "history" | "chat"
+type Tab = "settings" | "history" | "chat" | "marketplace"
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -45,6 +47,7 @@ const tabsByMessageAction: Partial<Record<NonNullable<ExtensionMessage["action"]
 	chatButtonClicked: "chat",
 	settingsButtonClicked: "settings",
 	historyButtonClicked: "history",
+	marketplaceButtonClicked: "marketplace",
 }
 
 const App = () => {
@@ -63,7 +66,11 @@ const App = () => {
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [tab, setTab] = useState<Tab>("chat")
 	const [currentSection, setCurrentSection] = useState<string | undefined>(undefined)
+	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
 	const handledImportRef = useRef<number | undefined>(undefined)
+
+	// Create a persistent state manager
+	const marketplaceStateManager = useMemo(() => new MarketplaceViewStateManager(), [])
 
 	const [deleteMessageDialogState, setDeleteMessageDialogState] = useState<DeleteMessageDialogState>({
 		isOpen: false,
@@ -107,14 +114,16 @@ const App = () => {
 			const message: ExtensionMessage = e.data
 
 			if (message.type === "action" && message.action) {
-				// Handle switchTab action with tab parameter
-				if (message.action === "switchTab" && message.tab) {
-					const targetTab = message.tab as Tab
-					switchTab(targetTab)
-					// Extract targetSection from values if provided
-					const targetSection = message.values?.section as string | undefined
-					setCurrentSection(targetSection)
-				} else {
+					// Handle switchTab action with tab parameter
+					if (message.action === "switchTab" && message.tab) {
+						const targetTab = message.tab as Tab
+						switchTab(targetTab)
+						// Extract targetSection from values if provided
+						const targetSection = message.values?.section as string | undefined
+						const marketplaceTab = message.values?.marketplaceTab as string | undefined
+						setCurrentSection(targetSection)
+						setCurrentMarketplaceTab(marketplaceTab)
+					} else {
 					// Handle other actions using the mapping
 					const newTab = tabsByMessageAction[message.action]
 					const section = message.values?.section as string | undefined
@@ -161,7 +170,7 @@ const App = () => {
 	}, [shouldShowAnnouncement, tab])
 
 	useEffect(() => {
-		const isRecoverableTab = tab === "settings"
+		const isRecoverableTab = tab === "settings" || tab === "marketplace"
 
 		if (showWelcome && settingsImportedAt && settingsImportedAt !== handledImportRef.current) {
 			handledImportRef.current = settingsImportedAt
@@ -211,13 +220,20 @@ const App = () => {
 
 	// Do not conditionally load ChatView, it's expensive and there's state we
 	// don't want to lose (user input, disableInput, askResponse promise, etc.)
-	const isSetupGatedTab = showWelcome && tab !== "settings"
+	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace"
 
 	return isSetupGatedTab ? (
 		<WelcomeView />
 	) : (
 		<>
 			{tab === "history" && <HistoryView onDone={() => switchTab("chat")} />}
+			{tab === "marketplace" && (
+				<MarketplaceView
+					stateManager={marketplaceStateManager}
+					onDone={() => switchTab("chat")}
+					targetTab={currentMarketplaceTab as "mcp" | "mode" | undefined}
+				/>
+			)}
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
 			)}

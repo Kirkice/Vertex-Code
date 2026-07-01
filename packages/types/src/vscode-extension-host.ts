@@ -118,6 +118,7 @@ export interface ExtensionMessage {
 		| "chatButtonClicked"
 		| "settingsButtonClicked"
 		| "historyButtonClicked"
+		| "marketplaceButtonClicked"
 		| "didBecomeVisible"
 		| "focusInput"
 		| "switchTab"

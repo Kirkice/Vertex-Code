@@ -1,4 +1,5 @@
 {
+	"title": "Marketplace",
 	"type-group": {
 		"modes": "Modes",
 		"mcps": "MCP Servers",
@@ -18,7 +19,9 @@
 	},
 	"filters": {
 		"search": {
-			"placeholder": "Search marketplace..."
+			"placeholder": "Search marketplace...",
+			"placeholderMcp": "Search MCP servers...",
+			"placeholderMode": "Search modes..."
 		},
 		"type": {
 			"label": "Type",
@@ -34,6 +37,7 @@
 		"tags": {
 			"label": "Tags",
 			"clear": "Clear tags",
+			"clickToFilter": "Click to filter by tag",
 			"placeholder": "Search tags...",
 			"noResults": "No tags found.",
 			"selected": "Showing items with any of the selected tags"
@@ -52,11 +56,74 @@
 		"browse": "Browse",
 		"settings": "Settings"
 	},
+	"sections": {
+		"organizationMcps": "{{organization}} MCP Servers",
+		"marketplace": "Marketplace"
+	},
 	"items": {
 		"empty": {
 			"noItems": "No marketplace items found.",
-			"emptyHint": "Try adjusting your filters or search terms"
-		}
+			"emptyHint": "Try adjusting your filters or search terms",
+			"adjustFilters": "Try adjusting your filters or search terms",
+			"clearAllFilters": "Clear All Filters"
+		},
+		"refresh": {
+			"refreshing": "Refreshing marketplace data...",
+			"mayTakeMoment": "This may take a moment"
+		},
+		"card": {
+			"install": "Install",
+			"installed": "Installed",
+			"installProject": "Install Project",
+			"removeProject": "Remove Project",
+			"remove": "Remove",
+			"removeProjectTooltip": "Remove from current project",
+			"removeGlobalTooltip": "Remove from global configuration",
+			"noWorkspaceTooltip": "Open a workspace to install marketplace items",
+			"by": "by {{author}}"
+		},
+		"removeFailed": "Failed to remove: {{error}}",
+		"unknownError": "Unknown error",
+		"matched": "matched",
+		"components": "Components"
+	},
+	"install": {
+		"button": "Install",
+		"scope": "Installation Scope",
+		"project": "Project (current workspace)",
+		"global": "Global (all workspaces)",
+		"method": "Installation Method",
+		"prerequisites": "Prerequisites",
+		"configuration": "Configuration",
+		"configurationDescription": "Provide values for the required parameters",
+		"validationRequired": "Please provide a value for {{paramName}}",
+		"titleMcp": "Install MCP Server: {{name}}",
+		"titleMode": "Install Mode: {{name}}",
+		"successTitle": "Successfully installed {{name}}",
+		"successDescription": "The item has been installed successfully.",
+		"moreInfoMcp": "More information about {{name}}",
+		"installed": "Installed",
+		"whatNextMcp": "The MCP server has been added to your configuration. You can manage it in the MCP settings.",
+		"whatNextMode": "The mode has been added to your configuration. You can use it from the mode selector.",
+		"done": "Done",
+		"goToMcp": "Go to MCP Settings",
+		"goToModes": "Go to Modes"
+	},
+	"removeConfirm": {
+		"mode": {
+			"title": "Remove Mode",
+			"message": "Are you sure you want to remove the mode \"{{modeName}}\"?",
+			"rulesWarning": "This will also remove any associated rules files."
+		},
+		"mcp": {
+			"title": "Remove MCP Server",
+			"message": "Are you sure you want to remove the MCP server \"{{mcpName}}\"?"
+		},
+		"cancel": "Cancel",
+		"confirm": "Remove"
+	},
+	"footer": {
+		"issueText": "Having issues with a marketplace item? <1>Open a GitHub issue</1>"
 	},
 	"installation": {
 		"installing": "Installing item: \"{{itemName}}\"",

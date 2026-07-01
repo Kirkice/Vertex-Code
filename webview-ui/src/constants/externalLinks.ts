@@ -6,4 +6,5 @@ export const EXTERNAL_LINKS = {
 	SECURITY_POLICY: "https://github.com/Kirkice/Vertex-Code/security/policy",
 	REDDIT: "https://www.reddit.com/r/Vertex/",
 	DISCORD: "https://discord.gg/VxfP4Vx3gX",
+	MARKETPLACE_ISSUE: "https://github.com/Kirkice/Vertex-Code/issues/new?template=bug_report.yml",
 } as const

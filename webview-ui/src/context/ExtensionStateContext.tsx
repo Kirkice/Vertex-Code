@@ -17,6 +17,7 @@ import {
 	type McpServer,
 	type OrchestratorProviderConfig,
 	type OrchestratorSessionSnapshot,
+	type MarketplaceInstalledMetadata,
 	RouterModels,
 	ORGANIZATION_ALLOW_ALL,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -57,6 +58,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setAlwaysAllowFollowupQuestions: (value: boolean) => void // Setter for the new property
 	followupAutoApproveTimeoutMs: number | undefined // Timeout in ms for auto-approving follow-up questions
 	setFollowupAutoApproveTimeoutMs: (value: number) => void // Setter for the timeout
+	marketplaceItems?: any[]
+	marketplaceInstalledMetadata?: MarketplaceInstalledMetadata
 	profileThresholds: Record<string, number>
 	setProfileThresholds: (value: Record<string, number>) => void
 	setApiConfiguration: (config: ProviderSettings) => void
@@ -302,6 +305,11 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
 	const [currentCheckpoint, setCurrentCheckpoint] = useState<string>()
 	const [extensionRouterModels, setExtensionRouterModels] = useState<RouterModels | undefined>(undefined)
+	const [marketplaceItems, setMarketplaceItems] = useState<any[]>([])
+	const [marketplaceInstalledMetadata, setMarketplaceInstalledMetadata] = useState<MarketplaceInstalledMetadata>({
+		project: {},
+		global: {},
+	})
 	const [alwaysAllowFollowupQuestions, setAlwaysAllowFollowupQuestions] = useState(false) // Add state for follow-up questions auto-approve
 	const [followupAutoApproveTimeoutMs, setFollowupAutoApproveTimeoutMs] = useState<number | undefined>(undefined) // Will be set from global settings
 	const [skills, setSkills] = useState<SkillMetadata[]>([])
@@ -329,10 +337,17 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			const message: ExtensionMessage = event.data
 			switch (message.type) {
 				case "state": {
-					const newState = message.state ?? {}
-					setState((prevState) => mergeExtensionState(prevState, newState))
-					setShowWelcome(!checkExistKey(newState.apiConfiguration))
-					setDidHydrateState(true)
+						const newState = message.state ?? {}
+						setState((prevState) => mergeExtensionState(prevState, newState))
+						setShowWelcome(!checkExistKey(newState.apiConfiguration))
+						setDidHydrateState(true)
+						// Handle marketplace data if present in state message
+						if (newState.marketplaceItems !== undefined) {
+							setMarketplaceItems(newState.marketplaceItems)
+						}
+						if (newState.marketplaceInstalledMetadata !== undefined) {
+							setMarketplaceInstalledMetadata(newState.marketplaceInstalledMetadata)
+						}
 					// Update alwaysAllowFollowupQuestions if present in state message
 					if ((newState as any).alwaysAllowFollowupQuestions !== undefined) {
 						setAlwaysAllowFollowupQuestions((newState as any).alwaysAllowFollowupQuestions)
@@ -429,9 +444,18 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					break
 				}
 				case "routerModels": {
-					setExtensionRouterModels(message.routerModels)
-					break
-				}
+						setExtensionRouterModels(message.routerModels)
+						break
+					}
+					case "marketplaceData": {
+						if (message.marketplaceItems !== undefined) {
+							setMarketplaceItems(message.marketplaceItems)
+						}
+						if (message.marketplaceInstalledMetadata !== undefined) {
+							setMarketplaceInstalledMetadata(message.marketplaceInstalledMetadata)
+						}
+						break
+					}
 				case "taskHistoryUpdated": {
 					// Efficiently update just the task history without replacing entire state
 					if (message.taskHistory !== undefined) {
@@ -521,6 +545,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		cloudIsAuthenticated: state.cloudIsAuthenticated ?? false,
 		cloudOrganizations: state.cloudOrganizations ?? [],
 		organizationSettingsVersion: state.organizationSettingsVersion ?? -1,
+		marketplaceItems,
+		marketplaceInstalledMetadata,
 		profileThresholds: state.profileThresholds ?? {},
 		alwaysAllowFollowupQuestions,
 		followupAutoApproveTimeoutMs,
