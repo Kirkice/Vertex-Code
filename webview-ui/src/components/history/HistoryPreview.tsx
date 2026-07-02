@@ -1,23 +1,39 @@
-import { memo } from "react"
+import { memo, useState, useMemo } from "react"
 
-import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 
 import { useTaskSearch } from "./useTaskSearch"
 import { useGroupedTasks } from "./useGroupedTasks"
+import { countAllSubtasks } from "./types"
 import TaskGroupItem from "./TaskGroupItem"
+import { DeleteTaskDialog } from "./DeleteTaskDialog"
+import { vscode } from "@src/utils/vscode"
 
 const HistoryPreview = () => {
 	const { tasks, searchQuery } = useTaskSearch()
 	const { groups, toggleExpand } = useGroupedTasks(tasks, searchQuery)
 	const { t } = useAppTranslation()
 
+	const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
+	const [deleteSubtaskCount, setDeleteSubtaskCount] = useState<number>(0)
+
+	// Get subtask count for a task (recursive total)
+	const getSubtaskCount = useMemo(() => {
+		const countMap = new Map<string, number>()
+		for (const group of groups) {
+			countMap.set(group.parent.id, countAllSubtasks(group.subtasks))
+		}
+		return (taskId: string) => countMap.get(taskId) || 0
+	}, [groups])
+
 	const handleViewAllHistory = () => {
 		vscode.postMessage({ type: "switchTab", tab: "history" })
 	}
 
+	// Handle delete with subtask count - show confirmation dialog
 	const handleDelete = (taskId: string) => {
-		vscode.postMessage({ type: "deleteTaskWithId", text: taskId })
+		setDeleteTaskId(taskId)
+		setDeleteSubtaskCount(getSubtaskCount(taskId))
 	}
 
 	// Show up to 4 groups (parent + subtasks count as 1 block)
@@ -47,6 +63,21 @@ const HistoryPreview = () => {
 						/>
 					))}
 				</>
+			)}
+
+			{/* Delete confirmation dialog */}
+			{deleteTaskId && (
+				<DeleteTaskDialog
+					taskId={deleteTaskId}
+					subtaskCount={deleteSubtaskCount}
+					onOpenChange={(open) => {
+						if (!open) {
+							setDeleteTaskId(null)
+							setDeleteSubtaskCount(0)
+						}
+					}}
+					open
+				/>
 			)}
 		</div>
 	)

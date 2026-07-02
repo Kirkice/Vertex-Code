@@ -894,6 +894,11 @@ export const webviewMessageHandler = async (
 				await provider.deleteTaskWithId(message.text!)
 			} catch (error) {
 				console.error(`Failed to delete task ${message.text}:`, error)
+				vscode.window.showErrorMessage(
+					`Failed to delete task: ${error instanceof Error ? error.message : String(error)}`,
+				)
+				// Ensure UI is refreshed even on failure
+				await provider.postStateToWebview()
 			}
 			break
 		case "deleteMultipleTasksWithIds": {
