@@ -114,23 +114,32 @@ const App = () => {
 			const message: ExtensionMessage = e.data
 
 			if (message.type === "action" && message.action) {
-					// Handle switchTab action with tab parameter
-					if (message.action === "switchTab" && message.tab) {
-						const targetTab = message.tab as Tab
-						switchTab(targetTab)
-						// Extract targetSection from values if provided
-						const targetSection = message.values?.section as string | undefined
-						const marketplaceTab = message.values?.marketplaceTab as string | undefined
-						setCurrentSection(targetSection)
-						setCurrentMarketplaceTab(marketplaceTab)
-					} else {
+				// Handle switchTab action with tab parameter
+				if (message.action === "switchTab" && message.tab) {
+					const targetTab = message.tab as Tab
+					switchTab(targetTab)
+					// Extract targetSection from values if provided
+					const targetSection = message.values?.section as string | undefined
+					setCurrentSection(targetSection)
+					setCurrentMarketplaceTab(undefined)
+				} else {
 					// Handle other actions using the mapping
 					const newTab = tabsByMessageAction[message.action]
 					const section = message.values?.section as string | undefined
+					const marketplaceTab = message.values?.marketplaceTab as string | undefined
 
 					if (newTab) {
 						switchTab(newTab)
 						setCurrentSection(section)
+						setCurrentMarketplaceTab(marketplaceTab)
+
+						// Request marketplace data immediately when switching in via
+						// toolbar/action messages so we do not depend on mount timing.
+						if (newTab === "marketplace") {
+							vscode.postMessage({
+								type: "fetchMarketplaceData",
+							})
+						}
 					}
 				}
 			}

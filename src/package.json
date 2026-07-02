@@ -49,7 +49,7 @@
 		"onLanguage",
 		"onStartupFinished"
 	],
-	"main": "./dist/extension.js",
+	"main": "./dist/extension.patched.js",
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [

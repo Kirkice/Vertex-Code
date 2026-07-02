@@ -2809,26 +2809,6 @@ export const webviewMessageHandler = async (
 			await vscode.commands.executeCommand(getCommand("focusPanel"))
 			break
 		}
-		case "filterMarketplaceItems": {
-			break
-		}
-
-		case "fetchMarketplaceData": {
-			break
-		}
-
-		case "installMarketplaceItem": {
-			break
-		}
-
-		case "removeInstalledMarketplaceItem": {
-			break
-		}
-
-		case "installMarketplaceItemWithParameters": {
-			break
-		}
-
 		case "switchTab": {
 			if (message.tab) {
 				await provider.postMessageToWebview({

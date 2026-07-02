@@ -2792,25 +2792,36 @@ export class ClineProvider
 	 */
 	public async fetchMarketplaceData(): Promise<void> {
 		try {
-			const [marketplaceResult, marketplaceInstalledMetadata] = await Promise.all([
-				this.marketplaceManager.getMarketplaceItems().catch((error) => {
-					console.error("Failed to fetch marketplace items:", error)
-					return { organizationMcps: [], marketplaceItems: [], errors: [error.message] }
-				}),
-				this.marketplaceManager.getInstallationMetadata().catch((error) => {
-					console.error("Failed to fetch installation metadata:", error)
-					return { project: {}, global: {} }
-				}),
-			])
+			const marketplaceResult = await this.marketplaceManager.getMarketplaceItems().catch((error) => {
+				console.error("Failed to fetch marketplace items:", error)
+				return { organizationMcps: [], marketplaceItems: [], errors: [error.message] }
+			})
 
-			// Send marketplace data separately
+			// Send marketplace items immediately so the UI does not stay stuck on
+			// a spinner when installation metadata is slow (for example, due to an
+			// unreachable custom storage path).
 			this.postMessageToWebview({
 				type: "marketplaceData",
 				organizationMcps: marketplaceResult.organizationMcps || [],
 				marketplaceItems: marketplaceResult.marketplaceItems || [],
-				marketplaceInstalledMetadata: marketplaceInstalledMetadata || { project: {}, global: {} },
+				marketplaceInstalledMetadata: { project: {}, global: {} },
 				errors: marketplaceResult.errors,
 			})
+
+			void this.marketplaceManager
+				.getInstallationMetadata()
+				.then((marketplaceInstalledMetadata) => {
+					this.postMessageToWebview({
+						type: "marketplaceData",
+						organizationMcps: marketplaceResult.organizationMcps || [],
+						marketplaceItems: marketplaceResult.marketplaceItems || [],
+						marketplaceInstalledMetadata: marketplaceInstalledMetadata || { project: {}, global: {} },
+						errors: marketplaceResult.errors,
+					})
+				})
+				.catch((error) => {
+					console.error("Failed to fetch installation metadata:", error)
+				})
 		} catch (error) {
 			console.error("Failed to fetch marketplace data:", error)
 

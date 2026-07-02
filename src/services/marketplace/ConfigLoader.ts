@@ -19,10 +19,10 @@ const mcpMarketplaceResponse = z.object({
 })
 
 export class ConfigLoader {
-	private readonly marketplacePath: string
+	private readonly marketplacePaths: string[]
 
 	constructor(extensionPath: string) {
-		this.marketplacePath = path.join(extensionPath, "assets", "marketplace")
+		this.marketplacePaths = this.createMarketplacePaths(extensionPath)
 	}
 
 	async loadAllItems(): Promise<MarketplaceItem[]> {
@@ -59,11 +59,36 @@ export class ConfigLoader {
 	}
 
 	private async readMarketplaceFile(fileName: string): Promise<string> {
-		return fs.readFile(path.join(this.marketplacePath, fileName), "utf-8")
+		const attemptedPaths = this.marketplacePaths.map((basePath) => path.join(basePath, fileName))
+		let lastError: unknown
+
+		for (const filePath of attemptedPaths) {
+			try {
+				return await fs.readFile(filePath, "utf-8")
+			} catch (error) {
+				lastError = error
+			}
+		}
+
+		const errorMessage = lastError instanceof Error ? lastError.message : String(lastError)
+		throw new Error(
+			`Failed to read marketplace file '${fileName}'. Tried: ${attemptedPaths.join(", ")}. Last error: ${errorMessage}`,
+		)
 	}
 
 	async getItem(id: string, type: MarketplaceItemType): Promise<MarketplaceItem | null> {
 		const items = await this.loadAllItems()
 		return items.find((item) => item.id === id && item.type === type) || null
+	}
+
+	private createMarketplacePaths(extensionPath: string): string[] {
+		const candidates = [
+			path.join(extensionPath, "assets", "marketplace"),
+			path.join(extensionPath, "..", "assets", "marketplace"),
+			path.join(extensionPath, "dist", "assets", "marketplace"),
+			path.join(extensionPath, "..", "dist", "assets", "marketplace"),
+		]
+
+		return [...new Set(candidates.map((candidate) => path.normalize(candidate)))]
 	}
 }
