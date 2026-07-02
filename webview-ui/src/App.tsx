@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ExtensionMessage, type GraphicsIntent, type GraphicsPlaybookId, type GraphicsWorkflowResult } from "@roo-code/types"
+import { type ExtensionMessage, type GraphicsWorkflowResult } from "@roo-code/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
 import { MarketplaceViewStateManager } from "./components/marketplace/MarketplaceViewStateManager"
@@ -23,9 +23,8 @@ import { useAddNonInteractiveClickListener } from "./components/ui/hooks/useNonI
 import { TooltipProvider } from "./components/ui/tooltip"
 import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 import { Button } from "./components/ui"
-import { GraphicsWorkspace } from "./components/graphics/GraphicsWorkspace"
 
-type Tab = "settings" | "history" | "chat" | "marketplace" | "graphics"
+type Tab = "settings" | "history" | "chat" | "marketplace"
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -261,7 +260,7 @@ const App = () => {
 
 	// Do not conditionally load ChatView, it's expensive and there's state we
 	// don't want to lose (user input, disableInput, askResponse promise, etc.)
-	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace" && tab !== "graphics"
+	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace"
 
 	return isSetupGatedTab ? (
 		<WelcomeView />
@@ -278,32 +277,6 @@ const App = () => {
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
 			)}
-			{tab === "graphics" && (
-				<GraphicsWorkspace
-					currentMode={mode}
-					onRunWorkflow={(intent: GraphicsIntent, message?: string) => {
-						vscode.postMessage({
-							type: "runGraphicsWorkflow",
-							graphicsIntent: intent,
-							text: message,
-						} as any)
-					}}
-					onRunPlaybook={(playbookId: GraphicsPlaybookId) => {
-						vscode.postMessage({
-							type: "runGraphicsPlaybook",
-							graphicsPlaybookId: playbookId,
-						} as any)
-					}}
-					onSwitchMode={(newMode: string) => {
-						vscode.postMessage({
-							type: "switchMode",
-							mode: newMode,
-						} as any)
-					}}
-					latestResult={graphicsResult}
-					isAnalyzing={graphicsAnalyzing}
-				/>
-			)}
 			{graphicsModeSuggestion && (
 				<div className="fixed bottom-4 right-4 z-50 max-w-sm bg-vscode-editor-background border border-vscode-panel-border rounded-lg shadow-lg p-4">
 					<div className="flex items-start gap-3">
@@ -319,7 +292,7 @@ const App = () => {
 											type: "switchMode",
 											mode: graphicsModeSuggestion.targetMode,
 										} as any)
-										switchTab("graphics")
+										switchTab("chat")
 										setGraphicsModeSuggestion(null)
 									}}>
 									Switch to Graphics Mode

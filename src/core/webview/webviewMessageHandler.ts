@@ -890,7 +890,11 @@ export const webviewMessageHandler = async (
 			provider.condenseTaskContext(message.text!)
 			break
 		case "deleteTaskWithId":
-			provider.deleteTaskWithId(message.text!)
+			try {
+				await provider.deleteTaskWithId(message.text!)
+			} catch (error) {
+				console.error(`Failed to delete task ${message.text}:`, error)
+			}
 			break
 		case "deleteMultipleTasksWithIds": {
 			const ids = message.ids
