@@ -24,6 +24,7 @@ import {
 	markdownFormattingSection,
 	getSkillsSection,
 } from "./sections"
+import { GRAPHICS_MODE_PROMPT } from "./sections/graphics-agent"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -82,6 +83,9 @@ async function generatePrompt(
 	// Tools catalog is not included in the system prompt.
 	const toolsCatalog = ""
 
+	// Include graphics-specific prompt section when in graphics mode
+	const graphicsSection = mode === "graphics" ? `\n${GRAPHICS_MODE_PROMPT}\n` : ""
+
 	const basePrompt = `${roleDefinition}
 
 ${markdownFormattingSection()}
@@ -94,7 +98,7 @@ ${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
 
 ${modesSection}
 ${skillsSection ? `\n${skillsSection}` : ""}
-${getRulesSection(cwd, settings)}
+${graphicsSection}${getRulesSection(cwd, settings)}
 
 ${getSystemInfoSection(cwd)}
 

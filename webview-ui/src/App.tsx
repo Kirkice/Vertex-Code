@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ExtensionMessage } from "@roo-code/types"
+import { type ExtensionMessage, type GraphicsIntent, type GraphicsPlaybookId, type GraphicsWorkflowResult } from "@roo-code/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
 import { MarketplaceViewStateManager } from "./components/marketplace/MarketplaceViewStateManager"
@@ -22,8 +22,10 @@ import ErrorBoundary from "./components/ErrorBoundary"
 import { useAddNonInteractiveClickListener } from "./components/ui/hooks/useNonInteractiveClick"
 import { TooltipProvider } from "./components/ui/tooltip"
 import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
+import { Button } from "./components/ui"
+import { GraphicsWorkspace } from "./components/graphics/GraphicsWorkspace"
 
-type Tab = "settings" | "history" | "chat" | "marketplace"
+type Tab = "settings" | "history" | "chat" | "marketplace" | "graphics"
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -61,6 +63,7 @@ const App = () => {
 		machineId,
 		renderContext,
 		mdmCompliant,
+		mode,
 	} = useExtensionState()
 
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
@@ -68,6 +71,11 @@ const App = () => {
 	const [currentSection, setCurrentSection] = useState<string | undefined>(undefined)
 	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
 	const handledImportRef = useRef<number | undefined>(undefined)
+
+	// Graphics workspace state
+	const [graphicsResult, setGraphicsResult] = useState<GraphicsWorkflowResult | null>(null)
+	const [graphicsAnalyzing, setGraphicsAnalyzing] = useState(false)
+	const [graphicsModeSuggestion, setGraphicsModeSuggestion] = useState<{ text: string; targetMode: string } | null>(null)
 
 	// Create a persistent state manager
 	const marketplaceStateManager = useMemo(() => new MarketplaceViewStateManager(), [])
@@ -165,6 +173,30 @@ const App = () => {
 			if (message.type === "acceptInput") {
 				chatViewRef.current?.acceptInput()
 			}
+
+			// Handle graphics result messages from extension
+			if (message.type === "graphicsResult" as any) {
+				setGraphicsAnalyzing(false)
+				const result = (message as any).values?.result as GraphicsWorkflowResult | undefined
+				if (result) {
+					setGraphicsResult(result)
+				}
+			}
+
+			if (message.type === "graphicsWorkflowStarted" as any) {
+				setGraphicsAnalyzing(true)
+				setGraphicsResult(null)
+			}
+
+			// Handle graphics mode suggestion from extension
+			if (message.type === "graphicsModeSuggestion" as any) {
+				const suggestionText = (message as any).text as string | undefined
+				const targetMode = (message as any).targetMode as string | undefined
+				if (suggestionText && targetMode) {
+					// Show suggestion UI for user to confirm/reject
+					setGraphicsModeSuggestion({ text: suggestionText, targetMode })
+				}
+			}
 		},
 		[switchTab],
 	)
@@ -229,7 +261,7 @@ const App = () => {
 
 	// Do not conditionally load ChatView, it's expensive and there's state we
 	// don't want to lose (user input, disableInput, askResponse promise, etc.)
-	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace"
+	const isSetupGatedTab = showWelcome && tab !== "settings" && tab !== "marketplace" && tab !== "graphics"
 
 	return isSetupGatedTab ? (
 		<WelcomeView />
@@ -245,6 +277,63 @@ const App = () => {
 			)}
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
+			)}
+			{tab === "graphics" && (
+				<GraphicsWorkspace
+					currentMode={mode}
+					onRunWorkflow={(intent: GraphicsIntent, message?: string) => {
+						vscode.postMessage({
+							type: "runGraphicsWorkflow",
+							graphicsIntent: intent,
+							text: message,
+						} as any)
+					}}
+					onRunPlaybook={(playbookId: GraphicsPlaybookId) => {
+						vscode.postMessage({
+							type: "runGraphicsPlaybook",
+							graphicsPlaybookId: playbookId,
+						} as any)
+					}}
+					onSwitchMode={(newMode: string) => {
+						vscode.postMessage({
+							type: "switchMode",
+							mode: newMode,
+						} as any)
+					}}
+					latestResult={graphicsResult}
+					isAnalyzing={graphicsAnalyzing}
+				/>
+			)}
+			{graphicsModeSuggestion && (
+				<div className="fixed bottom-4 right-4 z-50 max-w-sm bg-vscode-editor-background border border-vscode-panel-border rounded-lg shadow-lg p-4">
+					<div className="flex items-start gap-3">
+						<span className="codicon codicon-lightbulb text-vscode-descriptionForeground text-lg mt-0.5"></span>
+						<div className="flex-1">
+							<p className="text-sm text-vscode-foreground mb-3">{graphicsModeSuggestion.text}</p>
+							<div className="flex gap-2">
+								<Button
+									variant="primary"
+									size="sm"
+									onClick={() => {
+										vscode.postMessage({
+											type: "switchMode",
+											mode: graphicsModeSuggestion.targetMode,
+										} as any)
+										switchTab("graphics")
+										setGraphicsModeSuggestion(null)
+									}}>
+									Switch to Graphics Mode
+								</Button>
+								<Button
+									variant="secondary"
+									size="sm"
+									onClick={() => setGraphicsModeSuggestion(null)}>
+									Dismiss
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
 			)}
 			<ChatView
 				ref={chatViewRef}

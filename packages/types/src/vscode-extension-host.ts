@@ -657,10 +657,15 @@ export interface WebviewMessage {
 		| "orchestratorUpdateConfig"
 		| "orchestratorApprovePlan"
 		| "orchestratorCancel"
+		// Graphics agent messages
+		| "runGraphicsWorkflow"
+		| "runGraphicsPlaybook"
+		| "selectGraphicsProvider"
+		| "requestGraphicsProviderStatus"
 	text?: string
 	taskId?: string
 	editedMessageContent?: string
-	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "cloud"
+	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "cloud" | "graphics"
 	disabled?: boolean
 	context?: string
 	dataUri?: string
@@ -722,6 +727,10 @@ export interface WebviewMessage {
 	upsellId?: string // For dismissUpsell
 	list?: string[] // For dismissedUpsells response
 	organizationId?: string | null // For organization switching
+	// Graphics agent fields
+	graphicsIntent?: string // For runGraphicsWorkflow
+	graphicsPlaybookId?: string // For runGraphicsPlaybook
+	graphicsProviderId?: string // For selectGraphicsProvider
 	useProviderSignup?: boolean // For rooCloudSignIn to use provider signup flow
 	codeIndexSettings?: {
 		// Global state settings

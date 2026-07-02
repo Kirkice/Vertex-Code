@@ -92,6 +92,8 @@ import {
 } from "./worktree"
 
 import { MarketplaceManager } from "../../services/marketplace"
+import { handleGraphicsMessage } from "./graphicsMessageHandler"
+import { graphicsModeManager } from "../../services/graphics-agent/GraphicsModeManager"
 
 export const webviewMessageHandler = async (
 	provider: ClineProvider,
@@ -543,6 +545,18 @@ export const webviewMessageHandler = async (
 		}
 	}
 
+	// Handle graphics agent messages before the main switch
+	const graphicsMessageTypes = [
+		"runGraphicsWorkflow",
+		"runGraphicsPlaybook",
+		"selectGraphicsProvider",
+		"requestGraphicsProviderStatus",
+	]
+	if (graphicsMessageTypes.includes(message.type)) {
+		await handleGraphicsMessage(provider, message)
+		return
+	}
+
 	switch (message.type) {
 		case "webviewDidLaunch":
 			// Load custom modes first
@@ -626,6 +640,35 @@ export const webviewMessageHandler = async (
 		case "newTask": {
 			// Check if orchestrator mode is enabled
 			const orchestratorEnabled = getGlobalState("orchestratorEnabled")
+
+			// Analyze message for graphics intent and potentially switch mode
+			if (message.text) {
+				const currentMode = await getCurrentMode()
+				graphicsModeManager.setCurrentMode(currentMode)
+				const modeDecision = graphicsModeManager.analyzeMessage(message.text)
+				
+				if (modeDecision.shouldSwitch && modeDecision.targetMode) {
+					if (modeDecision.requiresConfirmation) {
+						// Ask user for confirmation
+						const suggestionMessage = graphicsModeManager.getSwitchSuggestionMessage(modeDecision)
+						if (suggestionMessage) {
+							provider.log(`[GraphicsModeManager] Suggesting mode switch: ${suggestionMessage}`)
+							// Post suggestion to webview for user confirmation
+							await provider.postMessageToWebview({
+								type: "graphicsModeSuggestion",
+								text: suggestionMessage,
+								targetMode: modeDecision.targetMode,
+							} as any)
+						}
+					} else {
+						// Auto-switch for high confidence
+						provider.log(`[GraphicsModeManager] Auto-switching to ${modeDecision.targetMode}: ${modeDecision.reason}`)
+						await graphicsModeManager.executeSwitch(modeDecision, async (mode) => {
+							await provider.handleModeSwitch(mode)
+						})
+					}
+				}
+			}
 
 			try {
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })

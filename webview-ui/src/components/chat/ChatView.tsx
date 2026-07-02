@@ -1629,6 +1629,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 <div className="flex flex-col gap-4 w-full items-center">
 							<RooHero />
 							<RooTips />
+							{/* Graphics Workspace Entry */}
+							<Button
+								variant="secondary"
+								className="w-full max-w-md"
+								onClick={() => window.postMessage({ type: "action", action: "switchTab", tab: "graphics" })}>
+								<span className="codicon codicon-device-mobile mr-2"></span>
+								Open Graphics Workspace
+							</Button>
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
 						</div>
