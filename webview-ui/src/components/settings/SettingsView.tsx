@@ -29,6 +29,7 @@ import {
 	ArrowLeft,
 	GitCommitVertical,
 	GraduationCap,
+	Monitor,
 } from "lucide-react"
 
 import {
@@ -78,6 +79,7 @@ import PromptsSettings from "./PromptsSettings"
 import { SlashCommandsSettings } from "./SlashCommandsSettings"
 import { SkillsSettings } from "./SkillsSettings"
 import { UISettings } from "./UISettings"
+import { GraphicsProvidersSettings } from "./GraphicsProvidersSettings"
 import { OrchestratorSettings } from "../orchestrator/OrchestratorSettings"
 import { DEFAULT_ORCHESTRATOR_CONFIG, DEFAULT_MODES } from "@roo-code/types"
 import ModesView from "../modes/ModesView"
@@ -114,6 +116,7 @@ export const sectionNames = [
 	"ui",
 	"experimental",
 	"language",
+	"graphicsProviders",
 	"about",
 ] as const
 
@@ -543,6 +546,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "ui", icon: Glasses },
 			{ id: "experimental", icon: FlaskConical },
 			{ id: "language", icon: Globe },
+			{ id: "graphicsProviders", icon: Monitor },
 			{ id: "about", icon: Info },
 		],
 		[], // No dependencies needed now
@@ -973,6 +977,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						{renderTab === "language" && (
 							<LanguageSettings language={language || "en"} setCachedStateField={setCachedStateField} />
 						)}
+
+						{/* Graphics Providers Section */}
+						{renderTab === "graphicsProviders" && <GraphicsProvidersSettings />}
 
 						{/* About Section */}
 						{renderTab === "about" && (

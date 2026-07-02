@@ -42,6 +42,7 @@
 		"ui": "UI",
 		"experimental": "Experimental",
 		"language": "Language",
+		"graphicsProviders": "Graphics Providers",
 		"about": "About Vertex"
 	},
 	"about": {

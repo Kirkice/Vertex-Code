@@ -41,6 +41,7 @@
 		"ui": "UI",
 		"experimental": "实验性",
 		"language": "语言",
+		"graphicsProviders": "图形提供商",
 		"about": "关于 Vertex",
 		"skills": "Skills"
 	},
