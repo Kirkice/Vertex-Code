@@ -28,6 +28,45 @@ async function removeDirWithRetries(dirPath, retries = 5, retryDelayMs = 200) {
 	}
 }
 
+function setupMarketplaceWatcher(srcDir, buildDir) {
+	const marketplaceDir = path.join(srcDir, "assets", "marketplace")
+
+	if (!fs.existsSync(marketplaceDir)) {
+		console.warn(`Cannot set up watcher: Source marketplace directory does not exist: ${marketplaceDir}`)
+		return
+	}
+
+	console.log(`Setting up watcher for marketplace files in ${marketplaceDir}`)
+
+	let debounceTimer = null
+
+	const debouncedCopy = () => {
+		if (debounceTimer) {
+			clearTimeout(debounceTimer)
+		}
+
+		debounceTimer = setTimeout(() => {
+			console.log("Marketplace files changed, copying...")
+			copyPaths([["assets/marketplace", "dist/assets/marketplace"]], srcDir, buildDir)
+		}, 300)
+	}
+
+	try {
+		fs.watch(marketplaceDir, { recursive: true }, (_eventType, filename) => {
+			if (filename && (filename.endsWith(".yml") || filename.endsWith(".yaml") || filename.endsWith(".json"))) {
+				console.log(`Marketplace file ${filename} changed, triggering copy...`)
+				debouncedCopy()
+			}
+		})
+		console.log("Watcher for marketplace files is set up")
+	} catch (error) {
+		console.error(
+			`Error setting up watcher for ${marketplaceDir}:`,
+			error instanceof Error ? error.message : "Unknown error",
+		)
+	}
+}
+
 async function main() {
 	const name = "extension"
 	const production = process.argv.includes("--production")
@@ -147,6 +186,8 @@ async function main() {
 		await Promise.all([extensionCtx.watch(), workerCtx.watch()])
 		copyLocales(srcDir, distDir)
 		setupLocaleWatcher(srcDir, distDir)
+		copyPaths([["assets/marketplace", "dist/assets/marketplace"]], srcDir, buildDir)
+		setupMarketplaceWatcher(srcDir, buildDir)
 	} else {
 		// Run sequentially on rebuild to avoid Windows EBUSY races when both
 		// onEnd hooks copy the same asset directories concurrently.

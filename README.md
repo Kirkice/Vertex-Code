@@ -1,41 +1,74 @@
-# Mini Modes - 学习项目
+# Vertex Code
 
-一个极简 VS Code 扩展，演示 Vertex 的自定义模式（Custom Modes）核心概念。
+> A compact VS Code extension project for understanding how custom AI modes are modeled, merged, and surfaced inside a modern agent workflow.
 
-**对应 Vertex 的关键文件**：`packages/types/src/modes.ts`、`src/shared/tools.ts`、`src/shared/modes.ts`、`src/core/prompt.ts`、`src/extension.ts` — 每个部分都详细注释了对应关系和作用说明。
+`Vertex Code` is a focused learning project. It distills the core ideas behind **Custom Modes** into a small, readable VS Code extension so you can study the mechanics without wading through a much larger production codebase.
 
-## 功能特性
+It is designed for people who want to understand:
 
-- **自定义模式配置** — 在 `settings.json` 中添加 `miniModes.customModes` 定义自定义模式
-- **模式切换** — 在 UI 中切换当前模式，查看不同模式的工具权限
-- **系统提示组装** — 实时预览当前模式的系统提示（roleDefinition + customInstructions + 工具描述 + 模式约束）
-- **演示模式** — 不需要真实 LLM 交互，UI 会展示组装的 prompt，方便理解模式如何影响对话
+- how a mode is defined
+- how built-in and user-defined modes are merged
+- how tool permissions shape agent behavior
+- how a system prompt is assembled from mode data
+- how those ideas are exposed through a lightweight VS Code chat UI
 
-## 每个模式包含
+## Why This Project
 
-- **角色定义（roleDefinition）** — 拼入 system prompt 的核心内容
-- **自定义指令（customInstructions）** — 附加补充说明
-- **工具权限（toolGroups）** — 决定该模式可以使用哪些工具组
+Large AI coding products often hide their most interesting ideas behind a lot of infrastructure. This repo intentionally goes the other direction.
 
-## 内置模式
+It keeps the surface area small, the file boundaries clear, and the concepts visible. Instead of simulating an entire agent platform, it focuses on one powerful abstraction:
 
-| 模式 | 工具组 | 说明 |
-|------|--------|------|
-| Code | read, edit, terminal, search, browser | 全功能编码模式 |
-| Architect | read, search | 规划设计模式，不能编辑文件 |
-| Ask | read | 快速问答模式 |
+**a mode is a reusable behavioral contract**
 
-## 使用方式
+That contract combines:
 
-1. 按 `Ctrl+Shift+P`，输入 `Mini Modes: Open Chat` 打开聊天面板
-2. 在下拉菜单中选择模式（Code / Architect / Ask）
-3. 点击 **👁 Preview Prompt** 查看当前模式的系统提示组装结果
-4. 输入消息发送 — 无 API Key 时展示 demo prompt，有 API Key 时调用真实 LLM
-5. Enter 发送消息，Ctrl+Enter 换行
+- a role definition
+- extra instructions
+- a tool permission set
+- a prompt assembly strategy
 
-## 配置自定义模式
+## Highlights
 
-在 VS Code 的 `settings.json` 中添加：
+- **Custom Modes**  
+  Define your own modes in `settings.json` with `slug`, `name`, `roleDefinition`, `customInstructions`, and `toolGroups`.
+
+- **Mode Switching UI**  
+  Switch between built-in and custom modes from the extension UI and immediately see how the active behavior changes.
+
+- **Prompt Preview**  
+  Inspect the final assembled system prompt, including role definition, custom instructions, tool descriptions, and mode constraints.
+
+- **Minimal, Study-Friendly Architecture**  
+  The project is intentionally small enough to trace end-to-end.
+
+- **Vertex-Aligned Concepts**  
+  The implementation mirrors the shape of a real mode-driven agent system closely enough to be educational, while staying approachable.
+
+## Built-In Modes
+
+| Mode | Tool Groups | Purpose |
+| --- | --- | --- |
+| `Code` | `read`, `edit`, `terminal`, `search`, `browser` | Full coding workflow |
+| `Architect` | `read`, `search` | Planning, analysis, structure, no file edits |
+| `Ask` | `read` | Lightweight Q&A mode |
+
+## How It Works
+
+At a high level, the extension follows a simple flow:
+
+1. Load built-in modes.
+2. Read user-defined modes from VS Code settings.
+3. Merge them using override-or-append rules.
+4. Resolve the active mode.
+5. Expand tool-group permissions into concrete capability descriptions.
+6. Assemble the final system prompt.
+7. Show the result inside the chat panel.
+
+This makes the repo useful both as a teaching aid and as a starting point for your own experiments.
+
+## Custom Mode Example
+
+Add your own mode in VS Code `settings.json`:
 
 ```json
 {
@@ -53,37 +86,89 @@
 }
 ```
 
-**模式合并规则（与 Vertex 一致）：**
-- 自定义模式 slug 与内置相同 → 覆盖（override）
-- 自定义模式 slug 是全新的 → 追加（add）
-- 查找时始终自定义优先
+### Merge Rules
 
-## 项目结构
+- If a custom mode uses the same `slug` as a built-in mode, it **overrides** it.
+- If a custom mode uses a new `slug`, it is **added** to the mode list.
+- During lookup, custom definitions take precedence.
 
-```
+## Project Structure
+
+```text
 src/
-  extension.ts          # 扩展入口（注册命令、监听设置）
-  types/modes.ts        # 类型定义 + 3 个内置模式
+  extension.ts          VS Code entrypoint
+  types/
+    modes.ts            Mode types and built-in mode definitions
   core/
-    modes.ts            # 模式引擎（查找、合并、摘要）
-    tools.ts            # 5 个工具组定义
-    prompt.ts           # 系统提示组装
+    modes.ts            Mode lookup, merge, and summary logic
+    tools.ts            Tool-group definitions
+    prompt.ts           System prompt assembly
   webview/
-    ChatPanel.ts        # WebView 面板管理（消息通信、HTML 加载）
+    ChatPanel.ts        Webview lifecycle and message bridge
+
 webview-ui/
-  index.html            # 聊天 UI 结构
-  main.js               # 前端交互逻辑
-  style.css             # VS Code 主题风格样式
+  index.html            Chat UI shell
+  main.js               Frontend interaction logic
+  style.css             UI styling
 ```
 
-## 开发
+## Files Worth Reading First
+
+If you want the fastest path through the codebase, start here:
+
+- `src/types/modes.ts`
+- `src/core/tools.ts`
+- `src/core/modes.ts`
+- `src/core/prompt.ts`
+- `src/extension.ts`
+
+Together, these files explain most of the system.
+
+## Development
+
+### Prerequisites
+
+- Node.js `20.20.2`
+- VS Code `^1.84.0`
+- `pnpm` `10.8.1`
+
+### Common Commands
 
 ```bash
-# 编译
-npm run compile
-
-# 监听模式
-npm run watch
+pnpm install
+pnpm build
+pnpm test
+pnpm lint
 ```
 
-按 F5 在 VS Code 中启动扩展开发调试。
+If you are working on the extension itself:
+
+```bash
+pnpm bundle
+pnpm vsix
+```
+
+### Run In VS Code
+
+1. Open the project in VS Code.
+2. Run `pnpm install`.
+3. Press `F5`.
+4. In the Extension Development Host, run `Mini Modes: Open Chat`.
+
+## What This Project Is And Is Not
+
+This project **is**:
+
+- a clean reference for mode-driven prompt assembly
+- a small VS Code extension for experimentation
+- a teaching-oriented implementation
+
+This project **is not**:
+
+- a full production agent platform
+- a complete clone of Vertex internals
+- an opinionated end-user chat product
+
+## License
+
+See [LICENSE](LICENSE).
