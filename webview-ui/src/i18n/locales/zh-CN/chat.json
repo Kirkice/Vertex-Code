@@ -12,6 +12,7 @@
 		"size": "大小",
 		"contextWindow": "上下文长度",
 		"closeAndStart": "关闭任务并开始新任务",
+		"backToHome": "返回主界面",
 		"export": "导出任务历史",
 		"delete": "删除任务（Shift + 点击跳过确认）",
 		"condenseContext": "智能压缩上下文",

@@ -184,6 +184,22 @@ describe("TaskHeader", () => {
 			mockPostMessage.mockClear()
 		})
 
+		it("should always show back to home button", () => {
+			renderTaskHeader()
+			expect(screen.getByText("chat:task.backToHome")).toBeInTheDocument()
+		})
+
+		it("should call vscode.postMessage with clearTask when back to home button is clicked", () => {
+			renderTaskHeader()
+
+			const homeButton = screen.getByText("chat:task.backToHome")
+			fireEvent.click(homeButton)
+
+			expect(mockPostMessage).toHaveBeenCalledWith({
+				type: "clearTask",
+			})
+		})
+
 		it("should not show back button when parentTaskId is not provided", () => {
 			renderTaskHeader()
 			expect(screen.queryByText("chat:task.backToParentTask")).not.toBeInTheDocument()

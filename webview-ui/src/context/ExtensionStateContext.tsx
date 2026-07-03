@@ -174,11 +174,17 @@ export const mergeExtensionState = (prevState: ExtensionState, newState: Partial
 	const customModePrompts = { ...prevCustomModePrompts, ...(newCustomModePrompts ?? {}) }
 	const experiments = { ...prevExperiments, ...(newExperiments ?? {}) }
 	const rest = { ...prevRest, ...newRest }
+	const hasCurrentTaskIdUpdate = Object.prototype.hasOwnProperty.call(newState, "currentTaskId")
+	const didTaskChange =
+		hasCurrentTaskIdUpdate && newState.currentTaskId !== prevState.currentTaskId
 	const prevMessages = prevState.clineMessages ?? []
 	const incomingMessages = newState.clineMessages
+	const isIncomingMessageListEmpty = incomingMessages !== undefined && incomingMessages.length === 0
 	const prevLastMessageTs = prevMessages.at(-1)?.ts ?? 0
 	const incomingLastMessageTs = incomingMessages?.at(-1)?.ts ?? 0
 	const hasIncomingOlderMessages =
+		!isIncomingMessageListEmpty &&
+		!didTaskChange &&
 		incomingMessages !== undefined &&
 		(incomingMessages.length < prevMessages.length || incomingLastMessageTs < prevLastMessageTs)
 

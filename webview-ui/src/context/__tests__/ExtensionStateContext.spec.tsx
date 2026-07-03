@@ -511,5 +511,63 @@ describe("mergeExtensionState", () => {
 			expect(result.clineMessages).toBe(newMessages)
 			expect(result.clineMessagesSeq).toBe(1)
 		})
+
+		it("applies empty clineMessages when the current task is deleted or cleared", () => {
+			const prevState: ExtensionState = {
+				...baseState,
+				currentTaskId: "task-1",
+				clineMessages: [makeMessage(1, "hello"), makeMessage(2, "world")],
+				clineMessagesSeq: 5,
+			}
+
+			const result = mergeExtensionState(prevState, {
+				currentTaskId: undefined,
+				currentTaskItem: undefined,
+				clineMessages: [],
+				clineMessagesSeq: 6,
+			})
+
+			expect(result.currentTaskId).toBeUndefined()
+			expect(result.currentTaskItem).toBeUndefined()
+			expect(result.clineMessages).toEqual([])
+			expect(result.clineMessagesSeq).toBe(6)
+		})
+
+		it("applies shorter clineMessages when switching to a different task", () => {
+			const prevState: ExtensionState = {
+				...baseState,
+				currentTaskId: "task-1",
+				clineMessages: [makeMessage(1, "task-1 hello"), makeMessage(2, "task-1 world")],
+				clineMessagesSeq: 5,
+			}
+			const nextMessages = [makeMessage(1, "task-2 hello")]
+
+			const result = mergeExtensionState(prevState, {
+				currentTaskId: "task-2",
+				clineMessages: nextMessages,
+				clineMessagesSeq: 6,
+			})
+
+			expect(result.currentTaskId).toBe("task-2")
+			expect(result.clineMessages).toBe(nextMessages)
+			expect(result.clineMessagesSeq).toBe(6)
+		})
+
+		it("applies empty clineMessages even when currentTaskId is omitted", () => {
+			const prevState: ExtensionState = {
+				...baseState,
+				currentTaskId: "task-1",
+				clineMessages: [makeMessage(1, "hello"), makeMessage(2, "world")],
+				clineMessagesSeq: 5,
+			}
+
+			const result = mergeExtensionState(prevState, {
+				clineMessages: [],
+				clineMessagesSeq: 6,
+			})
+
+			expect(result.clineMessages).toEqual([])
+			expect(result.clineMessagesSeq).toBe(6)
+		})
 	})
 })

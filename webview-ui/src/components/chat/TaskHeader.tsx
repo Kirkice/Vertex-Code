@@ -1,6 +1,6 @@
 import { memo, useRef, useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronUp, ChevronDown, HardDriveDownload, HardDriveUpload, FoldVertical, ArrowLeft } from "lucide-react"
+import { ChevronUp, ChevronDown, HardDriveDownload, HardDriveUpload, FoldVertical, ArrowLeft, HouseIcon } from "lucide-react"
 import prettyBytes from "pretty-bytes"
 
 import type { ClineMessage } from "@roo-code/types"
@@ -98,10 +98,22 @@ const TaskHeader = ({
 		}
 	}
 
+	const handleBackToHome = () => {
+		vscode.postMessage({ type: "clearTask" })
+	}
+
 	return (
 		<div className="group pt-2 pb-0 px-3">
+			<div className="mb-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={handleBackToHome}
+					className="flex items-center gap-1.5 text-xs text-vscode-descriptionForeground hover:text-vscode-foreground">
+					<HouseIcon className="size-3" />
+					{t("chat:task.backToHome")}
+				</Button>
 			{isSubtask && (
-				<div className="mb-2" onClick={(e) => e.stopPropagation()}>
 					<Button
 						variant="ghost"
 						size="sm"
@@ -110,8 +122,8 @@ const TaskHeader = ({
 						<ArrowLeft className="size-3" />
 						{t("chat:task.backToParentTask")}
 					</Button>
-				</div>
 			)}
+			</div>
 			<div
 				className={cn(
 					"px-3 pt-2.5 pb-2 flex flex-col gap-1.5 relative z-1 cursor-pointer",
