@@ -68,6 +68,7 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 		const labels: Partial<Record<MarketplaceItem["type"], string>> = {
 			mode: t("marketplace:filters.type.mode"),
 			mcp: t("marketplace:filters.type.mcpServer"),
+			skill: "Skill",
 		}
 		return labels[item.type] ?? "N/A"
 	}, [item.type, t])

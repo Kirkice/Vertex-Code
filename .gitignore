@@ -88,3 +88,9 @@ venv/
 *.swp
 *.tmp
 *~
+
+# Webview build artifacts (copied to src/ for packaging)
+src/webview-ui/build/
+
+# Plan documents (optional: remove this line if you want to track plans)
+# plans/

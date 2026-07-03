@@ -27,7 +27,7 @@ export type McpInstallationMethod = z.infer<typeof mcpInstallationMethodSchema>
 /**
  * Component type validation
  */
-export const marketplaceItemTypeSchema = z.enum(["mode", "mcp"] as const)
+export const marketplaceItemTypeSchema = z.enum(["mode", "mcp", "skill"] as const)
 
 export type MarketplaceItemType = z.infer<typeof marketplaceItemTypeSchema>
 
@@ -62,6 +62,30 @@ export const mcpMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
 export type McpMarketplaceItem = z.infer<typeof mcpMarketplaceItemSchema>
 
 /**
+ * Schema for a single file within a skill package
+ */
+export const skillFileSchema = z.object({
+	path: z.string().min(1), // Relative path within the skill directory, e.g. "SKILL.md", "references/guide.md"
+	url: z.string().url().optional(), // Optional direct download URL, overrides source-derived URL
+})
+
+export type SkillFile = z.infer<typeof skillFileSchema>
+
+/**
+ * Skill marketplace item schema
+ * Skills are hosted on GitHub and downloaded at install time.
+ */
+export const skillMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
+	source: z.string().url(), // GitHub repository URL, e.g. "https://github.com/user/repo"
+	sourcePath: z.string().optional().default(""), // Path within the repo to the skill directory
+	branch: z.string().optional().default("main"), // Git branch name
+	files: z.array(skillFileSchema).min(1), // List of files to download
+	modeSlugs: z.array(z.string()).optional(), // Applicable mode slugs (e.g. ["graphics", "code"])
+})
+
+export type SkillMarketplaceItem = z.infer<typeof skillMarketplaceItemSchema>
+
+/**
  * Unified marketplace item schema using discriminated union
  */
 export const marketplaceItemSchema = z.discriminatedUnion("type", [
@@ -72,6 +96,10 @@ export const marketplaceItemSchema = z.discriminatedUnion("type", [
 	// MCP marketplace item
 	mcpMarketplaceItemSchema.extend({
 		type: z.literal("mcp"),
+	}),
+	// Skill marketplace item
+	skillMarketplaceItemSchema.extend({
+		type: z.literal("skill"),
 	}),
 ])
 

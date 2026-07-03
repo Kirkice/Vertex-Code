@@ -6,6 +6,7 @@ import type { MarketplaceItem, MarketplaceItemType, InstallMarketplaceItemOption
 import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
+import { SkillInstaller } from "./SkillInstaller"
 
 export interface InstallOptions extends InstallMarketplaceItemOptions {
 	target: "project" | "global"
@@ -13,10 +14,14 @@ export interface InstallOptions extends InstallMarketplaceItemOptions {
 }
 
 export class SimpleInstaller {
+	private readonly skillInstaller: SkillInstaller
+
 	constructor(
 		private readonly context: vscode.ExtensionContext,
 		private readonly customModesManager?: CustomModesManager,
-	) {}
+	) {
+		this.skillInstaller = new SkillInstaller()
+	}
 
 	async installItem(item: MarketplaceItem, options: InstallOptions): Promise<{ filePath: string; line?: number }> {
 		const { target } = options
@@ -26,13 +31,23 @@ export class SimpleInstaller {
 				return await this.installMode(item, target)
 			case "mcp":
 				return await this.installMcp(item, target, options)
+			case "skill":
+				return await this.installSkill(item, target)
 			default:
 				throw new Error(`Unsupported item type: ${(item as any).type}`)
 		}
 	}
 
-	private async installMode(
+	private async installSkill(
 		item: MarketplaceItem,
+		target: "project" | "global",
+	): Promise<{ filePath: string; line?: number }> {
+		const result = await this.skillInstaller.installSkill(item, target)
+		return { filePath: result.dirPath }
+	}
+
+	private async installMode(
+		item: Extract<MarketplaceItem, { type: "mode" }>,
 		target: "project" | "global",
 	): Promise<{ filePath: string; line?: number }> {
 		if (!item.content) {
@@ -155,7 +170,7 @@ export class SimpleInstaller {
 	}
 
 	private async installMcp(
-		item: MarketplaceItem,
+		item: Extract<MarketplaceItem, { type: "mcp" }>,
 		target: "project" | "global",
 		options?: InstallOptions,
 	): Promise<{ filePath: string; line?: number }> {
@@ -288,12 +303,15 @@ export class SimpleInstaller {
 			case "mcp":
 				await this.removeMcp(item, target)
 				break
+			case "skill":
+				await this.skillInstaller.removeSkill(item, target)
+				break
 			default:
 				throw new Error(`Unsupported item type: ${(item as any).type}`)
 		}
 	}
 
-	private async removeMode(item: MarketplaceItem, target: "project" | "global"): Promise<void> {
+	private async removeMode(item: Extract<MarketplaceItem, { type: "mode" }>, target: "project" | "global"): Promise<void> {
 		if (!this.customModesManager) {
 			throw new Error("CustomModesManager is not available")
 		}
@@ -328,7 +346,7 @@ export class SimpleInstaller {
 		await this.customModesManager.deleteCustomMode(modeSlug, true)
 	}
 
-	private async removeMcp(item: MarketplaceItem, target: "project" | "global"): Promise<void> {
+	private async removeMcp(item: Extract<MarketplaceItem, { type: "mcp" }>, target: "project" | "global"): Promise<void> {
 		const filePath = await this.getMcpFilePath(target)
 
 		try {

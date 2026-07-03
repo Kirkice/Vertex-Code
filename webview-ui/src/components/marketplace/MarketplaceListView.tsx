@@ -16,7 +16,7 @@ export interface MarketplaceListViewProps {
 	stateManager: MarketplaceViewStateManager
 	allTags: string[]
 	filteredTags: string[]
-	filterByType?: "mcp" | "mode"
+	filterByType?: "mcp" | "mode" | "skill"
 }
 
 export function MarketplaceListView({ stateManager, allTags, filteredTags, filterByType }: MarketplaceListViewProps) {
@@ -48,7 +48,9 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 								? t("marketplace:filters.search.placeholderMcp")
 								: filterByType === "mode"
 									? t("marketplace:filters.search.placeholderMode")
-									: t("marketplace:filters.search.placeholder")
+									: filterByType === "skill"
+										? "Search skills..."
+										: t("marketplace:filters.search.placeholder")
 						}
 						value={state.filters.search}
 						onChange={(e) =>

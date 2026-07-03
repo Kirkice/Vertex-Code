@@ -1,0 +1,254 @@
+items:
+  # Graphics Skills
+  - id: write-shader
+    name: Write Shader
+    description: "Write, modify, and optimize GPU shader code. Supports HLSL, GLSL, WGSL, and Metal Shading Language. Includes templates for PBR lighting, post-processing effects, compute shaders, and skyboxes."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - shader
+      - graphics
+      - hlsl
+      - glsl
+      - wgsl
+      - pbr
+      - compute
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "graphics/write-shader"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+      - code
+
+  - id: rendering-pipeline
+    name: Rendering Pipeline
+    description: "Design and modify rendering pipelines. Covers Forward, Deferred, Forward+, and Tile-Based architectures. Includes pass graph design, resource management, and barrier planning."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - pipeline
+      - graphics
+      - rendering
+      - deferred
+      - forward
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "graphics/rendering-pipeline"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+      - code
+
+  - id: graphics-debug
+    name: Graphics Debug
+    description: "Code-level rendering bug debugging. Systematic checklists for black screen, artifacts, flickering, lighting errors, shadow issues, and more. Uses elimination-based diagnosis without requiring GPU capture tools."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - debug
+      - graphics
+      - troubleshooting
+      - black-screen
+      - artifacts
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "graphics/graphics-debug"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+      - path: "references/debug-playbook.md"
+    modeSlugs:
+      - graphics
+      - code
+
+  - id: graphics-optimization
+    name: Graphics Optimization
+    description: "Rendering performance optimization. Includes performance budgets for 30/60 FPS, bottleneck analysis (CPU/GPU/vertex/pixel/bandwidth), optimization technique decision matrix, and common anti-patterns."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - optimization
+      - graphics
+      - performance
+      - gpu
+      - bandwidth
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "graphics/graphics-optimization"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+      - code
+
+  - id: unity-graphics
+    name: Unity Graphics
+    description: "Unity-specific graphics programming. Covers URP/HDRP pipeline customization, Shader Graph best practices, custom render features, and Unity shader language (HLSL/ShaderLab)."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - unity
+      - graphics
+      - urp
+      - hdrp
+      - shader-graph
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "graphics/unity-graphics"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+      - code
+
+  # RenderDoc for VSCode Skills
+  - id: renderdoc-frame-overview
+    name: RenderDoc Frame Overview
+    description: "Analyze RenderDoc frame captures. Get high-level overview of render passes, draw calls, timing, and identify performance hotspots."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - frame-capture
+      - performance
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-frame-overview"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-current-selection-explainer
+    name: RenderDoc Selection Explainer
+    description: "Explain the currently selected draw call or event in RenderDoc. Analyze pipeline state, shader bindings, and resource usage."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - draw-call
+      - pipeline-state
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-current-selection-explainer"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-shader-review
+    name: RenderDoc Shader Review
+    description: "Review and analyze shaders captured in RenderDoc. Examine shader source, constant buffers, and identify optimization opportunities."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - shader
+      - hlsl
+      - glsl
+      - optimization
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-shader-review"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-texture-trace
+    name: RenderDoc Texture Trace
+    description: "Trace texture usage through a RenderDoc capture. Find where textures are written, sampled, and identify potential issues."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - texture
+      - resource-trace
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-texture-trace"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-buffer-inspector
+    name: RenderDoc Buffer Inspector
+    description: "Inspect buffer contents in RenderDoc captures. Analyze vertex buffers, index buffers, constant buffers, and structured buffers."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - buffer
+      - vertex
+      - constant-buffer
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-buffer-inspector"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-performance-investigation
+    name: RenderDoc Performance Investigation
+    description: "Investigate performance issues using RenderDoc. Analyze GPU timing, identify bottlenecks, and suggest optimizations."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - performance
+      - gpu-timing
+      - bottleneck
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-performance-investigation"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-pass-to-project-mapping
+    name: RenderDoc Pass-to-Project Mapping
+    description: "Map RenderDoc render passes back to project source code. Identify which code files and functions are responsible for each pass."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - code-mapping
+      - render-pass
+      - source-code
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-pass-to-project-mapping"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics
+
+  - id: renderdoc-replay-recovery-helper
+    name: RenderDoc Replay Recovery Helper
+    description: "Help recover from RenderDoc replay issues. Diagnose API errors, state corruption, and compatibility problems."
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - renderdoc
+      - replay
+      - error-recovery
+      - debugging
+      - graphics
+    source: "https://github.com/Kirkice/vertex-skills"
+    sourcePath: "renderdoc-for-vscode/renderdoc-replay-recovery-helper"
+    branch: "main"
+    files:
+      - path: "SKILL.md"
+    modeSlugs:
+      - graphics

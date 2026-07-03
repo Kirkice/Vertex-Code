@@ -16,6 +16,7 @@ modeSlugs:
 - 如果主要任务是编写或重写某个具体 shader，而不是改 pass/架构，切换到 `write-shader`
 - 如果主要问题是画面结果不对，先切换到 `graphics-debug` 定位根因
 - 如果主要问题是帧率低、某个 pass 太慢、带宽或 CPU 开销过高，切换到 `graphics-optimization`
+- 如果任务发生在 Unity 项目里，先过一遍 `unity-graphics` 识别 Built-in、URP 或 HDRP 的接入方式
 - 如果确认根因在管线集成、资源状态或 pass 顺序，再回到本 skill 落地修改
 
 ## 工作流程

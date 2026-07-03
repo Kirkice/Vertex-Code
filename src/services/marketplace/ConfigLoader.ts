@@ -8,6 +8,7 @@ import {
 	type MarketplaceItemType,
 	modeMarketplaceItemSchema,
 	mcpMarketplaceItemSchema,
+	skillMarketplaceItemSchema,
 } from "@roo-code/types"
 
 const modeMarketplaceResponse = z.object({
@@ -18,6 +19,10 @@ const mcpMarketplaceResponse = z.object({
 	items: z.array(mcpMarketplaceItemSchema),
 })
 
+const skillMarketplaceResponse = z.object({
+	items: z.array(skillMarketplaceItemSchema),
+})
+
 export class ConfigLoader {
 	private readonly marketplacePaths: string[]
 
@@ -26,8 +31,12 @@ export class ConfigLoader {
 	}
 
 	async loadAllItems(): Promise<MarketplaceItem[]> {
-		const [modes, mcps] = await Promise.all([this.fetchModes(), this.fetchMcps()])
-		return [...modes, ...mcps]
+		const [modes, mcps, skills] = await Promise.all([
+			this.fetchModes(),
+			this.fetchMcps(),
+			this.fetchSkills(),
+		])
+		return [...modes, ...mcps, ...skills]
 	}
 
 	private async fetchModes(): Promise<MarketplaceItem[]> {
@@ -56,6 +65,26 @@ export class ConfigLoader {
 		}))
 
 		return items
+	}
+
+	private async fetchSkills(): Promise<MarketplaceItem[]> {
+		try {
+			const data = await this.readMarketplaceFile("skills.yml")
+
+			const yamlData = yaml.parse(data)
+			const validated = skillMarketplaceResponse.parse(yamlData)
+
+			const items: MarketplaceItem[] = validated.items.map((item) => ({
+				type: "skill" as const,
+				...item,
+			}))
+
+			return items
+		} catch (error) {
+			// skills.yml is optional — return empty array if not found
+			console.warn("Failed to load skills.yml:", error)
+			return []
+		}
 	}
 
 	private async readMarketplaceFile(fileName: string): Promise<string> {

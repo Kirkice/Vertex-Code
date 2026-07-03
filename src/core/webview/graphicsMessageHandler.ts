@@ -282,14 +282,30 @@ async function handleRequestGraphicsProviderStatus(
 ): Promise<void> {
 	try {
 		const registry = getGraphicsRegistry(provider)
-		const statuses = await registry.getAllStatuses()
-		const selectedProvider = await registry.getSelectedProvider()
+		const allProviders = await registry.listProviders()
+		const [statuses, selectedProvider, capabilitiesEntries] = await Promise.all([
+			registry.getAllStatuses(),
+			registry.getSelectedProvider(),
+			Promise.all(
+				allProviders.map(async (graphicsProvider) => {
+					try {
+						const capabilities = await graphicsProvider.getCapabilities()
+						return [graphicsProvider.id, capabilities] as const
+					} catch {
+						return [graphicsProvider.id, null] as const
+					}
+				}),
+			),
+		])
+
+		const capabilitiesByProviderId = Object.fromEntries(capabilitiesEntries)
 
 		await provider.postMessageToWebview({
 			type: "graphicsProviderStatus",
 			values: {
 				providers: statuses,
 				selectedProviderId: selectedProvider?.id,
+				capabilitiesByProviderId,
 			},
 		} as any)
 	} catch (error) {

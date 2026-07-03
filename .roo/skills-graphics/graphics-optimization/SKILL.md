@@ -16,6 +16,7 @@ modeSlugs:
 - 如果主要问题是黑屏、闪烁、颜色错误、阴影错误或几何体消失，切换到 `graphics-debug`
 - 如果优化方案需要重构 render graph、拆分 pass、修改资源生命周期或改变管线拓扑，切换到 `rendering-pipeline`
 - 如果瓶颈集中在单个 shader 的实现细节、采样路径或数学热点，切换到 `write-shader`
+- 如果优化任务发生在 Unity 项目里，先过一遍 `unity-graphics` 确认是 Built-in、URP 还是 HDRP，并检查 Unity 专有瓶颈
 - 如果需要同时改架构和热点代码，先用本 skill 判断瓶颈，再分别交给 `rendering-pipeline` 或 `write-shader`
 
 ## 核心原则

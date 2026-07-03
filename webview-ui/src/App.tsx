@@ -271,7 +271,7 @@ const App = () => {
 				<MarketplaceView
 					stateManager={marketplaceStateManager}
 					onDone={() => switchTab("chat")}
-					targetTab={currentMarketplaceTab as "mcp" | "mode" | undefined}
+					targetTab={currentMarketplaceTab as "mcp" | "mode" | "skill" | undefined}
 				/>
 			)}
 			{tab === "settings" && (

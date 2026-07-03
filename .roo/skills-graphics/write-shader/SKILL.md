@@ -16,6 +16,7 @@ modeSlugs:
 - 如果主要任务是改 render graph、插入新 pass、调整资源生命周期或同步策略，切换到 `rendering-pipeline`
 - 如果主要问题是黑屏、花屏、阴影错误、颜色错误等结果不对，先切换到 `graphics-debug`
 - 如果主要诉求是帧率、带宽、draw call 或整条 pass 链路的优化，切换到 `graphics-optimization`
+- 如果任务发生在 Unity 的 ShaderLab/URP/HDRP 语境里，先过一遍 `unity-graphics` 确认落在哪个 Unity 接口层
 - 如果确认瓶颈就在某个 shader 热点路径，再回到本 skill 完成具体实现
 
 ## 工作流程
