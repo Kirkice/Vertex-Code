@@ -1340,12 +1340,20 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								aria-label="Toggle Mode-Level LLM Routing"
 								onClick={handleToggleLockApiConfig}
 								className={cn(
-									"inline-flex items-center justify-center",
-									"bg-transparent border-none p-1.5 rounded",
-									"hover:bg-vscode-list-hoverBackground cursor-pointer",
-									modeLevelLlmRoutingEnabled ? "text-vscode-focusBorder" : "opacity-60",
+									"inline-flex items-center gap-1 justify-center",
+									"bg-transparent border border-vscode-input-border rounded px-1.5 py-0.5",
+									"hover:bg-vscode-list-hoverBackground cursor-pointer text-xs",
+									"transition-colors",
+									modeLevelLlmRoutingEnabled
+										? "text-vscode-focusBorder border-vscode-focusBorder"
+										: "text-vscode-descriptionForeground opacity-70",
 								)}>
-								<Layers className="w-4 h-4" />
+								<Layers className="w-3.5 h-3.5" />
+								<span className="hidden min-[400px]:inline truncate">
+									{modeLevelLlmRoutingEnabled
+										? t("chat:modeLevelRouting.labelOn", { defaultValue: "多模型" })
+										: t("chat:modeLevelRouting.labelOff", { defaultValue: "单模型" })}
+								</span>
 							</button>
 						</StandardTooltip>
 					</div>
