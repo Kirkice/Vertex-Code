@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Server, Users2, GraduationCap } from "lucide-react"
 import { Tab, TabContent, TabHeader } from "../common/Tab"
 import { MarketplaceViewStateManager } from "./MarketplaceViewStateManager"
 import { useStateManager } from "./useStateManager"
@@ -96,11 +96,29 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 	// Memoize filtered tags
 	const filteredTags = useMemo(() => allTags, [allTags])
 
+	// Compute item counts for the active tab
+	const activeItems = state.displayItems || []
+	const activeFiltered = state.activeTab
+		? activeItems.filter((item) => item.type === state.activeTab)
+		: activeItems
+	const totalCount = activeFiltered.length
+	const installedCount = activeFiltered.filter((item) => {
+		const installedMetadata = state.installedMetadata
+		return !!installedMetadata?.project?.[item.id] || !!installedMetadata?.global?.[item.id]
+	}).length
+
+	const tabConfig = [
+		{ id: "mcp" as const, label: "MCP", icon: Server },
+		{ id: "mode" as const, label: "Modes", icon: Users2 },
+		{ id: "skill" as const, label: "Skills", icon: GraduationCap },
+	]
+
 	return (
 		<TooltipProvider delayDuration={300}>
 			<Tab>
-				<TabHeader className="flex flex-col sticky top-0 z-10 px-3 py-2">
-					<div className="flex items-center justify-between gap-2 px-2">
+				<TabHeader className="flex flex-col sticky top-0 z-10 bg-vscode-sideBar-background">
+					{/* Section Header - Graphics Providers style */}
+					<div className="px-5 pt-6 pb-4">
 						<div className="flex items-center gap-2">
 							<Button
 								variant="ghost"
@@ -110,48 +128,46 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 								<ArrowLeft />
 								<span className="sr-only">{t("settings:back")}</span>
 							</Button>
-							<h3 className="font-bold m-0">{t("marketplace:title")}</h3>
+							<div>
+								<h3 className="text-[1.25em] font-semibold text-vscode-foreground m-0">
+									{t("marketplace:title")}
+								</h3>
+								<p className="text-vscode-descriptionForeground text-sm mt-1 mb-0">
+									{totalCount > 0
+										? `${installedCount} of ${totalCount} item${totalCount !== 1 ? "s" : ""} installed`
+										: "Browse and install MCP servers, modes, and skills."}
+								</p>
+							</div>
 						</div>
 					</div>
 
-					<div className="w-full mt-2">
-						<div className="flex relative py-1">
-							<div className="absolute w-full h-[2px] -bottom-[2px] bg-vscode-input-border">
-								<div
-									className={cn(
-										"absolute w-1/3 h-[2px] bottom-0 bg-vscode-button-background transition-all duration-300 ease-in-out",
-										{
-											"left-0": state.activeTab === "mcp",
-											"left-1/3": state.activeTab === "mode",
-											"left-2/3": state.activeTab === "skill",
-										},
-									)}
-								/>
-							</div>
-							<button
-								className="cursor-pointer flex items-center justify-center gap-2 flex-1 text-sm font-medium rounded-sm transition-colors duration-300 relative z-10 text-vscode-foreground"
-								onClick={() => manager.transition({ type: "SET_ACTIVE_TAB", payload: { tab: "mcp" } })}>
-								MCP
-							</button>
-							<button
-								className="cursor-pointer flex items-center justify-center gap-2 flex-1 text-sm font-medium rounded-sm transition-colors duration-300 relative z-10 text-vscode-foreground"
-								onClick={() =>
-									manager.transition({ type: "SET_ACTIVE_TAB", payload: { tab: "mode" } })
-								}>
-								Modes
-							</button>
-							<button
-								className="cursor-pointer flex items-center justify-center gap-2 flex-1 text-sm font-medium rounded-sm transition-colors duration-300 relative z-10 text-vscode-foreground"
-								onClick={() =>
-									manager.transition({ type: "SET_ACTIVE_TAB", payload: { tab: "skill" } })
-								}>
-								Skills
-							</button>
+					{/* Pill-style Tab Selector */}
+					<div className="px-5 pb-3">
+						<div className="flex gap-1 rounded-md border border-vscode-panel-border bg-vscode-editor-background p-1">
+							{tabConfig.map(({ id, label, icon: Icon }) => {
+								const isActive = state.activeTab === id
+								return (
+									<button
+										key={id}
+										className={cn(
+											"cursor-pointer flex items-center justify-center gap-1.5 flex-1 text-xs font-medium rounded-sm px-3 py-1.5 transition-all duration-200",
+											isActive
+												? "bg-vscode-button-background text-vscode-button-foreground shadow-sm"
+												: "text-vscode-descriptionForeground hover:text-vscode-foreground hover:bg-vscode-list-hoverBackground",
+										)}
+										onClick={() =>
+											manager.transition({ type: "SET_ACTIVE_TAB", payload: { tab: id } })
+										}>
+										<Icon className="size-3.5" />
+										{label}
+									</button>
+								)
+							})}
 						</div>
 					</div>
 				</TabHeader>
 
-				<TabContent className="p-3 pt-2">
+				<TabContent className="px-5 py-2">
 					{state.activeTab === "mcp" && (
 						<MarketplaceListView
 							stateManager={stateManager}

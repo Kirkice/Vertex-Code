@@ -93,6 +93,13 @@ import { MessageManager } from "../message-manager"
 import { validateAndFixToolResultIds } from "./validateToolResultIds"
 import { mergeConsecutiveApiMessages } from "./mergeConsecutiveApiMessages"
 import { prepareApiConversationMessage } from "./apiConversationHistory"
+import {
+	createHandoff,
+	handoffToMessage,
+	consumePendingHandoff,
+	type ModeHandoffExtractInput,
+} from "../../services/mode-handoff"
+import type { ModeHandoffTrigger } from "@roo-code/types"
 
 const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
 const DEFAULT_USAGE_COLLECTION_TIMEOUT_MS = 5000 // 5 seconds
@@ -1371,11 +1378,71 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * @param toProfile 切换目标 Profile（可能为 undefined 表示不切 profile）
 	 * @internal
 	 */
-	private captureModeSwitchSnapshot(toMode?: string, toProfile?: string): void {
-		// TODO(handoff): 当 toMode !== this._taskMode 或 toProfile !== this._taskApiConfigName 时，
-		// 生成 ModeHandoffSummary 并写入 clineMessages，供下一轮请求前注入。
-		// 当前仅保留方法签名，确保切换前快照有统一入口。
-		void { fromMode: this._taskMode, fromApiConfigName: this._taskApiConfigName, toMode, toProfile }
+	private async captureModeSwitchSnapshot(toMode?: string, toProfile?: string): Promise<void> {
+		// Mode Handoff: 当 Mode 或 Profile 发生变化时，生成结构化交接摘要并写入 clineMessages。
+		// 详见 docs/mode-handoff-summary-implementation-plan.md
+		const fromMode = this._taskMode
+		const fromProfile = this._taskApiConfigName
+
+		// 提取最近用户目标（取最近一条 user_feedback / text 消息）
+		let objective = ""
+		const recentAssistantTexts: string[] = []
+		for (let i = this.clineMessages.length - 1; i >= 0 && i >= this.clineMessages.length - 20; i--) {
+			const msg = this.clineMessages[i]
+			if (!msg) continue
+			if (msg.type === "say" && msg.say === "user_feedback" && msg.text && !objective) {
+				objective = msg.text
+			}
+			if (msg.type === "say" && msg.say === "text" && msg.text) {
+				recentAssistantTexts.unshift(msg.text)
+			}
+		}
+		if (!objective) objective = "(未提取到明确目标)"
+
+		// 提取 touchedFiles（从工具调用中提取文件路径，简化版取最近 10 个）
+		const touchedFiles: string[] = []
+		for (let i = this.clineMessages.length - 1; i >= 0 && touchedFiles.length < 10; i--) {
+			const msg = this.clineMessages[i]
+			if (msg?.type === "ask" && msg.ask === "tool") {
+				const tool = (msg as any)?.tool
+				if (tool?.path) touchedFiles.unshift(tool.path)
+			}
+		}
+
+		// 判断阻塞阶段
+		let blockingStage: "followup" | "approval" | "review_repair" | undefined
+		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
+			const msg = this.clineMessages[i]
+			if (msg?.type === "ask" && !msg.isAnswered) {
+				if (msg.ask === "followup") blockingStage = "followup"
+				else if (msg.ask === "tool") blockingStage = "approval"
+				break
+			}
+		}
+
+		// Mode 约束（简化版：根据 fromMode 给默认约束）
+		const modeConstraints: string[] = []
+		if (fromMode === "architect") modeConstraints.push("Architect 模式为只读分析，不直接修改代码")
+
+		const input: ModeHandoffExtractInput = {
+			objective,
+			todos: (this as any).todoList || [],
+			recentAssistantTexts,
+			touchedFiles,
+			blockingStage,
+			modeConstraints,
+			fromMode,
+			toMode: toMode || fromMode || "",
+			fromProfile,
+			toProfile: toProfile || fromProfile || "",
+			trigger: "user_mode_switch" as ModeHandoffTrigger,
+		}
+
+		const handoff = createHandoff(input)
+		if (handoff) {
+			const message = handoffToMessage(handoff)
+			await this.addToClineMessages(message)
+		}
 	}
 
 	/**
@@ -1407,17 +1474,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const provider = this.providerRef.deref()
 
 			if (provider) {
-				// 记录切换前的 mode/profile 快照（为 Phase 4 mode handoff summary 预留）。
-				// TODO(handoff): 当 mode 或 profile 发生变化时，在此处生成 mode_handoff 摘要。
-				void this.captureModeSwitchSnapshot(mode, providerProfile)
-
 				if (mode) {
 					await provider.setMode(mode)
 				}
-
+	
 				if (providerProfile) {
 					await provider.setProviderProfile(providerProfile)
-
+	
 					// Update this task's API configuration to match the new profile
 					// This ensures the parser state is synchronized with the selected model
 					const newState = await provider.getState()
@@ -1425,7 +1488,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						this.updateApiConfiguration(newState.apiConfiguration)
 					}
 				}
-
+	
+				// Mode Handoff: 在切换成功后生成结构化交接摘要并写入 clineMessages。
+				// 放在 setMode/setProviderProfile 之后，确保切换已生效，避免"假交接"。
+				await this.captureModeSwitchSnapshot(mode, providerProfile)
+	
 				this.emit(RooCodeEventName.TaskUserMessage, this.taskId)
 
 				// Handle the message directly instead of routing through the webview.
@@ -2401,6 +2468,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// provider rate-limit window.
 			await this.maybeWaitForProviderRateLimit(currentItem.retryAttempt ?? 0)
 			Task.lastGlobalApiRequestTime = performance.now()
+
+			// Mode Handoff: 消费 pending handoff，注入到本轮 API 请求的 userContent 前面
+			const handoffInject = consumePendingHandoff(this.clineMessages)
+			if (handoffInject) {
+				userContent.unshift({
+					type: "text",
+					text: handoffInject.text,
+				} as Anthropic.TextBlockParam)
+				// 持久化 consumedAt，避免进程重启后重复注入
+				await this.saveClineMessages()
+			}
 
 			await this.say(
 				"api_req_started",

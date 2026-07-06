@@ -170,6 +170,7 @@ export const clineSays = [
 	"user_edit_todos",
 	"too_many_tools_warning",
 	"tool",
+	"mode_handoff",
 ] as const
 
 export const clineSaySchema = z.enum(clineSays)
@@ -288,9 +289,78 @@ export const clineMessageSchema = z.object({
 	 * 用于多模型成本分摊（byProfile breakdown）。
 	 */
 	providerProfileAtRequest: z.string().optional(),
+	/**
+	 * Mode Handoff Summary：Mode/Profile 切换时的结构化交接摘要。
+	 * 当 say === "mode_handoff" 时存在，记录 from→to 的上下文交接信息。
+	 */
+	modeHandoff: z.lazy(() => modeHandoffSummarySchema).optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>
+
+/**
+	* Mode Handoff Summary
+	*
+	* 在同一个 task 内发生 Mode 或 Profile 切换时，自动生成的结构化交接摘要。
+	* 供下一个模型快速接住上下文，避免多模型混搭时的衔接波动。
+	*
+	* 详见 docs/mode-handoff-summary-implementation-plan.md
+	*/
+
+export const modeHandoffSummarySchema = z.object({
+	/** 唯一标识 */
+	handoffId: z.string(),
+	/** 创建时间戳 */
+	createdAt: z.number(),
+	/** 触发类型 */
+	trigger: z.enum([
+		"user_mode_switch",
+		"tool_switch_mode",
+		"orchestrator_stage",
+		"profile_only_switch",
+		"auto_intent_switch",
+	]),
+	/** 切换前的 Mode（首次切换可能没有） */
+	fromMode: z.string().optional(),
+	/** 切换目标 Mode */
+	toMode: z.string(),
+	/** 切换前的 Profile */
+	fromProfile: z.string().optional(),
+	/** 切换目标 Profile */
+	toProfile: z.string().optional(),
+	/** 当前 task 的用户目标 */
+	objective: z.string(),
+	/** 已完成的事项 */
+	completed: z.array(z.string()),
+	/** 进行中的事项 */
+	inProgress: z.array(z.string()),
+	/** 待完成的事项 */
+	pending: z.array(z.string()),
+	/** 约束条件（只读/读写限制、用户显式约束等） */
+	constraints: z.array(z.string()),
+	/** task 期间读写过的文件集合 */
+	touchedFiles: z.array(z.string()),
+	/** 未解决的阻塞点（followup/approval/review repair） */
+	openQuestions: z.array(z.string()),
+	/** 给下一个 mode 的行动建议 */
+	recommendedNextStep: z.string().optional(),
+	/** 摘要来源消息的时间范围 */
+	sourceMessageRange: z
+		.object({
+			fromTs: z.number().optional(),
+			toTs: z.number().optional(),
+		})
+		.optional(),
+	/** 消费时间戳（注入给模型后标记） */
+	consumedAt: z.number().optional(),
+})
+
+export type ModeHandoffSummary = z.infer<typeof modeHandoffSummarySchema>
+
+/**
+	* Mode Handoff 触发类型
+	*/
+export type ModeHandoffTrigger = ModeHandoffSummary["trigger"]
 
 /**
 	* TokenUsage

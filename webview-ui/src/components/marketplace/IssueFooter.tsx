@@ -6,7 +6,7 @@ import { EXTERNAL_LINKS } from "@/constants/externalLinks"
 
 export const IssueFooter: React.FC = () => {
 	return (
-		<div className="text-xs text-vscode-descriptionForeground p-3">
+		<div className="py-4 text-center text-[11px] text-vscode-descriptionForeground opacity-60">
 			<Trans i18nKey="marketplace:footer.issueText">
 				<VSCodeLink href={EXTERNAL_LINKS.MARKETPLACE_ISSUE} style={{ display: "inline", fontSize: "inherit" }}>
 					Open a GitHub issue

@@ -96,6 +96,12 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 		})
 	}, [filterByType, installedMetadata, items])
 
+	// Compute statistics
+	const installedCount = items.filter((item) => {
+		return !!installedMetadata?.project?.[item.id] || !!installedMetadata?.global?.[item.id]
+	}).length
+	const availableCount = items.length - installedCount
+
 	return (
 		<>
 			<div className="mb-4">
@@ -251,20 +257,33 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 			</div>
 
 			{state.isFetching && isEmpty && (
-				<div className="flex flex-col items-center justify-center h-64 text-vscode-descriptionForeground animate-fade-in">
-					<div className="animate-spin mb-4">
-						<span className="codicon codicon-sync text-3xl"></span>
-					</div>
-					<p>{t("marketplace:items.refresh.refreshing")}</p>
-					<p className="text-sm mt-2 animate-pulse">{t("marketplace:items.refresh.mayTakeMoment")}</p>
+				<div className="flex flex-col items-center justify-center py-12">
+					<div className="h-5 w-5 animate-spin rounded-full border-2 border-vscode-focusBorder border-t-transparent" />
+					<span className="mt-3 text-xs text-vscode-descriptionForeground">{t("marketplace:items.refresh.refreshing")}</span>
 				</div>
 			)}
 
 			{!state.isFetching && isEmpty && (
-				<div className="flex flex-col items-center justify-center h-64 text-vscode-descriptionForeground animate-fade-in">
-					<span className="codicon codicon-inbox text-4xl mb-4 opacity-70"></span>
-					<p className="font-medium">{t("marketplace:items.empty.noItems")}</p>
-					<p className="text-sm mt-2">{t("marketplace:items.empty.adjustFilters")}</p>
+				<div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+					<div className="mb-4 text-4xl opacity-40">📦</div>
+					<h3 className="mb-2 text-sm font-semibold text-vscode-foreground">{t("marketplace:items.empty.noItems")}</h3>
+					<p className="max-w-sm text-xs leading-relaxed text-vscode-descriptionForeground">
+						{t("marketplace:items.empty.adjustFilters")}
+					</p>
+					<div className="mt-4 space-y-2 text-left text-xs text-vscode-descriptionForeground">
+						<div className="flex items-start gap-2">
+							<span className="mt-0.5 shrink-0 text-[#7c3aed]">1.</span>
+							<span>Try adjusting your search keywords</span>
+						</div>
+						<div className="flex items-start gap-2">
+							<span className="mt-0.5 shrink-0 text-[#7c3aed]">2.</span>
+							<span>Clear active tag filters</span>
+						</div>
+						<div className="flex items-start gap-2">
+							<span className="mt-0.5 shrink-0 text-[#7c3aed]">3.</span>
+							<span>Switch to a different category tab (MCP, Modes, or Skills)</span>
+						</div>
+					</div>
 					<Button
 						onClick={() =>
 							manager.transition({
@@ -281,6 +300,18 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 
 			{!state.isFetching && !isEmpty && (
 				<div className="pb-3">
+					{/* Statistics Summary Bar - Graphics Providers style */}
+					<div className="mb-3 flex items-center gap-4 text-xs text-vscode-descriptionForeground">
+						<div className="flex items-center gap-1.5">
+							<div className="h-2 w-2 rounded-full bg-[#10b981]" />
+							{installedCount} Installed
+						</div>
+						<div className="flex items-center gap-1.5">
+							<div className="h-2 w-2 rounded-full bg-[#6b7280]" />
+							{availableCount} Available
+						</div>
+					</div>
+
 					{orgMcps.length > 0 && (
 						<div className="mb-6">
 							<div className="flex items-center gap-2 mb-3 px-1">

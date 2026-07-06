@@ -1011,6 +1011,63 @@ export const ChatRowContent = ({
 	switch (message.type) {
 		case "say":
 			switch (message.say) {
+				case "mode_handoff": {
+					const handoff = message.modeHandoff
+					if (!handoff) return null
+					const fromLabel = [handoff.fromMode, handoff.fromProfile].filter(Boolean).join(" · ")
+					const toLabel = [handoff.toMode, handoff.toProfile].filter(Boolean).join(" · ")
+					return (
+						<div className="border border-vscode-input-border rounded p-3 my-2 text-xs bg-vscode-textBlockQuote-background">
+							<div className="flex items-center gap-2 mb-2">
+								<span className="text-base">🔄</span>
+								<span className="font-bold text-vscode-foreground">Mode Handoff</span>
+								<span className="text-vscode-descriptionForeground">
+									{fromLabel || "?"} → {toLabel}
+								</span>
+							</div>
+							<div className="mb-1">
+								<span className="text-vscode-descriptionForeground">目标: </span>
+								<span className="text-vscode-foreground">{handoff.objective}</span>
+							</div>
+							{handoff.completed.length > 0 && (
+								<div className="mb-1">
+									<div className="text-vscode-descriptionForeground">已完成:</div>
+									<ul className="list-disc list-inside ml-2">
+										{handoff.completed.map((item, i) => (
+											<li key={`c-${i}`} className="text-vscode-foreground">{item}</li>
+										))}
+									</ul>
+								</div>
+							)}
+							{handoff.inProgress.length > 0 && (
+								<div className="mb-1">
+									<div className="text-vscode-descriptionForeground">进行中:</div>
+									<ul className="list-disc list-inside ml-2">
+										{handoff.inProgress.map((item, i) => (
+											<li key={`p-${i}`} className="text-vscode-foreground">{item}</li>
+										))}
+									</ul>
+								</div>
+							)}
+							{handoff.pending.length > 0 && (
+								<div className="mb-1">
+									<div className="text-vscode-descriptionForeground">待完成:</div>
+									<ul className="list-disc list-inside ml-2">
+										{handoff.pending.map((item, i) => (
+											<li key={`pe-${i}`} className="text-vscode-foreground">{item}</li>
+										))}
+									</ul>
+								</div>
+							)}
+							{handoff.recommendedNextStep && (
+								<div className="mt-2 pt-2 border-t border-vscode-input-border">
+									<span className="text-vscode-descriptionForeground">下一步: </span>
+									<span className="text-vscode-foreground">{handoff.recommendedNextStep}</span>
+								</div>
+							)}
+						</div>
+					)
+				}
 				case "diff_error":
 					return (
 						<ErrorRow
