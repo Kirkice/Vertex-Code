@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import DynamicTextArea from "react-textarea-autosize"
-import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square } from "lucide-react"
+import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square, Layers } from "lucide-react"
 
 import type { ExtensionMessage } from "@roo-code/types"
 
@@ -97,6 +97,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			commands,
 			enterBehavior,
 			lockApiConfigAcrossModes,
+			modeLevelLlmRoutingEnabled,
 		} = useExtensionState()
 
 		// Find the ID and display text for the currently selected API configuration.
@@ -1327,6 +1328,26 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							</>
 						)}
 						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
+						<StandardTooltip
+							content={
+								modeLevelLlmRoutingEnabled
+									? t("chat:modeLevelRouting.enabled", { defaultValue: "Mode-Level LLM Routing: ON (each Mode uses its own model)" })
+									: t("chat:modeLevelRouting.disabled", { defaultValue: "Mode-Level LLM Routing: OFF (all Modes use global model)" })
+							}
+							side="top"
+							sideOffset={8}>
+							<button
+								aria-label="Toggle Mode-Level LLM Routing"
+								onClick={handleToggleLockApiConfig}
+								className={cn(
+									"inline-flex items-center justify-center",
+									"bg-transparent border-none p-1.5 rounded",
+									"hover:bg-vscode-list-hoverBackground cursor-pointer",
+									modeLevelLlmRoutingEnabled ? "text-vscode-focusBorder" : "opacity-60",
+								)}>
+								<Layers className="w-4 h-4" />
+							</button>
+						</StandardTooltip>
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none pr-2")}>
 						{isTtsPlaying && (
