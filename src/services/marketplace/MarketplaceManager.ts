@@ -222,6 +222,10 @@ export class MarketplaceManager {
 			} catch (error) {
 				// File doesn't exist or can't be read, skip
 			}
+
+			// Check Skills in .roo/skills/ and .roo/skills-{mode}/
+			const rooDir = path.join(workspaceFolder.uri.fsPath, ".roo")
+			await this.scanSkillDirectories(rooDir, metadata)
 		} catch (error) {
 			console.error("Error checking project installations:", error)
 		}
@@ -267,8 +271,54 @@ export class MarketplaceManager {
 			} catch (error) {
 				// File doesn't exist or can't be read, skip
 			}
+
+			// Check global Skills in ~/.roo/skills/ and ~/.roo/skills-{mode}/
+			const globalRooDir = path.join(globalSettingsPath, ".roo")
+			await this.scanSkillDirectories(globalRooDir, metadata)
 		} catch (error) {
 			console.error("Error checking global installations:", error)
+		}
+	}
+
+	/**
+	 * Scan skill directories (skills/ and skills-{mode}/) for installed skills.
+	 * A skill is considered installed if its directory contains a SKILL.md file.
+	 */
+	private async scanSkillDirectories(
+		baseDir: string,
+		metadata: Record<string, { type: string }>,
+	): Promise<void> {
+		try {
+			const entries = await fs.readdir(baseDir, { withFileTypes: true })
+
+			for (const entry of entries) {
+				if (!entry.isDirectory()) continue
+
+				// Match "skills" or "skills-{mode}" directories
+				if (entry.name === "skills" || entry.name.startsWith("skills-")) {
+					const skillsDir = path.join(baseDir, entry.name)
+					try {
+						const skillEntries = await fs.readdir(skillsDir, { withFileTypes: true })
+						for (const skillEntry of skillEntries) {
+							if (!skillEntry.isDirectory()) continue
+
+							// Check if SKILL.md exists in this directory
+							const skillMdPath = path.join(skillsDir, skillEntry.name, "SKILL.md")
+							try {
+								await fs.access(skillMdPath)
+								// SKILL.md exists, mark as installed
+								metadata[skillEntry.name] = { type: "skill" }
+							} catch {
+								// SKILL.md doesn't exist, skip
+							}
+						}
+					} catch {
+						// Can't read directory, skip
+					}
+				}
+			}
+		} catch {
+			// Base directory doesn't exist, skip
 		}
 	}
 }

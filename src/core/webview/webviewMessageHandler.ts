@@ -2901,6 +2901,8 @@ export const webviewMessageHandler = async (
 						message.mpInstallOptions,
 					)
 					await provider.postStateToWebview()
+					// Refresh marketplace data to update installed metadata
+					await provider.fetchMarketplaceData()
 
 					provider.postMessageToWebview({
 						type: "marketplaceInstallResult",
@@ -2925,6 +2927,8 @@ export const webviewMessageHandler = async (
 				try {
 					await marketplaceManager.removeInstalledMarketplaceItem(message.mpItem, message.mpInstallOptions)
 					await provider.postStateToWebview()
+					// Refresh marketplace data to update installed metadata
+					await provider.fetchMarketplaceData()
 
 					provider.postMessageToWebview({
 						type: "marketplaceRemoveResult",
