@@ -17,6 +17,7 @@ export function useStateManager(existingManager?: MarketplaceViewStateManager) {
 					JSON.stringify(prevState.displayItems) !== JSON.stringify(newState.displayItems) ||
 					JSON.stringify(prevState.displayOrganizationMcps) !==
 						JSON.stringify(newState.displayOrganizationMcps) ||
+					JSON.stringify(prevState.installedMetadata) !== JSON.stringify(newState.installedMetadata) ||
 					JSON.stringify(prevState.filters) !== JSON.stringify(newState.filters)
 
 				return hasChanged ? newState : prevState

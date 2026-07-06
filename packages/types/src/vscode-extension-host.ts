@@ -74,6 +74,7 @@ export interface ExtensionMessage {
 		| "indexCleared"
 		| "codebaseIndexConfig"
 		| "marketplaceInstallResult"
+		| "marketplaceBulkInstallResult"
 		| "marketplaceRemoveResult"
 		| "marketplaceData"
 		| "shareTaskSuccess"
@@ -592,6 +593,7 @@ export interface WebviewMessage {
 		| "filterMarketplaceItems"
 		| "marketplaceButtonClicked"
 		| "installMarketplaceItem"
+		| "installMarketplaceItems"
 		| "installMarketplaceItemWithParameters"
 		| "cancelMarketplaceInstall"
 		| "switchTab"
@@ -644,6 +646,7 @@ export interface WebviewMessage {
 		| "fetchMarketplaceData"
 		| "removeInstalledMarketplaceItem"
 		| "marketplaceInstallResult"
+		| "marketplaceBulkInstallResult"
 		| "shareTaskSuccess"
 		// Skills messages
 		| "requestSkills"
@@ -718,6 +721,7 @@ export interface WebviewMessage {
 	settings?: any
 	url?: string // For openExternal
 	mpItem?: MarketplaceItem
+	mpItems?: MarketplaceItem[]
 	mpInstallOptions?: InstallMarketplaceItemOptions
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	config?: Record<string, any> // Add config to the payload

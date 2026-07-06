@@ -2922,6 +2922,32 @@ export const webviewMessageHandler = async (
 			}
 			break
 		}
+		case "installMarketplaceItems": {
+			if (marketplaceManager && message.mpItems && message.mpInstallOptions) {
+				try {
+					const result = await marketplaceManager.installMarketplaceItems(
+						message.mpItems,
+						message.mpInstallOptions,
+					)
+					await provider.postStateToWebview()
+					await provider.fetchMarketplaceData()
+
+					provider.postMessageToWebview({
+						type: "marketplaceBulkInstallResult",
+						success: true,
+						values: result,
+					})
+				} catch (error) {
+					console.error(`Error installing marketplace items: ${error}`)
+					provider.postMessageToWebview({
+						type: "marketplaceBulkInstallResult",
+						success: false,
+						error: error instanceof Error ? error.message : String(error),
+					})
+				}
+			}
+			break
+		}
 		case "removeInstalledMarketplaceItem": {
 			if (marketplaceManager && message.mpItem && message.mpInstallOptions) {
 				try {

@@ -21,6 +21,11 @@ items:
     modeSlugs:
       - graphics
       - code
+    group:
+      id: graphics
+      name: Graphics
+      description: "Core graphics programming skills covering shaders, rendering pipelines, debugging, and optimization."
+      order: 1
 
   - id: rendering-pipeline
     name: Rendering Pipeline
@@ -41,6 +46,11 @@ items:
     modeSlugs:
       - graphics
       - code
+    group:
+      id: graphics
+      name: Graphics
+      description: "Core graphics programming skills covering shaders, rendering pipelines, debugging, and optimization."
+      order: 1
 
   - id: graphics-debug
     name: Graphics Debug
@@ -62,6 +72,11 @@ items:
     modeSlugs:
       - graphics
       - code
+    group:
+      id: graphics
+      name: Graphics
+      description: "Core graphics programming skills covering shaders, rendering pipelines, debugging, and optimization."
+      order: 1
 
   - id: graphics-optimization
     name: Graphics Optimization
@@ -82,6 +97,11 @@ items:
     modeSlugs:
       - graphics
       - code
+    group:
+      id: graphics
+      name: Graphics
+      description: "Core graphics programming skills covering shaders, rendering pipelines, debugging, and optimization."
+      order: 1
 
   - id: unity-graphics
     name: Unity Graphics
@@ -102,6 +122,11 @@ items:
     modeSlugs:
       - graphics
       - code
+    group:
+      id: graphics
+      name: Graphics
+      description: "Core graphics programming skills covering shaders, rendering pipelines, debugging, and optimization."
+      order: 1
 
   # RenderDoc for VSCode Skills
   - id: renderdoc-frame-overview
@@ -121,6 +146,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-current-selection-explainer
     name: RenderDoc Selection Explainer
@@ -139,6 +169,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-shader-review
     name: RenderDoc Shader Review
@@ -158,6 +193,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-texture-trace
     name: RenderDoc Texture Trace
@@ -176,6 +216,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-buffer-inspector
     name: RenderDoc Buffer Inspector
@@ -195,6 +240,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-performance-investigation
     name: RenderDoc Performance Investigation
@@ -214,6 +264,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-pass-to-project-mapping
     name: RenderDoc Pass-to-Project Mapping
@@ -233,6 +288,11 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2
 
   - id: renderdoc-replay-recovery-helper
     name: RenderDoc Replay Recovery Helper
@@ -252,3 +312,8 @@ items:
       - path: "SKILL.md"
     modeSlugs:
       - graphics
+    group:
+      id: renderdoc-for-vscode
+      name: RenderDoc for VSCode
+      description: "RenderDoc-assisted investigation skills for frame analysis, shader inspection, tracing, and code mapping."
+      order: 2

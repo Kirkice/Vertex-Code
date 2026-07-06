@@ -71,6 +71,15 @@ export const skillFileSchema = z.object({
 
 export type SkillFile = z.infer<typeof skillFileSchema>
 
+export const skillMarketplaceGroupSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	description: z.string().optional(),
+	order: z.number().int().optional(),
+})
+
+export type SkillMarketplaceGroup = z.infer<typeof skillMarketplaceGroupSchema>
+
 /**
  * Skill marketplace item schema
  * Skills are hosted on GitHub and downloaded at install time.
@@ -81,6 +90,7 @@ export const skillMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
 	branch: z.string().optional().default("main"), // Git branch name
 	files: z.array(skillFileSchema).min(1), // List of files to download
 	modeSlugs: z.array(z.string()).optional(), // Applicable mode slugs (e.g. ["graphics", "code"])
+	group: skillMarketplaceGroupSchema.optional(), // Optional visual grouping for marketplace display/bulk install
 })
 
 export type SkillMarketplaceItem = z.infer<typeof skillMarketplaceItemSchema>

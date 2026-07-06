@@ -43,7 +43,8 @@
 	},
 	"sections": {
 		"organizationMcps": "{{organization}} MCPs",
-		"marketplace": "Marketplace"
+		"marketplace": "Marketplace",
+		"skillsGroupCount": "{{count}} 个 Skill"
 	},
 	"type-group": {
 		"modes": "模式",
@@ -69,6 +70,8 @@
 			"by": "作者：{{author}}",
 			"from": "来源：{{source}}",
 			"install": "安装",
+			"installAll": "全部安装",
+			"installRemaining": "安装剩余（{{count}}）",
 			"installProject": "安装",
 			"installGlobal": "安装（全局）",
 			"remove": "移除",
@@ -101,12 +104,23 @@
 		"installed": "安装成功！",
 		"whatNextMcp": "现在您可以配置和使用此 MCP 服务。点击侧边栏中的 MCP 图标切换标签页。",
 		"whatNextMode": "现在您可以使用此模式。点击侧边栏中的模式图标切换标签页。",
+		"whatNextSkill": "现在您可以在相应模式中使用这个 Skill。",
 		"done": "完成",
 		"goToMcp": "转到 MCP 标签页",
 		"goToModes": "转到模式设置",
 		"moreInfoMcp": "查看 {{name}} MCP 文档",
 		"validationRequired": "请为 {{paramName}} 提供值",
 		"prerequisites": "前置条件"
+	},
+	"bulkInstall": {
+		"title": "安装 {{name}}",
+		"description": "一次性安装此分组下的 {{count}} 个 Skill。",
+		"button": "安装整组",
+		"successTitle": "{{name}} 已安装",
+		"successDescription": "成功安装 {{installed}} 个 Skill，跳过 {{skipped}} 个已安装 Skill。",
+		"installed": "分组安装完成",
+		"done": "完成",
+		"scope": "安装范围"
 	},
 	"sources": {
 		"title": "配置 Marketplace 源",
@@ -146,6 +160,10 @@
 		"mcp": {
 			"title": "删除 MCP 服务器",
 			"message": "您确定要删除 MCP 服务器\"{{mcpName}}\"吗？"
+		},
+		"skill": {
+			"title": "删除 Skill",
+			"message": "您确定要删除 Skill \"{{skillName}}\" 吗？"
 		},
 		"cancel": "取消",
 		"confirm": "删除"

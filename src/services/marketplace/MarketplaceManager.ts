@@ -134,6 +134,30 @@ export class MarketplaceManager {
 		}
 	}
 
+	async installMarketplaceItems(
+		items: MarketplaceItem[],
+		options?: { target?: "global" | "project"; parameters?: Record<string, any> },
+	): Promise<{ installedIds: string[]; skippedIds: string[] }> {
+		const { target = "project", parameters } = options || {}
+		const installedIds: string[] = []
+		const skippedIds: string[] = []
+
+		const installationMetadata = await this.getInstallationMetadata()
+		const targetMetadata = installationMetadata[target]
+
+		for (const item of items) {
+			if (targetMetadata[item.id]) {
+				skippedIds.push(item.id)
+				continue
+			}
+
+			await this.installer.installItem(item, { target, parameters })
+			installedIds.push(item.id)
+		}
+
+		return { installedIds, skippedIds }
+	}
+
 	async removeInstalledMarketplaceItem(
 		item: MarketplaceItem,
 		options?: { target?: "global" | "project" },

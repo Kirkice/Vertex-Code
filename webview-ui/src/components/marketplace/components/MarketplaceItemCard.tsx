@@ -211,7 +211,9 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 						<AlertDialogTitle>
 							{item.type === "mode"
 								? t("marketplace:removeConfirm.mode.title")
-								: t("marketplace:removeConfirm.mcp.title")}
+								: item.type === "skill"
+									? t("marketplace:removeConfirm.skill.title")
+									: t("marketplace:removeConfirm.mcp.title")}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{item.type === "mode" ? (
@@ -221,6 +223,8 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 										{t("marketplace:removeConfirm.mode.rulesWarning")}
 									</div>
 								</>
+							) : item.type === "skill" ? (
+								t("marketplace:removeConfirm.skill.message", { skillName: item.name })
 							) : (
 								t("marketplace:removeConfirm.mcp.message", { mcpName: item.name })
 							)}

@@ -6,11 +6,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { X, ChevronsUpDown } from "lucide-react"
 import { MarketplaceItemCard } from "./components/MarketplaceItemCard"
+import { MarketplaceBulkInstallModal } from "./components/MarketplaceBulkInstallModal"
 import { MarketplaceViewStateManager } from "./MarketplaceViewStateManager"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useStateManager } from "./useStateManager"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { IssueFooter } from "./IssueFooter"
+import { MarketplaceItem } from "@roo-code/types"
 
 export interface MarketplaceListViewProps {
 	stateManager: MarketplaceViewStateManager
@@ -22,11 +24,16 @@ export interface MarketplaceListViewProps {
 export function MarketplaceListView({ stateManager, allTags, filteredTags, filterByType }: MarketplaceListViewProps) {
 	const [state, manager] = useStateManager(stateManager)
 	const { t } = useAppTranslation()
-	const { marketplaceInstalledMetadata, cloudUserInfo } = useExtensionState()
+	const { cloudUserInfo, cwd } = useExtensionState()
 	const [isTagPopoverOpen, setIsTagPopoverOpen] = React.useState(false)
 	const [tagSearch, setTagSearch] = React.useState("")
 	const allItems = state.displayItems || []
 	const organizationMcps = state.displayOrganizationMcps || []
+	const installedMetadata = state.installedMetadata
+	const [bulkInstallGroup, setBulkInstallGroup] = React.useState<{
+		name: string
+		items: MarketplaceItem[]
+	} | null>(null)
 
 	// NOTE: installed metadata is already synchronized into the state manager via handleMessage("state"/"marketplaceData")
 	// in MarketplaceViewStateManager; avoid dispatching UPDATE_FILTERS here to prevent render loops.
@@ -36,6 +43,58 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 	const orgMcps = filterByType === "mcp" ? organizationMcps : []
 
 	const isEmpty = items.length === 0 && orgMcps.length === 0
+
+	const skillGroups = React.useMemo(() => {
+		if (filterByType !== "skill") {
+			return []
+		}
+
+		const groups = new Map<
+			string,
+			{
+				key: string
+				name: string
+				description?: string
+				order: number
+				items: MarketplaceItem[]
+				remainingItems: MarketplaceItem[]
+			}
+		>()
+
+		for (const item of items) {
+			const groupId = item.type === "skill" ? item.group?.id ?? item.id : item.id
+			const groupName = item.type === "skill" ? item.group?.name ?? item.name : item.name
+			const groupDescription = item.type === "skill" ? item.group?.description : undefined
+			const groupOrder = item.type === "skill" ? item.group?.order ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
+			const existing = groups.get(groupId)
+			const isInstalled =
+				!!installedMetadata?.project?.[item.id] || !!installedMetadata?.global?.[item.id]
+
+			if (existing) {
+				existing.items.push(item)
+				if (!isInstalled) {
+					existing.remainingItems.push(item)
+				}
+				continue
+			}
+
+			groups.set(groupId, {
+				key: groupId,
+				name: groupName,
+				description: groupDescription,
+				order: groupOrder,
+				items: [item],
+				remainingItems: isInstalled ? [] : [item],
+			})
+		}
+
+		return Array.from(groups.values()).sort((a, b) => {
+			if (a.order !== b.order) {
+				return a.order - b.order
+			}
+			return a.name.localeCompare(b.name)
+		})
+	}, [filterByType, installedMetadata, items])
 
 	return (
 		<>
@@ -246,8 +305,8 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 											})
 										}
 										installed={{
-											project: marketplaceInstalledMetadata?.project?.[item.id],
-											global: marketplaceInstalledMetadata?.global?.[item.id],
+											project: installedMetadata?.project?.[item.id],
+											global: installedMetadata?.global?.[item.id],
 										}}
 									/>
 								))}
@@ -266,29 +325,91 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 									<div className="flex-1 h-px bg-vscode-input-border"></div>
 								</div>
 							)}
-							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
-								{items.map((item) => (
-									<MarketplaceItemCard
-										key={item.id}
-										item={item}
-										filters={state.filters}
-										setFilters={(filters) =>
-											manager.transition({
-												type: "UPDATE_FILTERS",
-												payload: { filters },
-											})
-										}
-										installed={{
-											project: marketplaceInstalledMetadata?.project?.[item.id],
-											global: marketplaceInstalledMetadata?.global?.[item.id],
-										}}
-									/>
-								))}
-							</div>
+							{filterByType === "skill" ? (
+								<div className="space-y-5">
+									{skillGroups.map((group) => (
+										<div key={group.key} className="space-y-3">
+											<div className="flex flex-wrap items-start justify-between gap-3 px-1">
+												<div>
+													<h3 className="text-base font-semibold text-vscode-foreground">{group.name}</h3>
+													<div className="text-sm text-vscode-descriptionForeground">
+														{group.description || t("marketplace:sections.skillsGroupCount", { count: group.items.length })}
+													</div>
+												</div>
+												{group.remainingItems.length > 0 && (
+													<Button
+														size="sm"
+														variant="primary"
+														className="h-7 px-3 text-xs"
+														onClick={() =>
+															setBulkInstallGroup({
+																name: group.name,
+																items: group.remainingItems,
+															})
+														}>
+														{group.remainingItems.length === group.items.length
+															? t("marketplace:items.card.installAll")
+															: t("marketplace:items.card.installRemaining", {
+																	count: group.remainingItems.length,
+																})}
+													</Button>
+												)}
+											</div>
+											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+												{group.items.map((item) => (
+													<MarketplaceItemCard
+														key={item.id}
+														item={item}
+														filters={state.filters}
+														setFilters={(filters) =>
+															manager.transition({
+																type: "UPDATE_FILTERS",
+																payload: { filters },
+															})
+														}
+														installed={{
+															project: installedMetadata?.project?.[item.id],
+															global: installedMetadata?.global?.[item.id],
+														}}
+													/>
+												))}
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+									{items.map((item) => (
+										<MarketplaceItemCard
+											key={item.id}
+											item={item}
+											filters={state.filters}
+											setFilters={(filters) =>
+												manager.transition({
+													type: "UPDATE_FILTERS",
+													payload: { filters },
+												})
+											}
+											installed={{
+												project: installedMetadata?.project?.[item.id],
+												global: installedMetadata?.global?.[item.id],
+											}}
+										/>
+									))}
+								</div>
+							)}
 						</div>
 					)}
 				</div>
 			)}
+
+			<MarketplaceBulkInstallModal
+				groupName={bulkInstallGroup?.name || ""}
+				items={bulkInstallGroup?.items || []}
+				isOpen={!!bulkInstallGroup}
+				onClose={() => setBulkInstallGroup(null)}
+				hasWorkspace={!!cwd}
+			/>
 
 			<IssueFooter />
 		</>

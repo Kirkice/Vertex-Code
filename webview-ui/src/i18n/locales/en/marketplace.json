@@ -43,7 +43,8 @@
 	},
 	"sections": {
 		"organizationMcps": "{{organization}} MCPs",
-		"marketplace": "Marketplace"
+		"marketplace": "Marketplace",
+		"skillsGroupCount": "{{count}} skills"
 	},
 	"type-group": {
 		"modes": "Modes",
@@ -69,6 +70,8 @@
 			"by": "by {{author}}",
 			"from": "from {{source}}",
 			"install": "Install",
+			"installAll": "Install All",
+			"installRemaining": "Install Remaining ({{count}})",
 			"installProject": "Install",
 			"installGlobal": "Install (Global)",
 			"remove": "Remove",
@@ -102,11 +105,22 @@
 		"installed": "Successfully installed!",
 		"whatNextMcp": "You can now configure and use this MCP server. Click the MCP icon in the sidebar to switch tabs.",
 		"whatNextMode": "You can now use this mode. Click the Modes icon in the sidebar to switch tabs.",
+		"whatNextSkill": "You can now use this skill in the relevant mode.",
 		"done": "Done",
 		"goToMcp": "Go to MCP Tab",
 		"goToModes": "Go to Modes Settings",
 		"moreInfoMcp": "View {{name}} MCP documentation",
 		"validationRequired": "Please provide a value for {{paramName}}"
+	},
+	"bulkInstall": {
+		"title": "Install {{name}}",
+		"description": "Install {{count}} skills from this group at once.",
+		"button": "Install Group",
+		"successTitle": "{{name}} Installed",
+		"successDescription": "Installed {{installed}} skills. Skipped {{skipped}} already installed skills.",
+		"installed": "Group installation completed",
+		"done": "Done",
+		"scope": "Installation Scope"
 	},
 	"sources": {
 		"title": "Configure Marketplace Sources",
@@ -146,6 +160,10 @@
 		"mcp": {
 			"title": "Remove MCP Server",
 			"message": "Are you sure you want to remove the MCP server \"{{mcpName}}\"?"
+		},
+		"skill": {
+			"title": "Remove Skill",
+			"message": "Are you sure you want to remove the skill \"{{skillName}}\"?"
 		},
 		"cancel": "Cancel",
 		"confirm": "Remove"

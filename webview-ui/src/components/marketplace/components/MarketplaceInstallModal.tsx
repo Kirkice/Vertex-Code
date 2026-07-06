@@ -216,6 +216,8 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 					<DialogTitle>
 						{installationComplete
 							? t("marketplace:install.successTitle", { name: item.name })
+							: item.type === "skill"
+								? t("marketplace:install.title", { name: item.name })
 							: item.type === "mcp"
 								? t("marketplace:install.titleMcp", { name: item.name })
 								: t("marketplace:install.titleMode", { name: item.name })}
@@ -243,6 +245,8 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 							<p className="text-sm text-muted-foreground">
 								{item.type === "mcp"
 									? t("marketplace:install.whatNextMcp")
+									: item.type === "skill"
+										? t("marketplace:install.whatNextSkill")
 									: t("marketplace:install.whatNextMode")}
 							</p>
 						</div>
