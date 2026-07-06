@@ -80,8 +80,7 @@ import { SlashCommandsSettings } from "./SlashCommandsSettings"
 import { SkillsSettings } from "./SkillsSettings"
 import { UISettings } from "./UISettings"
 import { GraphicsProvidersSettings } from "./GraphicsProvidersSettings"
-import { OrchestratorSettings } from "../orchestrator/OrchestratorSettings"
-import { DEFAULT_ORCHESTRATOR_CONFIG, DEFAULT_MODES } from "@roo-code/types"
+import { DEFAULT_MODES } from "@roo-code/types"
 import ModesView from "../modes/ModesView"
 import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
@@ -101,7 +100,6 @@ export interface SettingsViewRef {
 
 export const sectionNames = [
 	"providers",
-	"orchestrator",
 	"autoApprove",
 	"slashCommands",
 	"skills",
@@ -226,18 +224,6 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		prevApiConfigName.current = currentApiConfigName
 		setChangeDetected(false)
 	}, [currentApiConfigName, extensionState])
-
-	// Sync orchestratorEnabled from extensionState to cachedState
-	// This is needed because the toggle sends a message to the backend,
-	// which updates extensionState, but cachedState needs to reflect the change
-	useEffect(() => {
-		setCachedState((prevState) => {
-			if (prevState.orchestratorEnabled === extensionState.orchestratorEnabled) {
-				return prevState
-			}
-			return { ...prevState, orchestratorEnabled: extensionState.orchestratorEnabled }
-		})
-	}, [extensionState.orchestratorEnabled])
 
 	// Bust the cache when settings are imported.
 	useEffect(() => {
@@ -531,7 +517,6 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
-			{ id: "orchestrator", icon: GitCommitVertical },
 			{ id: "modes", icon: Users2 },
 			{ id: "skills", icon: GraduationCap },
 			{ id: "slashCommands", icon: SquareSlash },
@@ -796,38 +781,6 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 										setApiConfigurationField={setApiConfigurationField}
 										errorMessage={errorMessage}
 										setErrorMessage={setErrorMessage}
-									/>
-								</Section>
-							</div>
-						)}
-
-						{/* Orchestrator Section */}
-						{renderTab === "orchestrator" && (
-							<div>
-								<SectionHeader>{t("settings:sections.orchestrator")}</SectionHeader>
-								<Section>
-									<OrchestratorSettings
-										enabled={cachedState.orchestratorEnabled ?? false}
-										config={cachedState.orchestratorConfig ?? DEFAULT_ORCHESTRATOR_CONFIG}
-										apiConfigs={listApiConfigMeta ?? []}
-										modes={[
-											...DEFAULT_MODES.map((m) => ({ slug: m.slug, name: m.name })),
-											...(customModes || []).map((m) => ({ slug: m.slug, name: m.name })),
-										]}
-										onChange={(partialConfig) => {
-											setCachedState((prev) => ({
-												...prev,
-												orchestratorConfig: {
-													...(prev.orchestratorConfig ?? DEFAULT_ORCHESTRATOR_CONFIG),
-													...partialConfig,
-												},
-											}))
-											setChangeDetected(true)
-											vscode.postMessage({
-												type: "orchestratorUpdateConfig",
-												values: partialConfig,
-											})
-										}}
 									/>
 								</Section>
 							</div>

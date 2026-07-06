@@ -272,29 +272,29 @@ export const clineMessageSchema = z.object({
 	apiProtocol: z.union([z.literal("openai"), z.literal("anthropic")]).optional(),
 	isAnswered: z.boolean().optional(),
 	/**
-	 * Orchestrator role that produced this message.
-	 * "planner" | "worker" | "reviewer" — used by ChatRow to show role icon and color.
-	 */
-	orchestratorRole: z.enum(["planner", "worker", "reviewer"]).optional(),
-	/**
-	 * Model identifier used by the orchestrator role that produced this message.
-	 * e.g. "qwen-max", "deepseek-chat", "gpt-4o"
-	 * Displayed next to the role label in ChatRow.
-	 */
-	orchestratorModelId: z.string().optional(),
-	/**
 	 * Model identifier used to produce this message (for non-orchestrator messages).
 	 * e.g. "claude-3-5-sonnet-20241022", "gpt-4o", "deepseek-chat"
 	 * Displayed in the message header in ChatRow.
 	 */
 	modelId: z.string().optional(),
+	/**
+	 * Mode-Level LLM Routing 归因字段：本次 API 请求发生时所处的 Mode。
+	 * 用于多模型成本分摊（byMode breakdown）。
+	 * 只对新增后的请求有效；历史消息无此字段时归入 "unknown" 桶。
+	 */
+	modeAtRequest: z.string().optional(),
+	/**
+	 * Mode-Level LLM Routing 归因字段：本次 API 请求使用的 Provider Profile name。
+	 * 用于多模型成本分摊（byProfile breakdown）。
+	 */
+	providerProfileAtRequest: z.string().optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>
 
 /**
- * TokenUsage
- */
+	* TokenUsage
+	*/
 
 export const tokenUsageSchema = z.object({
 	totalTokensIn: z.number(),
@@ -306,6 +306,48 @@ export const tokenUsageSchema = z.object({
 })
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>
+
+/**
+	* Multi-Model Usage Breakdown
+	*
+	* 多模型场景下的用量聚合结构，支持按 Mode / Profile 分摊成本。
+	* 详见 docs/mode-level-llm-routing-implementation-guide.md Phase 5。
+	*/
+
+export const usageBreakdownItemSchema = z.object({
+	mode: z.string().optional(),
+	profile: z.string().optional(),
+	modelId: z.string().optional(),
+	requestCount: z.number(),
+	tokensIn: z.number(),
+	tokensOut: z.number(),
+	totalCost: z.number(),
+})
+
+export type UsageBreakdownItem = z.infer<typeof usageBreakdownItemSchema>
+
+export const multiModelUsageSchema = z.object({
+	/** 全 task 累计总量（所有 Mode、所有 Profile） */
+	total: tokenUsageSchema,
+	/** 按 Mode 聚合的成本分摊 */
+	byMode: z.array(usageBreakdownItemSchema),
+	/** 按 Profile 聚合的成本分摊 */
+	byProfile: z.array(usageBreakdownItemSchema),
+	/** 当前生效的 Mode（取最后一条 api_req_started 的归因） */
+	currentEffectiveMode: z.string().optional(),
+	/** 当前生效的 Provider Profile */
+	currentEffectiveProfile: z.string().optional(),
+	/** 当前生效的 Model ID */
+	currentEffectiveModelId: z.string().optional(),
+	/** 当前生效模型的 context window */
+	currentContextWindow: z.number().optional(),
+	/** 当前模型预留给输出的 token 空间 */
+	reservedForOutput: z.number().optional(),
+	/** 当前可用空间 = currentContextWindow - contextTokens - reservedForOutput */
+	availableSpace: z.number().optional(),
+})
+
+export type MultiModelUsage = z.infer<typeof multiModelUsageSchema>
 
 /**
  * QueuedMessage

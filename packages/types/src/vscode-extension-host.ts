@@ -17,8 +17,6 @@ import type { OpenAiCodexRateLimitInfo } from "./providers/openai-codex-rate-lim
 import type { SkillMetadata } from "./skills.js"
 import type { TelemetrySetting } from "./telemetry.js"
 import type { WorktreeIncludeStatus } from "./worktree.js"
-import type { OrchestratorProviderConfig } from "./orchestrator-config.js"
-import type { OrchestratorSessionState, OrchestratorTask } from "./orchestrator.js"
 
 /**
  * ExtensionMessage
@@ -314,6 +312,12 @@ export type ExtensionState = Pick<
 	| "disabledTools"
 > & {
 	lockApiConfigAcrossModes?: boolean
+	/**
+	 * Mode-Level LLM Routing 总开关（与 lockApiConfigAcrossModes 互为反义，新开关优先）。
+	 * - true: 切换 Mode 时自动使用该 Mode 绑定的 Provider Profile
+	 * - false/undefined: 所有 Mode 使用全局 Profile
+	 */
+	modeLevelLlmRoutingEnabled?: boolean
 	version: string
 	clineMessages: ClineMessage[]
 	currentTaskId?: string
@@ -395,63 +399,6 @@ export type ExtensionState = Pick<
 	 */
 	clineMessagesSeq?: number
 
-	// Orchestrator fields
-	orchestratorEnabled?: boolean
-	orchestratorConfig?: OrchestratorProviderConfig
-	orchestratorSession?: OrchestratorSessionSnapshot
-}
-
-/**
- * Information about a single orchestrator stage (Planner/Worker/Reviewer).
- * Used by the UI to render stage cards with per-stage statistics.
- */
-export interface OrchestratorStageInfo {
-	/** Stage identifier: "planner" | "worker" | "reviewer" */
-	name: string
-	/** Display label (e.g. "🧠 规划器") */
-	label: string
-	/** Mode slug (e.g. "architect", "code") */
-	mode: string
-	/** Provider profile name (e.g. "qwen-max", "deepseek") */
-	profile: string
-	/** Token usage for this stage */
-	tokens: number
-	/** Estimated cost in USD for this stage */
-	cost: number
-	/** Whether this stage is currently active */
-	active: boolean
-}
-
-/**
- * Snapshot of an orchestrator session for the webview.
- *
- * In Mode chain architecture, the orchestrator state is simplified:
- * - No sub-task tracking (tasks are managed by the Mode chain itself)
- * - Phase tracks the current stage (planning/awaiting_approval/executing/reviewing/repairing/completed/failed)
- * - State maps phase to the legacy OrchestratorSessionState for UI compatibility
- */
-export interface OrchestratorSessionSnapshot {
-	sessionId: string
-	/** Legacy state mapping for UI compatibility */
-	state: OrchestratorSessionState
-	/** Current orchestrator phase */
-	currentPhase: string
-	/** Current repair round (0-indexed) */
-	repairRound: number
-	/** Maximum repair rounds allowed */
-	maxRepairRounds: number
-	/** Cost statistics */
-	costStats: {
-		totalTokens: number
-		tokensByProvider: Record<string, number>
-		estimatedCostUsd: number
-	}
-	/** Plan summary text (shown when plan is ready for approval) */
-	planSummary?: string
-	/** Error message when session is in failed state */
-	error?: string
-	/** Per-stage information for rendering stage cards */
-	stages: OrchestratorStageInfo[]
 }
 
 export interface Command {
@@ -570,6 +517,7 @@ export interface WebviewMessage {
 		| "toggleApiConfigPin"
 		| "hasOpenedModeSelector"
 		| "lockApiConfigAcrossModes"
+		| "setModeLevelLlmRoutingEnabled"
 		| "clearCloudAuthSkipModel"
 		| "rooCloudSignIn"
 		| "cloudLandingPageSignIn"
@@ -655,11 +603,6 @@ export interface WebviewMessage {
 		| "moveSkill"
 		| "updateSkillModes"
 		| "openSkillFile"
-		// Orchestrator messages
-		| "orchestratorSetEnabled"
-		| "orchestratorUpdateConfig"
-		| "orchestratorApprovePlan"
-		| "orchestratorCancel"
 		// Graphics agent messages
 		| "runGraphicsWorkflow"
 		| "runGraphicsPlaybook"
@@ -779,8 +722,6 @@ export interface WebviewMessage {
 	worktreeForce?: boolean
 	worktreeNewWindow?: boolean
 	worktreeIncludeContent?: string
-	// Orchestrator properties
-	sessionId?: string // For orchestratorApprovePlan and orchestratorCancel
 }
 
 export interface RequestOpenAiCodexRateLimitsMessage {

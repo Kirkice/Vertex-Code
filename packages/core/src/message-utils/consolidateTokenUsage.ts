@@ -1,4 +1,4 @@
-import type { TokenUsage, ToolUsage, ToolName, ClineMessage } from "@roo-code/types"
+import type { TokenUsage, ToolUsage, ToolName, ClineMessage, MultiModelUsage, UsageBreakdownItem } from "@roo-code/types"
 
 export type ParsedApiReqStartedTextType = {
 	tokensIn: number
@@ -154,4 +154,98 @@ export function hasToolUsageChanged(current: ToolUsage, snapshot?: ToolUsage): b
 
 		return currentTool.attempts !== snapshotTool.attempts || currentTool.failures !== snapshotTool.failures
 	})
+}
+
+/**
+	* Consolidates multi-model token usage metrics from an array of ClineMessages.
+	*
+	* 在 consolidateTokenUsage 基础上增加按 Mode / Profile 的成本分摊聚合，
+	* 并识别当前生效的 Mode / Profile / Model（取最后一条 api_req_started 的归因字段）。
+	*
+	* 口径定义：
+	* - total（累计）：全 task、所有 Mode、所有 Profile 的累计值
+	* - byMode / byProfile：按归因字段聚合；历史消息无归因字段时归入 "unknown" 桶
+	* - currentEffective*：当前生效模型口径，用于上下文空间展示
+	*
+	* @param messages - ClineMessage 数组
+	* @returns MultiModelUsage 聚合结构
+	*
+	* @example
+	* const usage = consolidateMultiModelUsage(messages)
+	* // usage.total.totalCost = 全 task 累计费用
+	* // usage.byMode = [{ mode: "code", totalCost: 0.5, ... }, ...]
+	* // usage.currentEffectiveModelId = "gpt-4o"
+	*/
+export function consolidateMultiModelUsage(messages: ClineMessage[]): MultiModelUsage {
+	// 复用现有总量统计逻辑
+	const total = consolidateTokenUsage(messages)
+
+	// 按 Mode / Profile 聚合
+	const byModeMap = new Map<string, UsageBreakdownItem>()
+	const byProfileMap = new Map<string, UsageBreakdownItem>()
+
+	let currentEffectiveMode: string | undefined
+	let currentEffectiveProfile: string | undefined
+	let currentEffectiveModelId: string | undefined
+
+	for (const message of messages) {
+		if (message.type !== "say" || message.say !== "api_req_started" || !message.text) {
+			continue
+		}
+
+		try {
+			const parsed: ParsedApiReqStartedTextType = JSON.parse(message.text)
+			const { tokensIn, tokensOut, cost } = parsed
+
+			const mode = message.modeAtRequest ?? "unknown"
+			const profile = message.providerProfileAtRequest ?? "unknown"
+			const modelId = message.modelId ?? "unknown"
+
+			// 聚合 byMode
+			const modeItem = byModeMap.get(mode) ?? {
+				mode,
+				requestCount: 0,
+				tokensIn: 0,
+				tokensOut: 0,
+				totalCost: 0,
+			}
+			modeItem.requestCount += 1
+			if (typeof tokensIn === "number") modeItem.tokensIn += tokensIn
+			if (typeof tokensOut === "number") modeItem.tokensOut += tokensOut
+			if (typeof cost === "number") modeItem.totalCost += cost
+			byModeMap.set(mode, modeItem)
+
+			// 聚合 byProfile
+			const profileItem = byProfileMap.get(profile) ?? {
+				profile,
+				requestCount: 0,
+				tokensIn: 0,
+				tokensOut: 0,
+				totalCost: 0,
+			}
+			profileItem.requestCount += 1
+			if (typeof tokensIn === "number") profileItem.tokensIn += tokensIn
+			if (typeof tokensOut === "number") profileItem.tokensOut += tokensOut
+			if (typeof cost === "number") profileItem.totalCost += cost
+			byProfileMap.set(profile, profileItem)
+
+			// 更新当前生效（取最后一条 api_req_started）
+			currentEffectiveMode = message.modeAtRequest ?? currentEffectiveMode
+			currentEffectiveProfile = message.providerProfileAtRequest ?? currentEffectiveProfile
+			if (message.modelId) currentEffectiveModelId = message.modelId
+		} catch {
+			// 忽略 JSON 解析错误
+			continue
+		}
+	}
+
+	return {
+		total,
+		byMode: Array.from(byModeMap.values()),
+		byProfile: Array.from(byProfileMap.values()),
+		currentEffectiveMode,
+		currentEffectiveProfile,
+		currentEffectiveModelId,
+		// currentContextWindow / reservedForOutput / availableSpace 由调用方按当前模型填充
+	}
 }

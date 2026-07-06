@@ -638,9 +638,6 @@ export const webviewMessageHandler = async (
 			provider.isViewLaunched = true
 			break
 		case "newTask": {
-			// Check if orchestrator mode is enabled
-			const orchestratorEnabled = getGlobalState("orchestratorEnabled")
-
 			// Analyze message for graphics intent and potentially switch mode
 			if (message.text) {
 				const currentMode = await getCurrentMode()
@@ -675,31 +672,6 @@ export const webviewMessageHandler = async (
 
 				// Build task options
 				const taskOptions: CreateTaskOptions = { taskId: message.taskId }
-
-				// If orchestrator mode is enabled, pass config to Task
-				if (orchestratorEnabled) {
-					const orchestratorConfig = getGlobalState("orchestratorConfig")
-					// Use current active API config as fallback when profile is not configured
-					// This prevents setProviderProfile("") from failing silently
-					const currentApiConfigName = getGlobalState("currentApiConfigName") ?? "default"
-					taskOptions.orchestratorMode = {
-						enabled: true,
-						planner: {
-							mode: orchestratorConfig?.plannerMode ?? "architect",
-							profile: orchestratorConfig?.plannerProfile || currentApiConfigName,
-						},
-						worker: {
-							mode: orchestratorConfig?.workerMode ?? "code",
-							profile: orchestratorConfig?.workerProfiles?.primary || currentApiConfigName,
-						},
-						reviewer: {
-							mode: orchestratorConfig?.reviewerMode ?? "architect",
-							profile: orchestratorConfig?.reviewerProfile || currentApiConfigName,
-						},
-						maxRepairRounds: orchestratorConfig?.routingPolicy?.maxRepairRounds ?? 2,
-					}
-					provider.log(`[Orchestrator] Creating task in orchestrator mode (Mode chain), planner=${taskOptions.orchestratorMode.planner.profile}, worker=${taskOptions.orchestratorMode.worker.profile}, reviewer=${taskOptions.orchestratorMode.reviewer.profile}`)
-				}
 
 				await provider.createTask(
 					resolved.text,
@@ -1700,6 +1672,17 @@ export const webviewMessageHandler = async (
 		case "lockApiConfigAcrossModes": {
 			const enabled = message.bool ?? false
 			await provider.context.workspaceState.update("lockApiConfigAcrossModes", enabled)
+
+			await provider.postStateToWebview()
+			break
+		}
+
+		case "setModeLevelLlmRoutingEnabled": {
+			// Mode-Level LLM Routing 总开关（新开关，与 lockApiConfigAcrossModes 互为反义）。
+			// 双写策略：新开关写 globalState，旧开关写反义到 workspaceState，保持双写期一致。
+			const routingEnabled = message.bool ?? false
+			await updateGlobalState("modeLevelLlmRoutingEnabled", routingEnabled)
+			await provider.context.workspaceState.update("lockApiConfigAcrossModes", !routingEnabled)
 
 			await provider.postStateToWebview()
 			break
@@ -3656,56 +3639,6 @@ export const webviewMessageHandler = async (
 				provider.log(`Error opening folder picker: ${errorMessage}`)
 			}
 
-			break
-		}
-
-		// Orchestrator messages
-		case "orchestratorSetEnabled": {
-			const enabled = message.bool ?? false
-			await updateGlobalState("orchestratorEnabled", enabled)
-			await provider.postStateToWebview()
-			break
-		}
-
-		case "orchestratorUpdateConfig": {
-			if (message.values) {
-				const currentConfig = getGlobalState("orchestratorConfig") ?? {}
-				const updatedConfig = { ...currentConfig, ...message.values }
-				await updateGlobalState("orchestratorConfig", updatedConfig)
-				await provider.postStateToWebview()
-			}
-			break
-		}
-
-		case "orchestratorApprovePlan": {
-			const currentTask = provider.getCurrentTask()
-			if (!currentTask) {
-				provider.log("Orchestrator approve plan: no active task")
-				break
-			}
-
-			try {
-				await currentTask.approveOrchestratorPlan()
-				provider.log(`Orchestrator plan approved for task: ${currentTask.taskId}`)
-			} catch (error) {
-				provider.log(`Failed to approve orchestrator plan: ${error instanceof Error ? error.message : String(error)}`)
-			}
-			break
-		}
-
-		case "orchestratorCancel": {
-			const currentTask = provider.getCurrentTask()
-			if (!currentTask) {
-				provider.log("Orchestrator cancel: no active task")
-				break
-			}
-
-			try {
-				currentTask.cancelOrchestrator()
-				provider.log(`Orchestrator cancelled for task: ${currentTask.taskId}`)
-			} catch (error) {
-				provider.log(`Failed to cancel orchestrator: ${error instanceof Error ? error.message : String(error)}`)
-			}
 			break
 		}
 

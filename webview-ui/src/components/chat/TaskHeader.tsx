@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next"
 import { ChevronUp, ChevronDown, HardDriveDownload, HardDriveUpload, FoldVertical, ArrowLeft, HouseIcon } from "lucide-react"
 import prettyBytes from "pretty-bytes"
 
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage, MultiModelUsage } from "@roo-code/types"
+import MultiModelUsageBreakdown from "./MultiModelUsageBreakdown"
 
 import { getModelMaxOutputTokens } from "@roo/api"
 
@@ -37,6 +38,8 @@ export interface TaskHeaderProps {
 	buttonsDisabled: boolean
 	handleCondenseContext: (taskId: string) => void
 	todos?: any[]
+	/** 多模型用量分摊（展开态显示 By Mode / By Profile） */
+	multiModelUsage?: MultiModelUsage
 }
 
 const TaskHeader = ({
@@ -54,6 +57,7 @@ const TaskHeader = ({
 	buttonsDisabled,
 	handleCondenseContext,
 	todos,
+	multiModelUsage,
 }: TaskHeaderProps) => {
 	const { t } = useTranslation()
 	const { apiConfiguration, currentTaskItem } = useExtensionState()
@@ -285,6 +289,27 @@ const TaskHeader = ({
 									</StandardTooltip>
 								</>
 							)}
+							{/* Mode-Level LLM Routing: 当前生效的 Mode · 模型标签 */}
+							{modelId && (
+								<>
+									<span>·</span>
+									<StandardTooltip
+										content={
+											<div>
+												{t("chat:multiModel.currentEffectiveModel", {
+													defaultValue: "Current effective model",
+												})}
+											</div>
+										}
+										side="top"
+										sideOffset={8}>
+										<span className="text-xs opacity-70">
+											{currentTaskItem?.mode ? `${currentTaskItem.mode} · ` : ""}
+											{modelId}
+										</span>
+									</StandardTooltip>
+								</>
+							)}
 						</div>
 					</div>
 				)}
@@ -431,6 +456,13 @@ const TaskHeader = ({
 								</tbody>
 							</table>
 						</div>
+	
+						{/* Multi-model cost breakdown (By Mode / By Profile) */}
+						{multiModelUsage && multiModelUsage.byMode.length > 0 && (
+							<div className="pt-3 mt-2 -mx-2.5 px-2.5 border-t border-vscode-sideBar-background">
+								<MultiModelUsageBreakdown usage={multiModelUsage} />
+							</div>
+						)}
 					</>
 				)}
 				{/* Todo list - always shown at bottom when todos exist */}

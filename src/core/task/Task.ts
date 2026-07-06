@@ -93,8 +93,6 @@ import { MessageManager } from "../message-manager"
 import { validateAndFixToolResultIds } from "./validateToolResultIds"
 import { mergeConsecutiveApiMessages } from "./mergeConsecutiveApiMessages"
 import { prepareApiConversationMessage } from "./apiConversationHistory"
-import { OrchestratorEngine } from "./OrchestratorEngine"
-import type { OrchestratorModeConfig, OrchestratorModeState } from "@roo-code/types"
 
 const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
 const DEFAULT_USAGE_COLLECTION_TIMEOUT_MS = 5000 // 5 seconds
@@ -381,13 +379,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private _messageManager?: MessageManager
 
 	// Orchestrator Mode
-	/** Orchestrator mode configuration (set when task runs in orchestrator mode) */
-	readonly orchestratorMode?: OrchestratorModeConfig
-	/** Orchestrator engine instance (created when orchestrator mode is enabled) */
-	private orchestratorEngine?: OrchestratorEngine
-	/** Current orchestrator state (updated by engine) */
-	private _orchestratorState?: OrchestratorModeState
-
 	constructor({
 		provider,
 		apiConfiguration,
@@ -407,7 +398,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		initialTodos,
 		workspacePath,
 		initialStatus,
-		orchestratorMode,
 	}: TaskOptions) {
 		super()
 
@@ -532,21 +522,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.TOKEN_USAGE_EMIT_INTERVAL_MS,
 			{ leading: true, trailing: true, maxWait: this.TOKEN_USAGE_EMIT_INTERVAL_MS },
 		)
-
-		// Initialize orchestrator mode if configured
-		const _orchProvider = this.providerRef.deref()
-		if (_orchProvider) {
-			_orchProvider.log(`[Task] Constructor orchestratorMode received: enabled=${orchestratorMode?.enabled}, planner=${orchestratorMode?.planner?.profile}, worker=${orchestratorMode?.worker?.profile}`)
-		}
-		if (orchestratorMode?.enabled) {
-			this.orchestratorMode = orchestratorMode
-			this.orchestratorEngine = new OrchestratorEngine(this, orchestratorMode)
-			if (_orchProvider) {
-				_orchProvider.log(`[Task] OrchestratorEngine CREATED successfully`)
-			}
-		} else if (_orchProvider) {
-			_orchProvider.log(`[Task] Orchestrator mode NOT enabled (orchestratorMode=${JSON.stringify(orchestratorMode)})`)
-		}
 
 		onCreated?.(this)
 
@@ -1387,6 +1362,23 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	/**
+	 * 捕获 Mode/Profile 切换前的快照（为 Phase 4 mode handoff summary 预留）。
+	 *
+	 * 当前为桩实现，仅记录切换意图，不产生任何副作用。
+	 * Phase 4 实现时将在此处生成结构化 mode_handoff 摘要并注入下一轮请求。
+	 *
+	 * @param toMode 切换目标 Mode（可能为 undefined 表示不切 mode）
+	 * @param toProfile 切换目标 Profile（可能为 undefined 表示不切 profile）
+	 * @internal
+	 */
+	private captureModeSwitchSnapshot(toMode?: string, toProfile?: string): void {
+		// TODO(handoff): 当 toMode !== this._taskMode 或 toProfile !== this._taskApiConfigName 时，
+		// 生成 ModeHandoffSummary 并写入 clineMessages，供下一轮请求前注入。
+		// 当前仅保留方法签名，确保切换前快照有统一入口。
+		void { fromMode: this._taskMode, fromApiConfigName: this._taskApiConfigName, toMode, toProfile }
+	}
+
+	/**
 	 * Updates the API configuration and rebuilds the API handler.
 	 * There is no tool-protocol switching or tool parser swapping.
 	 *
@@ -1415,6 +1407,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const provider = this.providerRef.deref()
 
 			if (provider) {
+				// 记录切换前的 mode/profile 快照（为 Phase 4 mode handoff summary 预留）。
+				// TODO(handoff): 当 mode 或 profile 发生变化时，在此处生成 mode_handoff 摘要。
+				void this.captureModeSwitchSnapshot(mode, providerProfile)
+
 				if (mode) {
 					await provider.setMode(mode)
 				}
@@ -1602,7 +1598,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					lastMessage.partial = partial
 					lastMessage.progressStatus = progressStatus
 					// Update modelId if not already set (e.g., for orchestrator messages)
-					if (!lastMessage.modelId && !lastMessage.orchestratorModelId) {
+					if (!lastMessage.modelId) {
 						lastMessage.modelId = currentModelId
 					}
 					this.updateClineMessage(lastMessage)
@@ -1624,6 +1620,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						contextCondense,
 						contextTruncation,
 						modelId: currentModelId,
+						// Mode-Level LLM Routing 归因字段：记录本次请求的 Mode 和 Profile
+						modeAtRequest: type === "api_req_started" ? this._taskMode : undefined,
+						providerProfileAtRequest:
+							type === "api_req_started" ? this._taskApiConfigName : undefined,
 					})
 				}
 			} else {
@@ -1640,7 +1640,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					lastMessage.partial = false
 					lastMessage.progressStatus = progressStatus
 					// Update modelId if not already set (e.g., for orchestrator messages)
-					if (!lastMessage.modelId && !lastMessage.orchestratorModelId) {
+					if (!lastMessage.modelId) {
 						lastMessage.modelId = currentModelId
 					}
 
@@ -2308,20 +2308,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.emit(RooCodeEventName.TaskStarted)
 
-		// Orchestrator mode: run the orchestrator engine instead of the normal agent loop
-		// Orchestrator mode: run the orchestrator engine instead of the normal agent loop
-		this.log(`[initiateTaskLoop] orchestratorMode.enabled=${this.orchestratorMode?.enabled}, hasEngine=${!!this.orchestratorEngine}`)
-		if (this.orchestratorMode?.enabled && this.orchestratorEngine) {
-			this.log(`[initiateTaskLoop] Using ORCHESTRATOR engine path`)
-			// Extract the user's original message text from the content blocks
-			const userMessageText = nextUserContent
-				.filter((block): block is Anthropic.TextBlockParam => block.type === "text")
-				.map((block) => block.text)
-				.join("\n")
-			await this.orchestratorEngine.run(userMessageText)
-			return
-		}
-
 		while (!this.abort) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
 			includeFileDetails = false // We only need file details the first time.
@@ -2416,23 +2402,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.maybeWaitForProviderRateLimit(currentItem.retryAttempt ?? 0)
 			Task.lastGlobalApiRequestTime = performance.now()
 
-			const orchestratorMeta = this.getCurrentOrchestratorMessageMeta()
-			if (orchestratorMeta) {
-				await this.sayWithOrchestratorMeta(
-					"api_req_started",
-					JSON.stringify({
-						apiProtocol,
-					}),
-					orchestratorMeta,
-				)
-			} else {
-				await this.say(
-					"api_req_started",
-					JSON.stringify({
-						apiProtocol,
-					}),
-				)
-			}
+			await this.say(
+				"api_req_started",
+				JSON.stringify({
+					apiProtocol,
+				}),
+			)
 
 			const provider = this.providerRef.deref()
 			const state = provider ? await provider.getState() : undefined
@@ -4303,42 +4278,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		return checkpointSave(this, force, suppressMessage)
 	}
 
-	private getCurrentOrchestratorMessageMeta():
-		| { orchestratorRole: "planner" | "worker" | "reviewer"; orchestratorModelId: string }
-		| undefined {
-		if (!this.orchestratorMode) {
-			return undefined
-		}
-
-		const phase = this.orchestratorState?.phase
-		if (!phase) {
-			return undefined
-		}
-
-		if (phase === "planning" || phase === "awaiting_approval") {
-			return {
-				orchestratorRole: "planner",
-				orchestratorModelId: this.orchestratorMode.planner.profile,
-			}
-		}
-
-		if (phase === "executing" || phase === "repairing") {
-			return {
-				orchestratorRole: "worker",
-				orchestratorModelId: this.orchestratorMode.worker.profile,
-			}
-		}
-
-		if (phase === "reviewing" || phase === "completed") {
-			return {
-				orchestratorRole: "reviewer",
-				orchestratorModelId: this.orchestratorMode.reviewer.profile,
-			}
-		}
-
-		return undefined
-	}
-
 	private buildCleanConversationHistory(
 		messages: ApiMessage[],
 	): Array<
@@ -4708,57 +4647,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 */
 	public log(message: string): void {
 		this.providerRef.deref()?.log(message)
-	}
-
-	/**
-	 * Get current orchestrator state (for UI panel)
-	 */
-	public get orchestratorState(): OrchestratorModeState | undefined {
-		return this.orchestratorEngine?.getState()
-	}
-
-	/**
-	 * Approve the orchestrator plan and start execution.
-	 * Called when user clicks "Approve Plan" in the webview.
-	 */
-	public async approveOrchestratorPlan(): Promise<void> {
-		if (!this.orchestratorEngine) {
-			throw new Error("Task is not in orchestrator mode")
-		}
-		await this.orchestratorEngine.approvePlan()
-	}
-
-	/**
-	 * Cancel the orchestrator run.
-	 * Called when user clicks "Cancel" in the webview.
-	 */
-	public cancelOrchestrator(): void {
-		this.orchestratorEngine?.cancel()
-	}
-
-	/**
-	 * Say with orchestrator metadata.
-	 * Convenience method used by OrchestratorEngine to write messages
-	 * with orchestratorRole and orchestratorModelId fields.
-	 */
-	public async sayWithOrchestratorMeta(
-		type: ClineSay,
-		text: string | undefined,
-		orchestratorMeta: { orchestratorRole?: string; orchestratorModelId?: string },
-	): Promise<void> {
-		const sayTs = Date.now()
-		this.lastMessageTs = sayTs
-
-		const message: ClineMessage = {
-			ts: sayTs,
-			type: "say",
-			say: type,
-			text,
-			orchestratorRole: orchestratorMeta.orchestratorRole as "planner" | "worker" | "reviewer" | undefined,
-			orchestratorModelId: orchestratorMeta.orchestratorModelId,
-		}
-
-		await this.addToClineMessages(message)
 	}
 
 	/**

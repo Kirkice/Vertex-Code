@@ -28,7 +28,6 @@ import Thumbnails from "../common/Thumbnails"
 import { ModeSelector } from "./ModeSelector"
 import { ApiConfigSelector } from "./ApiConfigSelector"
 import { AutoApproveDropdown } from "./AutoApproveDropdown"
-import { OrchestratorDropdown } from "./OrchestratorDropdown"
 import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
 import { IndexingStatusBadge } from "./IndexingStatusBadge"
@@ -98,7 +97,6 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			commands,
 			enterBehavior,
 			lockApiConfigAcrossModes,
-			orchestratorEnabled,
 		} = useExtensionState()
 
 		// Find the ID and display text for the currently selected API configuration.
@@ -942,8 +940,12 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		}, [])
 
 		const handleToggleLockApiConfig = useCallback(() => {
-			const newValue = !lockApiConfigAcrossModes
-			vscode.postMessage({ type: "lockApiConfigAcrossModes", bool: newValue })
+			// Mode-Level LLM Routing: 锁图标语义反转。
+			// lockApiConfigAcrossModes=true（锁定全局）⇔ modeLevelLlmRoutingEnabled=false
+			// lockApiConfigAcrossModes=false（按 Mode 切换）⇔ modeLevelLlmRoutingEnabled=true
+			// 点击锁图标切换：当前锁定 → 解锁并开启 Mode 路由；当前解锁 → 锁定全局
+			const routingEnabled = lockApiConfigAcrossModes // 当前是否锁定？锁定则切换后开启路由
+			vscode.postMessage({ type: "setModeLevelLlmRoutingEnabled", bool: routingEnabled })
 		}, [lockApiConfigAcrossModes])
 
 		return (
@@ -1298,7 +1300,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 				<div className="flex items-center gap-2">
 					<div className="flex items-center gap-2 min-w-0 overflow-clip flex-1">
-						{!orchestratorEnabled && (
+						{(
 							<>
 								<ModeSelector
 									value={mode}
@@ -1325,7 +1327,6 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							</>
 						)}
 						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
-						<OrchestratorDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none pr-2")}>
 						{isTtsPlaying && (

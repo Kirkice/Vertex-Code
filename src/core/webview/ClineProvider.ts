@@ -67,6 +67,7 @@ import { CodeIndexManager } from "../../services/code-index/manager"
 import type { IndexProgressUpdate } from "../../services/code-index/interfaces/manager"
 import { SkillsManager } from "../../services/skills/SkillsManager"
 import { MarketplaceManager } from "../../services/marketplace"
+import { resolveRoutingEnabled } from "../../services/mode-routing"
 
 import { fileExistsAtPath } from "../../utils/fs"
 import { setTtsEnabled, setTtsSpeed } from "../../utils/tts"
@@ -978,9 +979,13 @@ export class ClineProvider
 			// Load the saved API config for the restored mode if it exists.
 			// Skip mode-based profile activation if historyItem.apiConfigName exists,
 			// since the task's specific provider profile will override it anyway.
-			const lockApiConfigAcrossModes = this.context.workspaceState.get("lockApiConfigAcrossModes", false)
+			// Mode-Level LLM Routing: 统一通过 resolver 判定（新开关优先，回退到 lockApiConfigAcrossModes 反义）。
+			const routingEnabled = resolveRoutingEnabled({
+				modeLevelLlmRoutingEnabled: this.getGlobalState("modeLevelLlmRoutingEnabled"),
+				lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
+			})
 
-			if (!historyItem.apiConfigName && !lockApiConfigAcrossModes && !skipProfileRestoreFromHistory) {
+			if (!historyItem.apiConfigName && routingEnabled && !skipProfileRestoreFromHistory) {
 				const savedConfigId = await this.providerSettingsManager.getModeConfigId(historyItem.mode)
 				const listApiConfig = await this.providerSettingsManager.listConfig()
 
@@ -1407,9 +1412,14 @@ export class ClineProvider
 
 		this.emit(RooCodeEventName.ModeChanged, newMode)
 
-		// If workspace lock is on, keep the current API config — don't load mode-specific config
-		const lockApiConfigAcrossModes = this.context.workspaceState.get("lockApiConfigAcrossModes", false)
-		if (lockApiConfigAcrossModes) {
+		// Mode-Level LLM Routing: 统一通过 resolver 判定是否按 Mode 切换 profile。
+		// 新开关 modeLevelLlmRoutingEnabled 优先；未设置时回退到 lockApiConfigAcrossModes 反义。
+		// routing disabled（等价于旧 lockApiConfigAcrossModes=true）时保持当前全局 profile。
+		const routingEnabled = resolveRoutingEnabled({
+			modeLevelLlmRoutingEnabled: this.getGlobalState("modeLevelLlmRoutingEnabled"),
+			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
+		})
+		if (!routingEnabled) {
 			await this.postStateToWebview()
 			return
 		}
@@ -2063,7 +2073,6 @@ export class ClineProvider
 		const {
 			clineMessages: _omitMessages,
 			taskHistory: _omitHistory,
-			orchestratorSession: _omitOrchestratorSession,
 			...rest
 		} = state
 		this.postMessageToWebview({ type: "state", state: rest })
@@ -2212,8 +2221,6 @@ export class ClineProvider
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
 			lockApiConfigAcrossModes,
-			orchestratorEnabled,
-			orchestratorConfig,
 		} = await this.getState()
 
 		const telemetryKey = process.env.POSTHOG_API_KEY
@@ -2359,6 +2366,7 @@ export class ClineProvider
 			cloudApiUrl: "",
 			hasOpenedModeSelector: this.getGlobalState("hasOpenedModeSelector") ?? false,
 			lockApiConfigAcrossModes: lockApiConfigAcrossModes ?? false,
+			modeLevelLlmRoutingEnabled: this.getGlobalState("modeLevelLlmRoutingEnabled"),
 			alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
 			followupAutoApproveTimeoutMs: followupAutoApproveTimeoutMs ?? 60000,
 			includeDiagnosticMessages: includeDiagnosticMessages ?? true,
@@ -2381,97 +2389,6 @@ export class ClineProvider
 			})(),
 			...vertexState,
 			debug: vscode.workspace.getConfiguration(Package.name).get<boolean>("debug", false),
-			orchestratorEnabled: orchestratorEnabled ?? false,
-			orchestratorConfig,
-			// Derive orchestrator session snapshot from the current Task's orchestrator state.
-			// Only build snapshot when orchestratorEnabled is true — this ensures the panel
-			// hides immediately when the user disables orchestrator mode.
-			orchestratorSession: (() => {
-				if (!(orchestratorEnabled ?? false)) return undefined
-				const task = this.getCurrentTask()
-				const oState = task?.orchestratorState
-				const oConfig = task?.orchestratorMode
-				if (!oState || !oConfig) return undefined
-
-				// Build stages array from orchestrator config + message statistics
-				const currentPhase = oState.phase
-				const messages = task.clineMessages
-				const latestOrchestratorRole = [...messages]
-					.reverse()
-					.find((msg) => msg.orchestratorRole)?.orchestratorRole
-
-				// Helper to count tokens/cost for messages with a specific orchestratorRole
-				const getStageStats = (role: string) => {
-					let tokens = 0
-					let cost = 0
-					for (const msg of messages) {
-						if (msg.orchestratorRole === role && msg.say === "api_req_started") {
-							try {
-								const info = JSON.parse(msg.text || "{}")
-								tokens += (info.tokensIn || 0) + (info.tokensOut || 0)
-								cost += info.cost || 0
-							} catch { /* ignore parse errors */ }
-						}
-					}
-					return { tokens, cost }
-				}
-
-				const phaseRoleMap: Record<string, string> = {
-					planning: "planner",
-					awaiting_approval: "planner",
-					executing: "worker",
-					repairing: "worker",
-					reviewing: "reviewer",
-					completed: "reviewer",
-				}
-				const effectiveActiveRole = phaseRoleMap[currentPhase] ?? latestOrchestratorRole
-				const isActive = (role: string) => effectiveActiveRole === role
-
-				const stages: import("@roo-code/types").OrchestratorStageInfo[] = [
-					{
-						name: "planner",
-						label: "🧠 Planner",
-						mode: oConfig.planner.mode,
-						profile: oConfig.planner.profile,
-						...getStageStats("planner"),
-						active: isActive("planner"),
-					},
-					{
-						name: "worker",
-						label: "⚡ Worker",
-						mode: oConfig.worker.mode,
-						profile: oConfig.worker.profile,
-						...getStageStats("worker"),
-						active: isActive("worker"),
-					},
-					{
-						name: "reviewer",
-						label: "🔍 Reviewer",
-						mode: oConfig.reviewer.mode,
-						profile: oConfig.reviewer.profile,
-						...getStageStats("reviewer"),
-						active: isActive("reviewer"),
-					},
-				]
-
-				const totalTokens = stages.reduce((sum, s) => sum + s.tokens, 0)
-				const totalCost = stages.reduce((sum, s) => sum + s.cost, 0)
-
-				return {
-					sessionId: task.taskId,
-					state: oState.phase === "awaiting_approval" ? "planning" : (oState.phase === "completed" ? "completed" : oState.phase === "failed" ? "failed" : "executing") as any,
-					currentPhase: oState.phase,
-					repairRound: oState.repairRound,
-					maxRepairRounds: oConfig.maxRepairRounds ?? 2,
-					costStats: {
-						totalTokens,
-						tokensByProvider: {},
-						estimatedCostUsd: totalCost,
-					},
-					error: oState.error,
-					stages,
-				}
-			})(),
 		}
 	}
 
@@ -2609,6 +2526,7 @@ export class ClineProvider
 			},
 			profileThresholds: stateValues.profileThresholds ?? {},
 			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
+			modeLevelLlmRoutingEnabled: stateValues.modeLevelLlmRoutingEnabled,
 			includeDiagnosticMessages: stateValues.includeDiagnosticMessages ?? true,
 			maxDiagnosticMessages: stateValues.maxDiagnosticMessages ?? 50,
 			includeTaskHistoryInEnhance: stateValues.includeTaskHistoryInEnhance ?? true,
@@ -2619,8 +2537,6 @@ export class ClineProvider
 			imageGenerationProvider: stateValues.imageGenerationProvider,
 			openRouterImageApiKey: stateValues.openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel: stateValues.openRouterImageGenerationSelectedModel,
-			orchestratorEnabled: stateValues.orchestratorEnabled ?? false,
-			orchestratorConfig: stateValues.orchestratorConfig as import("@roo-code/types").OrchestratorProviderConfig | undefined,
 		}
 	}
 

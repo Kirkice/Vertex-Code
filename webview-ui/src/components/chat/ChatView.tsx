@@ -18,6 +18,7 @@ import { SuggestionItem } from "@roo-code/types"
 import { combineApiRequests } from "@roo/combineApiRequests"
 import { combineCommandSequences } from "@roo/combineCommandSequences"
 import { getApiMetrics } from "@roo/getApiMetrics"
+import { getMultiModelUsage } from "@roo/getMultiModelUsage"
 import { getAllModes } from "@roo/modes"
 import { ProfileValidator } from "@roo/ProfileValidator"
 import { getLatestTodo } from "@roo/todo"
@@ -43,7 +44,6 @@ import { CheckpointWarning } from "./CheckpointWarning"
 import { QueuedMessages } from "./QueuedMessages"
 import { WorktreeSelector } from "./WorktreeSelector"
 import FileChangesPanel from "./FileChangesPanel"
-import { OrchestratorSessionPanel } from "../orchestrator/OrchestratorSessionPanel"
 import { useScrollLifecycle } from "@src/hooks/useScrollLifecycle"
 
 export interface ChatViewProps {
@@ -87,8 +87,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		messageQueue = [],
 		showWorktreesInHomeScreen,
 		telemetrySetting,
-		orchestratorSession,
-		orchestratorEnabled,
 	} = useExtensionState()
 
 	// Show a WarningRow when the user sends a message with a retired provider.
@@ -131,6 +129,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Has to be after api_req_finished are all reduced into api_req_started messages.
 	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages])
+	// Multi-model usage breakdown (by Mode / by Profile) for expanded TaskHeader
+	const multiModelUsage = useMemo(() => getMultiModelUsage(modifiedMessages), [modifiedMessages])
 
 	const [inputValue, setInputValue] = useState("")
 	const inputValueRef = useRef(inputValue)
@@ -1604,6 +1604,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						buttonsDisabled={sendingDisabled}
 						handleCondenseContext={handleCondenseContext}
 						todos={latestTodos}
+						multiModelUsage={multiModelUsage}
 					/>
 
 				{checkpointWarning && (
@@ -1612,12 +1613,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					</div>
 				)}
 
-				{/* Orchestrator Session Panel — only show when orchestrator is enabled */}
-				{orchestratorEnabled && orchestratorSession && (
-					<div className="px-3">
-						<OrchestratorSessionPanel session={orchestratorSession} />
-					</div>
-				)}
 			</>
 			) : (
 				<div className="flex flex-col h-full p-6 min-h-0 overflow-y-auto gap-4 relative">

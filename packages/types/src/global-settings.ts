@@ -195,6 +195,23 @@ export const globalSettingsSchema = z.object({
 
 	mode: z.string().optional(),
 	modeApiConfigs: z.record(z.string(), z.string()).optional(),
+	/**
+	 * Mode-Level LLM Routing 总开关。
+	 *
+	 * - `true`: 切换 Mode 时自动使用该 Mode 在 `modeApiConfigs` 中绑定的 Provider Profile。
+	 *   高价值任务（如 Architect）可绑定强推理模型，简单任务（如 Code）可绑定便宜模型，
+	 *   从而在不破坏交互方式的前提下降低整体 Token 成本。
+	 * - `false` / `undefined`: 所有 Mode 继续使用全局 Provider Profile（向后兼容）。
+	 *
+	 * 与 `lockApiConfigAcrossModes`（workspaceState）互为反义：
+	 *   `modeLevelLlmRoutingEnabled = true`  ⇔ `lockApiConfigAcrossModes = false`
+	 *   `modeLevelLlmRoutingEnabled = false` ⇔ `lockApiConfigAcrossModes = true`
+	 *
+	 * 新开关优先；若新开关未设置（`undefined`），则回退到 `lockApiConfigAcrossModes` 反推。
+	 *
+	 * @default false
+	 */
+	modeLevelLlmRoutingEnabled: z.boolean().optional(),
 	customModes: z.array(modeConfigSchema).optional(),
 	customModePrompts: customModePromptsSchema.optional(),
 	customSupportPrompts: customSupportPromptsSchema.optional(),
@@ -239,35 +256,6 @@ export const globalSettingsSchema = z.object({
 	 */
 	disabledTools: z.array(toolNamesSchema).optional(),
 
-	/**
-	 * Multi-model orchestrator settings
-	 * Each stage has a Mode (determines system prompt/tools) and a Profile (determines model)
-	 */
-	orchestratorEnabled: z.boolean().optional(),
-	orchestratorConfig: z
-		.object({
-			plannerMode: z.string().optional(),
-			plannerProfile: z.string().optional(),
-			workerMode: z.string().optional(),
-			reviewerProfile: z.string().optional(),
-			reviewerMode: z.string().optional(),
-			workerProfiles: z
-				.object({
-					primary: z.string().optional(),
-					fallback: z.string().optional(),
-				})
-				.optional(),
-			routingPolicy: z
-				.object({
-					highRiskToPlanner: z.boolean().optional(),
-					budgetPressure: z.enum(["low", "medium", "high"]).optional(),
-					maxRepairRounds: z.number().optional(),
-				})
-				.optional(),
-			enabled: z.boolean().optional(),
-		})
-		.optional(),
-	orchestratorSession: z.any().optional(),
 })
 
 export type GlobalSettings = z.infer<typeof globalSettingsSchema>

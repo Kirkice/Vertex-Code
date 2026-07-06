@@ -1181,38 +1181,18 @@ export const ChatRowContent = ({
 				case "api_req_finished":
 					return null // we should never see this message type
 			case "text": {
-				// Orchestrator role-specific rendering
-				const roleIcons: Record<string, { icon: string; label: string; color: string }> = {
-					planner: { icon: "🧠", label: "计划者", color: "#7c3aed" },
-					worker: { icon: "⚡", label: "执行者", color: "#f59e0b" },
-					reviewer: { icon: "🔍", label: "审核者", color: "#10b981" },
-				}
-				const roleCfg = message.orchestratorRole ? roleIcons[message.orchestratorRole] : undefined
-
 				return (
 					<div className="group">
 						<div style={headerStyle}>
-							{roleCfg ? (
-								<>
-									<span style={{ fontSize: "1.1em" }}>{roleCfg.icon}</span>
-									<span style={{ fontWeight: "bold", color: roleCfg.color }}>{roleCfg.label}</span>
-									{message.orchestratorModelId && (
-										<span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 6 }}>
-											· {message.orchestratorModelId}
-										</span>
-									)}
-								</>
-							) : (
-								<>
-									<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
-									<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
-									{message.modelId && (
-										<span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 6 }}>
-											· {message.modelId}
-										</span>
-									)}
-								</>
-							)}
+							<>
+								<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
+								<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
+								{message.modelId && (
+									<span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 6 }}>
+										· {message.modelId}
+									</span>
+								)}
+							</>
 							<div style={{ flexGrow: 1 }} />
 							<OpenMarkdownPreviewButton markdown={message.text} />
 						</div>

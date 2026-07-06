@@ -5,8 +5,6 @@ import type { RooCodeSettings } from "./global-settings.js"
 import type { ClineMessage, QueuedMessage, TokenUsage } from "./message.js"
 import type { ToolUsage, ToolName } from "./tool.js"
 import type { TodoItem } from "./todo.js"
-import type { OrchestratorTask } from "./orchestrator.js"
-import type { PlanResponsePayload } from "./orchestrator-events.js"
 
 /**
  * TaskProviderLike
@@ -85,56 +83,6 @@ export type TaskProviderEvents = {
  * TaskLike
  */
 
-/**
- * Orchestrator Mode Configuration
- *
- * When enabled, the Task runs in orchestrator mode — a Mode chain that
- * switches between different working modes (Architect, Code) with
- * different model profiles for each stage.
- *
- * Stage = Mode + Model Profile
- *   Planner  → Architect (read-only) + planner model  → analyze & plan
- *   Worker   → Code (read-write) + worker model       → execute plan
- *   Reviewer → Architect (read-only) + reviewer model  → review results
- *
- * Mode switching naturally handles simple vs complex requests:
- *   - "Hello" → Architect replies directly → done
- *   - "Integrate docs" → Architect plans → Worker executes → Reviewer checks
- */
-export interface OrchestratorStageConfig {
-	/** Mode slug for this stage (e.g., "architect", "code") */
-	mode: string
-	/** Provider Profile name for this stage */
-	profile: string
-}
-
-export interface OrchestratorModeConfig {
-	enabled: boolean
-	/** Planner stage configuration */
-	planner: OrchestratorStageConfig
-	/** Worker stage configuration */
-	worker: OrchestratorStageConfig
-	/** Reviewer stage configuration */
-	reviewer: OrchestratorStageConfig
-	/** Maximum repair rounds before giving up (default: 2) */
-	maxRepairRounds?: number
-}
-
-/**
- * Orchestrator Mode Runtime State
- *
- * Tracks the current phase and progress of the orchestrator workflow
- * within a Task instance.
- */
-export interface OrchestratorModeState {
-	/** Current phase of the orchestrator workflow */
-	phase: "planning" | "awaiting_approval" | "executing" | "reviewing" | "repairing" | "completed" | "failed"
-	/** Current repair round (0-indexed) */
-	repairRound: number
-	/** Error message if the orchestrator failed */
-	error?: string
-}
-
 export interface CreateTaskOptions {
 	taskId?: string
 	enableCheckpoints?: boolean
@@ -146,13 +94,6 @@ export interface CreateTaskOptions {
 	/** Whether to start the task loop immediately (default: true).
 	 *  When false, the caller must invoke `task.start()` manually. */
 	startTask?: boolean
-	/**
-	 * Orchestrator mode configuration.
-	 * When provided and enabled, the Task will run the orchestrator workflow
-	 * (Plan → Approve → Execute → Review → Repair loop) instead of the
-	 * standard single-model agent loop.
-	 */
-	orchestratorMode?: OrchestratorModeConfig
 }
 
 export enum TaskStatus {
