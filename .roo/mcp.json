@@ -1,0 +1,20 @@
+{
+	"mcpServers": {
+		"renderdoc-for-vscode": {
+			"type": "streamable-http",
+			"url": "http://127.0.0.1:38967/mcp",
+			"disabled": false,
+			"alwaysAllow": [
+				"renderdoc_getReplayStatus",
+				"renderdoc_getCaptureInfo",
+				"renderdoc_getFrameSummary",
+				"renderdoc_getDrawCalls",
+				"renderdoc_getActionTimings",
+				"renderdoc_getPassGraph",
+				"renderdoc_getSelectionContext",
+				"renderdoc_analyzeFrame",
+				"renderdoc_getEventDetails"
+			]
+		}
+	}
+}

@@ -56,7 +56,9 @@ export class SwitchModeTool extends BaseTool<"switch_mode"> {
 			}
 
 			// Switch the mode using shared handler
-			await task.providerRef.deref()?.handleModeSwitch(mode_slug)
+			await task.providerRef.deref()?.handleModeSwitch(mode_slug, {
+				handoffTrigger: "tool_switch_mode",
+			})
 
 			pushToolResult(
 				`Successfully switched from ${getModeBySlug(currentMode)?.name ?? currentMode} mode to ${

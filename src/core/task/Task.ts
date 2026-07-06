@@ -16,6 +16,10 @@ import { serializeError } from "serialize-error"
 import { Package } from "../../shared/package"
 import { formatToolInvocation } from "../tools/helpers/toolResultFormatting"
 
+// Graphics agent - auto-detect graphics intent for mode switching
+import { detectGraphicsIntent } from "../../services/graphics-agent/GraphicsIntentRouter"
+import { GRAPHICS_MODE_SLUG } from "../../services/graphics-agent/GraphicsModeDefinition"
+
 import { type TaskLike, type TaskMetadata, type TaskEvents, type ProviderSettings, type TokenUsage, type ToolUsage, type ToolName, type ContextCondense, type ContextTruncation, type ClineMessage, type ClineSay, type ClineAsk, type ToolProgressStatus, type HistoryItem, type CreateTaskOptions, type ModelInfo, type ClineApiReqCancelReason, type ClineApiReqInfo, RooCodeEventName, TaskStatus, TodoItem, getApiProtocol, getModelId, isRetiredProvider, isIdleAsk, isInteractiveAsk, isResumableAsk, QueuedMessage, DEFAULT_CONSECUTIVE_MISTAKE_LIMIT, DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, MAX_CHECKPOINT_TIMEOUT_SECONDS, MIN_CHECKPOINT_TIMEOUT_SECONDS, ConsecutiveMistakeError, MAX_MCP_TOOLS_THRESHOLD, countEnabledMcpTools } from "@roo-code/types"
 // api
 import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler } from "../../api"
@@ -1369,83 +1373,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	/**
-	 * 捕获 Mode/Profile 切换前的快照（为 Phase 4 mode handoff summary 预留）。
-	 *
-	 * 当前为桩实现，仅记录切换意图，不产生任何副作用。
-	 * Phase 4 实现时将在此处生成结构化 mode_handoff 摘要并注入下一轮请求。
-	 *
-	 * @param toMode 切换目标 Mode（可能为 undefined 表示不切 mode）
-	 * @param toProfile 切换目标 Profile（可能为 undefined 表示不切 profile）
-	 * @internal
-	 */
-	private async captureModeSwitchSnapshot(toMode?: string, toProfile?: string): Promise<void> {
-		// Mode Handoff: 当 Mode 或 Profile 发生变化时，生成结构化交接摘要并写入 clineMessages。
-		// 详见 docs/mode-handoff-summary-implementation-plan.md
-		const fromMode = this._taskMode
-		const fromProfile = this._taskApiConfigName
-
-		// 提取最近用户目标（取最近一条 user_feedback / text 消息）
-		let objective = ""
-		const recentAssistantTexts: string[] = []
-		for (let i = this.clineMessages.length - 1; i >= 0 && i >= this.clineMessages.length - 20; i--) {
-			const msg = this.clineMessages[i]
-			if (!msg) continue
-			if (msg.type === "say" && msg.say === "user_feedback" && msg.text && !objective) {
-				objective = msg.text
-			}
-			if (msg.type === "say" && msg.say === "text" && msg.text) {
-				recentAssistantTexts.unshift(msg.text)
-			}
-		}
-		if (!objective) objective = "(未提取到明确目标)"
-
-		// 提取 touchedFiles（从工具调用中提取文件路径，简化版取最近 10 个）
-		const touchedFiles: string[] = []
-		for (let i = this.clineMessages.length - 1; i >= 0 && touchedFiles.length < 10; i--) {
-			const msg = this.clineMessages[i]
-			if (msg?.type === "ask" && msg.ask === "tool") {
-				const tool = (msg as any)?.tool
-				if (tool?.path) touchedFiles.unshift(tool.path)
-			}
-		}
-
-		// 判断阻塞阶段
-		let blockingStage: "followup" | "approval" | "review_repair" | undefined
-		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
-			const msg = this.clineMessages[i]
-			if (msg?.type === "ask" && !msg.isAnswered) {
-				if (msg.ask === "followup") blockingStage = "followup"
-				else if (msg.ask === "tool") blockingStage = "approval"
-				break
-			}
-		}
-
-		// Mode 约束（简化版：根据 fromMode 给默认约束）
-		const modeConstraints: string[] = []
-		if (fromMode === "architect") modeConstraints.push("Architect 模式为只读分析，不直接修改代码")
-
-		const input: ModeHandoffExtractInput = {
-			objective,
-			todos: (this as any).todoList || [],
-			recentAssistantTexts,
-			touchedFiles,
-			blockingStage,
-			modeConstraints,
-			fromMode,
-			toMode: toMode || fromMode || "",
-			fromProfile,
-			toProfile: toProfile || fromProfile || "",
-			trigger: "user_mode_switch" as ModeHandoffTrigger,
-		}
-
-		const handoff = createHandoff(input)
-		if (handoff) {
-			const message = handoffToMessage(handoff)
-			await this.addToClineMessages(message)
-		}
-	}
-
-	/**
 	 * Updates the API configuration and rebuilds the API handler.
 	 * There is no tool-protocol switching or tool parser swapping.
 	 *
@@ -1455,6 +1382,137 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Update the configuration and rebuild the API handler
 		this.apiConfiguration = newApiConfiguration
 		this.api = buildApiHandler(this.apiConfiguration)
+	}
+
+	private parseToolMessage(message: ClineMessage): Record<string, unknown> | undefined {
+		if (message.type !== "ask" || message.ask !== "tool" || !message.text) {
+			return undefined
+		}
+
+		try {
+			const parsed = JSON.parse(message.text)
+			return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : undefined
+		} catch {
+			return undefined
+		}
+	}
+
+	private collectFilePaths(value: unknown, files: Set<string>): void {
+		if (files.size >= 10 || value === null || value === undefined) {
+			return
+		}
+
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				this.collectFilePaths(item, files)
+				if (files.size >= 10) {
+					return
+				}
+			}
+			return
+		}
+
+		if (typeof value !== "object") {
+			return
+		}
+
+		for (const [key, nestedValue] of Object.entries(value)) {
+			if (files.size >= 10) {
+				return
+			}
+
+			if ((key === "path" || key === "filePath") && typeof nestedValue === "string" && nestedValue.trim().length > 0) {
+				files.add(nestedValue)
+				continue
+			}
+
+			this.collectFilePaths(nestedValue, files)
+		}
+	}
+
+	private extractTouchedFiles(): string[] {
+		const files = new Set<string>()
+
+		for (let i = this.clineMessages.length - 1; i >= 0 && files.size < 10; i--) {
+			const parsedTool = this.parseToolMessage(this.clineMessages[i])
+			if (!parsedTool) {
+				continue
+			}
+
+			this.collectFilePaths(parsedTool, files)
+		}
+
+		return Array.from(files).reverse()
+	}
+
+	public async maybeCreateModeHandoff(params: {
+		fromMode?: string
+		toMode?: string
+		fromProfile?: string
+		toProfile?: string
+		trigger: ModeHandoffTrigger
+	}): Promise<void> {
+		const { fromMode, toMode, fromProfile, toProfile, trigger } = params
+
+		let objective = ""
+		const recentAssistantTexts: string[] = []
+		for (let i = this.clineMessages.length - 1; i >= 0 && i >= this.clineMessages.length - 20; i--) {
+			const msg = this.clineMessages[i]
+			if (!msg) {
+				continue
+			}
+
+			if (msg.type === "say" && msg.say === "user_feedback" && msg.text && !objective) {
+				objective = msg.text
+			}
+
+			if (msg.type === "say" && msg.say === "text" && msg.text) {
+				recentAssistantTexts.unshift(msg.text)
+			}
+		}
+
+		if (!objective) {
+			objective = "(no explicit objective found)"
+		}
+
+		let blockingStage: "followup" | "approval" | "review_repair" | undefined
+		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
+			const msg = this.clineMessages[i]
+			if (msg?.type === "ask" && !msg.isAnswered) {
+				if (msg.ask === "followup") {
+					blockingStage = "followup"
+				} else if (msg.ask === "tool") {
+					blockingStage = "approval"
+				}
+				break
+			}
+		}
+
+		const modeConstraints: string[] = []
+		if (fromMode === "architect") {
+			modeConstraints.push("Architect mode should focus on analysis and planning instead of direct edits.")
+		}
+
+		const input: ModeHandoffExtractInput = {
+			objective,
+			todos: this.todoList || [],
+			recentAssistantTexts,
+			touchedFiles: this.extractTouchedFiles(),
+			blockingStage,
+			modeConstraints,
+			fromMode,
+			toMode: toMode || fromMode || "",
+			fromProfile,
+			toProfile: toProfile || fromProfile || "",
+			trigger,
+		}
+
+		const handoff = createHandoff(input)
+		if (!handoff) {
+			return
+		}
+
+		await this.addToClineMessages(handoffToMessage(handoff))
 	}
 
 	public async submitUserMessage(
@@ -1474,12 +1532,27 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const provider = this.providerRef.deref()
 
 			if (provider) {
+				// Auto-detect high-confidence graphics intent for mode switching.
+				// When a user asks a graphics-related question (e.g. frame analysis,
+				// shader debugging, RenderDoc capture) while not in Graphics Mode,
+				// automatically switch to Graphics Mode for proper analysis.
+				let autoDetectedGraphicsMode = false
+				if (text && !mode && this._taskMode !== GRAPHICS_MODE_SLUG) {
+					const intentResult = detectGraphicsIntent(text, this._taskMode)
+					if (intentResult.autoSwitchMode) {
+						mode = GRAPHICS_MODE_SLUG
+						autoDetectedGraphicsMode = true
+					}
+				}
+
+				const fromMode = this._taskMode
+				const fromProfile = this._taskApiConfigName
 				if (mode) {
-					await provider.setMode(mode)
+					await provider.setMode(mode, { createModeHandoff: false })
 				}
 	
 				if (providerProfile) {
-					await provider.setProviderProfile(providerProfile)
+					await provider.setProviderProfile(providerProfile, { createModeHandoff: false })
 	
 					// Update this task's API configuration to match the new profile
 					// This ensures the parser state is synchronized with the selected model
@@ -1489,9 +1562,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					}
 				}
 	
-				// Mode Handoff: 在切换成功后生成结构化交接摘要并写入 clineMessages。
-				// 放在 setMode/setProviderProfile 之后，确保切换已生效，避免"假交接"。
-				await this.captureModeSwitchSnapshot(mode, providerProfile)
+				// Mode Handoff: 鍦ㄥ垏鎹㈡垚鍔熷悗鐢熸垚缁撴瀯鍖栦氦鎺ユ憳瑕佸苟鍐欏叆 clineMessages銆?
+				// 鏀惧湪 setMode/setProviderProfile 涔嬪悗锛岀‘淇濆垏鎹㈠凡鐢熸晥锛岄伩鍏?鍋囦氦鎺?銆?
+				await this.maybeCreateModeHandoff({
+					fromMode,
+					toMode: mode ?? this._taskMode,
+					fromProfile,
+					toProfile: providerProfile ?? this._taskApiConfigName,
+					trigger: autoDetectedGraphicsMode ? "auto_intent_switch" : (mode && mode !== fromMode ? "user_mode_switch" : "profile_only_switch"),
+				})
 	
 				this.emit(RooCodeEventName.TaskUserMessage, this.taskId)
 
@@ -1687,7 +1766,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						contextCondense,
 						contextTruncation,
 						modelId: currentModelId,
-						// Mode-Level LLM Routing 归因字段：记录本次请求的 Mode 和 Profile
+						// Mode-Level LLM Routing 褰掑洜瀛楁锛氳褰曟湰娆¤姹傜殑 Mode 鍜?Profile
 						modeAtRequest: type === "api_req_started" ? this._taskMode : undefined,
 						providerProfileAtRequest:
 							type === "api_req_started" ? this._taskApiConfigName : undefined,
@@ -1995,7 +2074,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// intact. The summary message carries critical metadata (isSummary, condenseId)
 					// that getEffectiveApiHistory() uses to filter out condensed messages.
 					// Removing or merging it would destroy this metadata, causing all condensed
-					// messages to become "orphaned" and restored to active status — effectively
+					// messages to become "orphaned" and restored to active status 鈥?effectively
 					// undoing the condensation and sending the full history to the API.
 					// See: https://github.com/RooCodeInc/Vertex-Code/issues/11487
 					modifiedApiConversationHistory = [...existingApiConversationHistory]
@@ -2469,14 +2548,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.maybeWaitForProviderRateLimit(currentItem.retryAttempt ?? 0)
 			Task.lastGlobalApiRequestTime = performance.now()
 
-			// Mode Handoff: 消费 pending handoff，注入到本轮 API 请求的 userContent 前面
+			// Mode Handoff: 娑堣垂 pending handoff锛屾敞鍏ュ埌鏈疆 API 璇锋眰鐨?userContent 鍓嶉潰
 			const handoffInject = consumePendingHandoff(this.clineMessages)
 			if (handoffInject) {
-				userContent.unshift({
+				currentUserContent.unshift({
 					type: "text",
 					text: handoffInject.text,
 				} as Anthropic.TextBlockParam)
-				// 持久化 consumedAt，避免进程重启后重复注入
+				// 鎸佷箙鍖?consumedAt锛岄伩鍏嶈繘绋嬮噸鍚悗閲嶅娉ㄥ叆
 				await this.saveClineMessages()
 			}
 
@@ -2514,7 +2593,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					const state = await provider.getState()
 					const targetMode = getModeBySlug(slashCommandMode, state?.customModes)
 					if (targetMode) {
-						await provider.handleModeSwitch(slashCommandMode)
+						await provider.handleModeSwitch(slashCommandMode, {
+							handoffTrigger: "auto_intent_switch",
+						})
 					}
 				}
 			}
@@ -3909,7 +3990,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		// Update last request time right before making the request so that subsequent
-		// requests — even from new subtasks — will honour the provider's rate-limit.
+		// requests 鈥?even from new subtasks 鈥?will honour the provider's rate-limit.
 		//
 		// NOTE: When recursivelyMakeClineRequests handles rate limiting, it sets the
 		// timestamp earlier to include the environment details build. We still set it

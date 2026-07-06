@@ -31,6 +31,7 @@ import {
 	type ToolUsage,
 	type ExtensionMessage,
 	type ExtensionState,
+	type ModeHandoffTrigger,
 	RooCodeEventName,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
@@ -1378,8 +1379,13 @@ export class ClineProvider
 	 * Handle switching to a new mode, including updating the associated API configuration
 	 * @param newMode The mode to switch to
 	 */
-	public async handleModeSwitch(newMode: Mode) {
+	public async handleModeSwitch(
+		newMode: Mode,
+		options?: { createModeHandoff?: boolean; handoffTrigger?: ModeHandoffTrigger },
+	) {
 		const task = this.getCurrentTask()
+		const fromMode = (task as any)?._taskMode as string | undefined
+		const fromProfile = task?.taskApiConfigName
 
 		if (task) {
 			task.emit(RooCodeEventName.TaskModeSwitched, task.taskId, newMode)
@@ -1420,6 +1426,15 @@ export class ClineProvider
 			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
 		})
 		if (!routingEnabled) {
+			if (task && options?.createModeHandoff !== false) {
+				await task.maybeCreateModeHandoff({
+					fromMode,
+					toMode: newMode,
+					fromProfile,
+					toProfile: task.taskApiConfigName,
+					trigger: options?.handoffTrigger ?? "user_mode_switch",
+				})
+			}
 			await this.postStateToWebview()
 			return
 		}
@@ -1446,7 +1461,7 @@ export class ClineProvider
 				const hasActualSettings = !!fullProfile.apiProvider
 
 				if (hasActualSettings) {
-					await this.activateProviderProfile({ name: profile.name })
+					await this.activateProviderProfile({ name: profile.name }, { createModeHandoff: false })
 				} else {
 					// The task will continue with the current/default configuration.
 				}
@@ -1464,6 +1479,16 @@ export class ClineProvider
 					await this.providerSettingsManager.setModeConfig(newMode, config.id)
 				}
 			}
+		}
+
+		if (task && options?.createModeHandoff !== false) {
+			await task.maybeCreateModeHandoff({
+				fromMode,
+				toMode: newMode,
+				fromProfile,
+				toProfile: task.taskApiConfigName,
+				trigger: options?.handoffTrigger ?? "user_mode_switch",
+			})
 		}
 
 		await this.postStateToWebview()
@@ -1629,8 +1654,16 @@ export class ClineProvider
 
 	async activateProviderProfile(
 		args: { name: string } | { id: string },
-		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean },
+		options?: {
+			persistModeConfig?: boolean
+			persistTaskHistory?: boolean
+			createModeHandoff?: boolean
+			handoffTrigger?: ModeHandoffTrigger
+		},
 	) {
+		const task = this.getCurrentTask()
+		const fromMode = (task as any)?._taskMode as string | undefined
+		const fromProfile = task?.taskApiConfigName
 		const { name, id, ...providerSettings } = await this.providerSettingsManager.activateProfile(args)
 
 		const persistModeConfig = options?.persistModeConfig ?? true
@@ -1656,6 +1689,16 @@ export class ClineProvider
 		// being used purely as a non-persisting restoration (e.g., reopening a task from history).
 		if (persistTaskHistory) {
 			await this.persistStickyProviderProfileToCurrentTask(name)
+		}
+
+		if (task && options?.createModeHandoff !== false) {
+			await task.maybeCreateModeHandoff({
+				fromMode,
+				toMode: fromMode ?? mode,
+				fromProfile,
+				toProfile: name,
+				trigger: options?.handoffTrigger ?? "profile_only_switch",
+			})
 		}
 
 		await this.postStateToWebview()
@@ -3146,8 +3189,11 @@ export class ClineProvider
 		return mode
 	}
 
-	public async setMode(mode: string): Promise<void> {
-		await this.setValues({ mode })
+	public async setMode(
+		mode: string,
+		options?: { createModeHandoff?: boolean; handoffTrigger?: ModeHandoffTrigger },
+	): Promise<void> {
+		await this.handleModeSwitch(mode as Mode, options)
 	}
 
 	// Provider Profiles
@@ -3162,8 +3208,16 @@ export class ClineProvider
 		return currentApiConfigName
 	}
 
-	public async setProviderProfile(name: string): Promise<void> {
-		await this.activateProviderProfile({ name })
+	public async setProviderProfile(
+		name: string,
+		options?: {
+			persistModeConfig?: boolean
+			persistTaskHistory?: boolean
+			createModeHandoff?: boolean
+			handoffTrigger?: ModeHandoffTrigger
+		},
+	): Promise<void> {
+		await this.activateProviderProfile({ name }, options)
 	}
 
 	// Telemetry
