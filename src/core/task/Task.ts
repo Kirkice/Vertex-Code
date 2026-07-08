@@ -2586,6 +2586,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				currentMode,
 			})
 
+			const currentUserMessage = this.extractUserMessageText(parsedUserContent)
+
 			// Switch mode if specified in a slash command's frontmatter
 			if (slashCommandMode) {
 				const provider = this.providerRef.deref()
@@ -3723,7 +3725,49 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		return false
 	}
 
-	private async getSystemPrompt(): Promise<string> {
+	private extractUserMessageText(content: Anthropic.Messages.ContentBlockParam[]): string | undefined {
+		for (const block of content) {
+			if (block.type !== "text") {
+				continue
+			}
+
+			const taggedMatch = block.text.match(/<user_message>\s*([\s\S]*?)\s*<\/user_message>/i)
+			if (taggedMatch?.[1]?.trim()) {
+				return taggedMatch[1].trim()
+			}
+
+			if (block.text.trim()) {
+				return block.text.trim()
+			}
+		}
+
+		return undefined
+	}
+
+	private getLatestUserMessageForPrompt(): string | undefined {
+		if (this.userMessageContent.length > 0) {
+			const pendingMessage = this.extractUserMessageText(this.userMessageContent as Anthropic.Messages.ContentBlockParam[])
+			if (pendingMessage) {
+				return pendingMessage
+			}
+		}
+
+		for (let i = this.apiConversationHistory.length - 1; i >= 0; i--) {
+			const message = this.apiConversationHistory[i]
+			if (message.role !== "user" || !Array.isArray(message.content)) {
+				continue
+			}
+
+			const text = this.extractUserMessageText(message.content as Anthropic.Messages.ContentBlockParam[])
+			if (text) {
+				return text
+			}
+		}
+
+		return undefined
+	}
+
+	private async getSystemPrompt(userMessage?: string): Promise<string> {
 		const { mcpEnabled } = (await this.providerRef.deref()?.getState()) ?? {}
 		let mcpHub: McpHub | undefined
 		if (mcpEnabled ?? true) {
@@ -3796,6 +3840,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				undefined, // todoList
 				this.api.getModel().id,
 				provider.getSkillsManager(),
+				userMessage,
 			)
 		})()
 	}
@@ -3998,7 +4043,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// in the caller.
 		Task.lastGlobalApiRequestTime = performance.now()
 
-		const systemPrompt = await this.getSystemPrompt()
+		const systemPrompt = await this.getSystemPrompt(this.getLatestUserMessageForPrompt())
 		const { contextTokens } = this.getTokenUsage()
 
 		if (contextTokens) {

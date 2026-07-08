@@ -18,6 +18,12 @@ import { ExplainSelectedDrawWorkflow } from "../../services/graphics-agent/workf
 import { FindOwnerInProjectWorkflow } from "../../services/graphics-agent/workflows/findOwnerInProject"
 import { runPlaybook, detectPlaybookFromMessage, getPlaybook } from "../../services/graphics-agent/playbooks/playbookRunner"
 import type { GraphicsProviderCapabilities } from "../../services/graphics-provider/GraphicsProviderTypes"
+import {
+	orchestrateGraphicsKnowledge,
+	buildGraphicsContextBlock,
+	captureKnowledge,
+	buildCaptureContent,
+} from "../../services/graphics-agent/knowledge"
 
 /**
  * Singleton graphics agent instances.
@@ -101,6 +107,9 @@ async function handleRunGraphicsWorkflow(
 ): Promise<void> {
 	const intent = message.graphicsIntent as GraphicsIntent | undefined
 	const userMessage = message.text ?? ""
+	const orchestration = orchestrateGraphicsKnowledge(userMessage, "graphics")
+	const knowledgeContext = buildGraphicsContextBlock(userMessage, "graphics")
+	const enrichedUserMessage = knowledgeContext ? `${knowledgeContext}\n\n${userMessage}` : userMessage
 
 	if (!intent) {
 		provider.log("[Graphics] runGraphicsWorkflow: missing intent")
@@ -119,7 +128,7 @@ async function handleRunGraphicsWorkflow(
 		const orchestrator = getGraphicsOrchestrator(provider)
 		const result = await orchestrator.execute({
 			intent,
-			userMessage,
+			userMessage: enrichedUserMessage,
 		})
 
 		// Get provider info for the result
@@ -131,11 +140,39 @@ async function handleRunGraphicsWorkflow(
 			graphicsIntent: intent,
 			values: {
 				result,
+				knowledge: {
+					reasoning: orchestration.reasoning,
+					recommendedSkillIds: orchestration.recommendedSkillIds,
+					recommendedPlaybookId: orchestration.recommendedPlaybookId,
+					hasKnowledgeInjection: orchestration.hasKnowledgeInjection,
+					knowledgeIds: orchestration.knowledgeEntries.map((entry) => entry.id),
+				},
 				providerId: selectedProvider?.id ?? "unknown",
 				providerName: selectedProvider?.displayName ?? "Unknown Provider",
 				timestamp: Date.now(),
 			},
 		} as any)
+
+		if (result.success && (result.suspectedIssues.length > 0 || result.suggestions.length > 0)) {
+			captureKnowledge({
+				title: `graphics-workflow-${intent}-${Date.now()}`,
+				kind: "case-study",
+				tags: ["graphics", "workflow", intent],
+				triggers: [intent, ...orchestration.knowledgeEntries.flatMap((entry) => entry.triggers).slice(0, 8)],
+				scenarios: [intent],
+				summary: result.summary,
+				relatedSkills: orchestration.recommendedSkillIds,
+				relatedPlaybooks: orchestration.recommendedPlaybookId ? [orchestration.recommendedPlaybookId] : [],
+				sourceContext: `workflow:${intent}`,
+				content: buildCaptureContent({
+					title: `Graphics Workflow: ${intent}`,
+					findings: result.evidence.map((item) => item.description),
+					rootCause: result.suspectedIssues[0]?.description,
+					recommendations: result.suggestions,
+					relatedKnowledgeIds: orchestration.knowledgeEntries.map((entry) => entry.id),
+				}),
+			})
+		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error)
 		provider.log(`[Graphics] Workflow error: ${errorMessage}`)
@@ -169,9 +206,15 @@ async function handleRunGraphicsPlaybook(
 ): Promise<void> {
 	const playbookId = message.graphicsPlaybookId as GraphicsPlaybookId | undefined
 	const userMessage = message.text ?? ""
+	const orchestration = orchestrateGraphicsKnowledge(userMessage, "graphics")
+	const knowledgeContext = buildGraphicsContextBlock(userMessage, "graphics")
+	const enrichedUserMessage = knowledgeContext ? `${knowledgeContext}\n\n${userMessage}` : userMessage
 
 	// If no playbook ID specified, try to detect from message
-	const resolvedPlaybookId = playbookId ?? detectPlaybookFromMessage(userMessage)
+	const resolvedPlaybookId =
+		playbookId ??
+		(orchestration.recommendedPlaybookId as GraphicsPlaybookId | undefined) ??
+		detectPlaybookFromMessage(userMessage)
 
 	if (!resolvedPlaybookId) {
 		provider.log("[Graphics] runGraphicsPlaybook: missing playbook ID")
@@ -203,18 +246,46 @@ async function handleRunGraphicsPlaybook(
 
 		const selectedProvider = await registry.preflightCheck(requiredCaps)
 
-		const result = await runPlaybook(resolvedPlaybookId, selectedProvider, userMessage)
+		const result = await runPlaybook(resolvedPlaybookId, selectedProvider, enrichedUserMessage)
 
 		await provider.postMessageToWebview({
 			type: "graphicsResult",
 			graphicsPlaybookId: resolvedPlaybookId,
 			values: {
 				result,
+				knowledge: {
+					reasoning: orchestration.reasoning,
+					recommendedSkillIds: orchestration.recommendedSkillIds,
+					recommendedPlaybookId: orchestration.recommendedPlaybookId,
+					hasKnowledgeInjection: orchestration.hasKnowledgeInjection,
+					knowledgeIds: orchestration.knowledgeEntries.map((entry) => entry.id),
+				},
 				providerId: selectedProvider.id,
 				providerName: selectedProvider.displayName,
 				timestamp: Date.now(),
 			},
 		} as any)
+
+		if (result.success && (result.suspectedIssues.length > 0 || result.suggestions.length > 0)) {
+			captureKnowledge({
+				title: `graphics-playbook-${resolvedPlaybookId}-${Date.now()}`,
+				kind: "case-study",
+				tags: ["graphics", "playbook", resolvedPlaybookId],
+				triggers: [resolvedPlaybookId, ...orchestration.knowledgeEntries.flatMap((entry) => entry.triggers).slice(0, 8)],
+				scenarios: ["graphics_playbook"],
+				summary: result.summary,
+				relatedSkills: orchestration.recommendedSkillIds,
+				relatedPlaybooks: [resolvedPlaybookId],
+				sourceContext: `playbook:${resolvedPlaybookId}`,
+				content: buildCaptureContent({
+					title: `Graphics Playbook: ${resolvedPlaybookId}`,
+					findings: result.evidence.map((item) => item.description),
+					rootCause: result.suspectedIssues[0]?.description,
+					recommendations: result.suggestions,
+					relatedKnowledgeIds: orchestration.knowledgeEntries.map((entry) => entry.id),
+				}),
+			})
+		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error)
 		provider.log(`[Graphics] Playbook error: ${errorMessage}`)
