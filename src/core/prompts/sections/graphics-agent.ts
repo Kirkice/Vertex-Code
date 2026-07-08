@@ -8,8 +8,15 @@
  * - Distinguish facts from inferences
  * - Map capture data to project code
  *
+ * The `buildGraphicsModePrompt()` function dynamically appends relevant
+ * knowledge documents from the graphics-knowledge directory based on
+ * the user's message and detected intent.
+ *
  * @module prompts/sections/graphics-agent
  */
+
+import { routeToKnowledge, buildKnowledgeSupplement } from "../../../services/graphics-agent/knowledge"
+import type { GraphicsPromptBuildOptions } from "../../../services/graphics-agent/knowledge"
 
 /**
  * Graphics Mode system prompt section.
@@ -343,4 +350,25 @@ export function suggestGraphicsModeSwitch(message: string): string | null {
 	}
 
 	return "This appears to be a graphics/rendering question. Would you like to switch to Graphics Mode for specialized analysis capabilities?"
+}
+
+/**
+ * Build the complete Graphics Mode prompt with dynamically injected knowledge.
+ *
+ * This function combines the static core prompt (GRAPHICS_MODE_PROMPT) with
+ * relevant knowledge documents selected by the knowledge router based on
+ * the user's message and detected intent.
+ *
+ * @param options - Build options including user message and intent
+ * @returns The complete prompt string with knowledge supplement appended
+ */
+export function buildGraphicsModePrompt(options: GraphicsPromptBuildOptions): string {
+	const routingResult = routeToKnowledge(options)
+	const knowledgeSupplement = buildKnowledgeSupplement(routingResult)
+
+	if (!knowledgeSupplement) {
+		return GRAPHICS_MODE_PROMPT
+	}
+
+	return `${GRAPHICS_MODE_PROMPT}\n${knowledgeSupplement}`
 }

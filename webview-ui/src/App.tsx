@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ExtensionMessage, type GraphicsWorkflowResult } from "@roo-code/types"
+import { type ExtensionMessage } from "@roo-code/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
 import { MarketplaceViewStateManager } from "./components/marketplace/MarketplaceViewStateManager"
@@ -71,9 +71,7 @@ const App = () => {
 	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
 	const handledImportRef = useRef<number | undefined>(undefined)
 
-	// Graphics workspace state
-	const [graphicsResult, setGraphicsResult] = useState<GraphicsWorkflowResult | null>(null)
-	const [graphicsAnalyzing, setGraphicsAnalyzing] = useState(false)
+	// Graphics mode suggestion state
 	const [graphicsModeSuggestion, setGraphicsModeSuggestion] = useState<{ text: string; targetMode: string } | null>(null)
 
 	// Create a persistent state manager
@@ -171,20 +169,6 @@ const App = () => {
 
 			if (message.type === "acceptInput") {
 				chatViewRef.current?.acceptInput()
-			}
-
-			// Handle graphics result messages from extension
-			if (message.type === "graphicsResult" as any) {
-				setGraphicsAnalyzing(false)
-				const result = (message as any).values?.result as GraphicsWorkflowResult | undefined
-				if (result) {
-					setGraphicsResult(result)
-				}
-			}
-
-			if (message.type === "graphicsWorkflowStarted" as any) {
-				setGraphicsAnalyzing(true)
-				setGraphicsResult(null)
 			}
 
 			// Handle graphics mode suggestion from extension

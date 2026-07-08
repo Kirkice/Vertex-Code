@@ -24,7 +24,7 @@ import {
 	markdownFormattingSection,
 	getSkillsSection,
 } from "./sections"
-import { GRAPHICS_MODE_PROMPT } from "./sections/graphics-agent"
+import { GRAPHICS_MODE_PROMPT, buildGraphicsModePrompt } from "./sections/graphics-agent"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -56,6 +56,7 @@ async function generatePrompt(
 	todoList?: TodoItem[],
 	modelId?: string,
 	skillsManager?: SkillsManager,
+	userMessage?: string,
 ): Promise<string> {
 	if (!context) {
 		throw new Error("Extension context is required for generating system prompt")
@@ -84,7 +85,21 @@ async function generatePrompt(
 	const toolsCatalog = ""
 
 	// Include graphics-specific prompt section when in graphics mode
-	const graphicsSection = mode === "graphics" ? `\n${GRAPHICS_MODE_PROMPT}\n` : ""
+	// Use knowledge-aware prompt builder when user message is available
+	let graphicsSection = ""
+	if (mode === "graphics") {
+		if (userMessage) {
+			// Build prompt with dynamically injected knowledge based on user message
+			const graphicsPrompt = buildGraphicsModePrompt({
+				userMessage,
+				intent: undefined, // Will be detected by the router
+			})
+			graphicsSection = `\n${graphicsPrompt}\n`
+		} else {
+			// Fallback to static prompt when no user message available
+			graphicsSection = `\n${GRAPHICS_MODE_PROMPT}\n`
+		}
+	}
 
 	const basePrompt = `${roleDefinition}
 
@@ -130,6 +145,7 @@ export const SYSTEM_PROMPT = async (
 	todoList?: TodoItem[],
 	modelId?: string,
 	skillsManager?: SkillsManager,
+	userMessage?: string,
 ): Promise<string> => {
 	if (!context) {
 		throw new Error("Extension context is required for generating system prompt")
@@ -158,5 +174,6 @@ export const SYSTEM_PROMPT = async (
 		todoList,
 		modelId,
 		skillsManager,
+		userMessage,
 	)
 }
