@@ -23,6 +23,7 @@ import { useAddNonInteractiveClickListener } from "./components/ui/hooks/useNonI
 import { TooltipProvider } from "./components/ui/tooltip"
 import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 import { Button } from "./components/ui"
+import { ThemeProvider } from "./themes"
 
 type Tab = "settings" | "history" | "chat" | "marketplace"
 
@@ -366,13 +367,15 @@ const queryClient = new QueryClient()
 const AppWithProviders = () => (
 	<ErrorBoundary>
 		<ExtensionStateContextProvider>
-			<TranslationProvider>
-				<QueryClientProvider client={queryClient}>
-					<TooltipProvider delayDuration={STANDARD_TOOLTIP_DELAY}>
-						<App />
-					</TooltipProvider>
-				</QueryClientProvider>
-			</TranslationProvider>
+			<ThemeProvider>
+				<TranslationProvider>
+					<QueryClientProvider client={queryClient}>
+						<TooltipProvider delayDuration={STANDARD_TOOLTIP_DELAY}>
+							<App />
+						</TooltipProvider>
+					</QueryClientProvider>
+				</TranslationProvider>
+			</ThemeProvider>
 		</ExtensionStateContextProvider>
 	</ErrorBoundary>
 )

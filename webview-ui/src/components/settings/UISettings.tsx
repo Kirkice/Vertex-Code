@@ -1,14 +1,17 @@
 import { HTMLAttributes, useMemo } from "react"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { VSCodeCheckbox } from "@vscode/webview-ui-toolkit/react"
+import { Palette } from "lucide-react"
 import { telemetryClient } from "@/utils/TelemetryClient"
 
 import { SetCachedStateField } from "./types"
 import { SectionHeader } from "./SectionHeader"
 import { Section } from "./Section"
 import { SearchableSetting } from "./SearchableSetting"
-import { Slider, Button } from "../ui"
+import { Slider, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui"
 import { ExtensionStateContextType } from "@/context/ExtensionStateContext"
+import { useTheme, themes, themeOrder } from "@/themes"
+import type { ThemeId } from "@/themes"
 
 export const CHAT_FONT_SIZE_MIN = 8
 export const CHAT_FONT_SIZE_MAX = 32
@@ -29,6 +32,7 @@ export const UISettings = ({
 	...props
 }: UISettingsProps) => {
 	const { t } = useAppTranslation()
+	const { themeId, setThemeId } = useTheme()
 
 	// Detect platform for dynamic modifier key display
 	const primaryMod = useMemo(() => {
@@ -77,6 +81,46 @@ export const UISettings = ({
 
 			<Section>
 				<div className="space-y-6">
+					{/* Theme Selector */}
+					<SearchableSetting
+						settingId="ui-theme"
+						section="ui"
+						label="Theme">
+						<div className="flex flex-col gap-1">
+							<div className="flex items-center gap-2 mb-1">
+								<Palette className="w-4 h-4" />
+								<label className="block font-medium">Theme</label>
+							</div>
+							<Select
+								value={themeId}
+								onValueChange={(value) => setThemeId(value as ThemeId)}>
+								<SelectTrigger className="w-full" data-testid="theme-select">
+									<SelectValue placeholder="Select theme" />
+								</SelectTrigger>
+								<SelectContent>
+									{themeOrder.map((id) => {
+										const theme = themes[id]
+										return (
+											<SelectItem key={id} value={id}>
+												<div className="flex items-center gap-2">
+													<span>{theme.name}</span>
+													{theme.description && (
+														<span className="text-vscode-descriptionForeground text-xs ml-1">
+															({theme.description})
+														</span>
+													)}
+												</div>
+											</SelectItem>
+										)
+									})}
+								</SelectContent>
+							</Select>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								Choose a color theme for the webview panel. "None" follows your VSCode theme.
+							</div>
+						</div>
+					</SearchableSetting>
+
 					{/* Collapse Thinking Messages Setting */}
 					<SearchableSetting
 						settingId="ui-collapse-thinking"

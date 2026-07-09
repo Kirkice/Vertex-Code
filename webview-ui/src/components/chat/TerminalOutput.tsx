@@ -65,9 +65,12 @@ export const TerminalOutput: React.FC<TerminalOutputProps> = ({ content, classNa
 				wordBreak: "break-word",
 				margin: 0,
 				padding: "8px 12px",
-				backgroundColor: "var(--vscode-terminal-background, transparent)",
+				backgroundColor: "color-mix(in_srgb, var(--vscode-textCodeBlock-background) 92%, black)",
 				color: "var(--vscode-terminal-foreground, inherit)",
 				overflow: "auto",
+				border: "1px solid rgba(0, 229, 255, 0.18)",
+				borderRadius: "8px",
+				boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
 				// Support Unicode box-drawing characters and extended ASCII
 				unicodeBidi: "embed",
 			}}
