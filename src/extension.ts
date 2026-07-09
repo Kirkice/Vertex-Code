@@ -33,7 +33,7 @@ import { McpServerManager } from "./services/mcp/McpServerManager"
 import { CodeIndexManager } from "./services/code-index/manager"
 import { migrateSettings } from "./utils/migrateSettings"
 import { autoImportSettings } from "./utils/autoImportSettings"
-import { API } from "./extension/api"
+import { API } from "./api/facade"
 
 import {
 	handleUri,

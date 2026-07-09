@@ -22,7 +22,7 @@ export interface ViewState {
 	displayItems?: MarketplaceItem[] // Items currently being displayed (filtered or all)
 	displayOrganizationMcps?: MarketplaceItem[] // Organization MCPs currently being displayed (filtered or all)
 	isFetching: boolean
-	activeTab: "mcp" | "mode" | "skill"
+	activeTab: "mcp" | "mode" | "skill" | "knowledge"
 	filters: {
 		type: string
 		search: string

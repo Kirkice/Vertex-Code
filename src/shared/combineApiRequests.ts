@@ -1,3 +1,2 @@
-import { consolidateApiRequests as combineApiRequests } from "@roo-code/core/browser"
-
-export { combineApiRequests }
+// Re-export for backwards compatibility — module moved to api/combineApiRequests.ts
+export * from "./api/combineApiRequests"

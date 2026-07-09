@@ -10,6 +10,7 @@ import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import { t } from "../../i18n"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
+import { KNOWLEDGE_DIR, loadKnowledgeIndex } from "../knowledge/knowledgeLoader"
 
 import { ConfigLoader } from "./ConfigLoader"
 import { SimpleInstaller } from "./SimpleInstaller"
@@ -250,6 +251,9 @@ export class MarketplaceManager {
 			// Check Skills in .roo/skills/ and .roo/skills-{mode}/
 			const rooDir = path.join(workspaceFolder.uri.fsPath, ".roo")
 			await this.scanSkillDirectories(rooDir, metadata)
+	
+			// Check Knowledge in .roo/knowledge/
+			await this.scanKnowledgeDirectories(rooDir, metadata)
 		} catch (error) {
 			console.error("Error checking project installations:", error)
 		}
@@ -299,6 +303,9 @@ export class MarketplaceManager {
 			// Check global Skills in ~/.roo/skills/ and ~/.roo/skills-{mode}/
 			const globalRooDir = path.join(globalSettingsPath, ".roo")
 			await this.scanSkillDirectories(globalRooDir, metadata)
+	
+			// Check global Knowledge in ~/.roo/knowledge/
+			await this.scanKnowledgeDirectories(globalRooDir, metadata)
 		} catch (error) {
 			console.error("Error checking global installations:", error)
 		}
@@ -343,6 +350,62 @@ export class MarketplaceManager {
 			}
 		} catch {
 			// Base directory doesn't exist, skip
+		}
+	}
+	
+	/**
+	 * Scan knowledge directories (knowledge/) for installed knowledge documents.
+	 * A knowledge document is considered installed if its directory exists and
+	 * contains at least one file.
+	 *
+	 * Also checks the built-in knowledge directory (bundled with the extension)
+	 * for knowledge documents that ship pre-installed.
+	 */
+	private async scanKnowledgeDirectories(
+		baseDir: string,
+		metadata: Record<string, { type: string }>,
+	): Promise<void> {
+		// Check user-installed knowledge in .roo/knowledge/
+		try {
+			const knowledgeDir = path.join(baseDir, "knowledge")
+			const entries = await fs.readdir(knowledgeDir, { withFileTypes: true })
+
+			for (const entry of entries) {
+				if (!entry.isDirectory()) continue
+
+				// Check if the directory contains at least one file
+				const itemDir = path.join(knowledgeDir, entry.name)
+				try {
+					const itemEntries = await fs.readdir(itemDir)
+					if (itemEntries.length > 0) {
+						metadata[entry.name] = { type: "knowledge" }
+					}
+				} catch {
+					// Can't read directory, skip
+				}
+			}
+		} catch {
+			// knowledge directory doesn't exist, skip
+		}
+
+		// Check built-in knowledge (bundled with the extension)
+		// These are pre-installed and should show as "installed" in the marketplace
+		try {
+			const knowledgeIndex = loadKnowledgeIndex()
+			for (const entry of knowledgeIndex) {
+				if (metadata[entry.id]) continue // Already marked as installed
+
+				// Check if the knowledge file exists in the built-in directory
+				const filePath = path.join(KNOWLEDGE_DIR, entry.path)
+				try {
+					await fs.access(filePath)
+					metadata[entry.id] = { type: "knowledge" }
+				} catch {
+					// File doesn't exist, skip
+				}
+			}
+		} catch {
+			// Can't load knowledge index, skip
 		}
 	}
 }

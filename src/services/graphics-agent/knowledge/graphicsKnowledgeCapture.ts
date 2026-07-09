@@ -24,7 +24,7 @@ const DRAFTS_DIR = path.join(
 	"core",
 	"prompts",
 	"sections",
-	"graphics-knowledge",
+	"knowledge",
 	"drafts",
 )
 

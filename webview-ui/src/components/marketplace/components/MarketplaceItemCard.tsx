@@ -69,6 +69,7 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 			mode: t("marketplace:filters.type.mode"),
 			mcp: t("marketplace:filters.type.mcpServer"),
 			skill: "Skill",
+			knowledge: "Knowledge",
 		}
 		return labels[item.type] ?? "N/A"
 	}, [item.type, t])
@@ -229,7 +230,9 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 								? t("marketplace:removeConfirm.mode.title")
 								: item.type === "skill"
 									? t("marketplace:removeConfirm.skill.title")
-									: t("marketplace:removeConfirm.mcp.title")}
+									: item.type === "knowledge"
+										? t("marketplace:removeConfirm.knowledge.title")
+										: t("marketplace:removeConfirm.mcp.title")}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{item.type === "mode" ? (
@@ -241,6 +244,8 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 								</>
 							) : item.type === "skill" ? (
 								t("marketplace:removeConfirm.skill.message", { skillName: item.name })
+							) : item.type === "knowledge" ? (
+								t("marketplace:removeConfirm.knowledge.message", { knowledgeName: item.name })
 							) : (
 								t("marketplace:removeConfirm.mcp.message", { mcpName: item.name })
 							)}

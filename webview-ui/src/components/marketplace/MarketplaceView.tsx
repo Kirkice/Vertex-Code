@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Server, Users2, GraduationCap } from "lucide-react"
+import { ArrowLeft, Server, Users2, GraduationCap, BookOpen } from "lucide-react"
 import { Tab, TabContent, TabHeader } from "../common/Tab"
 import { MarketplaceViewStateManager } from "./MarketplaceViewStateManager"
 import { useStateManager } from "./useStateManager"
@@ -14,7 +14,7 @@ import { ExtensionStateContext } from "@/context/ExtensionStateContext"
 interface MarketplaceViewProps {
 	onDone?: () => void
 	stateManager: MarketplaceViewStateManager
-	targetTab?: "mcp" | "mode" | "skill"
+	targetTab?: "mcp" | "mode" | "skill" | "knowledge"
 }
 export function MarketplaceView({ stateManager, onDone, targetTab }: MarketplaceViewProps) {
 	const { t } = useAppTranslation()
@@ -44,7 +44,7 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 	}, [state.allItems, hasReceivedInitialState])
 
 	useEffect(() => {
-		if (targetTab && (targetTab === "mcp" || targetTab === "mode")) {
+		if (targetTab && (targetTab === "mcp" || targetTab === "mode" || targetTab === "skill" || targetTab === "knowledge")) {
 			manager.transition({ type: "SET_ACTIVE_TAB", payload: { tab: targetTab } })
 		}
 	}, [targetTab, manager])
@@ -111,6 +111,7 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 		{ id: "mcp" as const, label: "MCP", icon: Server },
 		{ id: "mode" as const, label: "Modes", icon: Users2 },
 		{ id: "skill" as const, label: "Skills", icon: GraduationCap },
+		{ id: "knowledge" as const, label: "Knowledge", icon: BookOpen },
 	]
 
 	return (
@@ -190,6 +191,14 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 							allTags={allTags}
 							filteredTags={filteredTags}
 							filterByType="skill"
+						/>
+					)}
+					{state.activeTab === "knowledge" && (
+						<MarketplaceListView
+							stateManager={stateManager}
+							allTags={allTags}
+							filteredTags={filteredTags}
+							filterByType="knowledge"
 						/>
 					)}
 				</TabContent>

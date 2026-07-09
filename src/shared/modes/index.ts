@@ -9,9 +9,9 @@ import {
 	DEFAULT_MODES,
 } from "@roo-code/types"
 
-import { addCustomInstructions } from "../core/prompts/sections/custom-instructions"
+import { addCustomInstructions } from "../../core/prompts/sections/custom-instructions"
 
-import { TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from "./tools"
+import { TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from "../tools"
 
 export type Mode = string
 

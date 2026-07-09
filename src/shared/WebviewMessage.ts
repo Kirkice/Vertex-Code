@@ -1,3 +1,2 @@
-export type { WebviewMessage, WebViewMessagePayload } from "@roo-code/types"
-
-export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse" | "objectResponse"
+// Re-export for backwards compatibility — module moved to messaging/WebviewMessage.ts
+export * from "./messaging/WebviewMessage"

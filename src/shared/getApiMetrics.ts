@@ -1,8 +1,2 @@
-import {
-	type ParsedApiReqStartedTextType,
-	consolidateTokenUsage as getApiMetrics,
-	hasTokenUsageChanged,
-	hasToolUsageChanged,
-} from "@roo-code/core/browser"
-
-export { type ParsedApiReqStartedTextType, getApiMetrics, hasTokenUsageChanged, hasToolUsageChanged }
+// Re-export for backwards compatibility — module moved to api/getApiMetrics.ts
+export * from "./api/getApiMetrics"

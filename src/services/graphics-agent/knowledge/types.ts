@@ -24,18 +24,22 @@ export interface GraphicsKnowledgeEntry {
 	id: string
 	/** Human-readable title */
 	title: string
-	/** Relative path to the .md file within graphics-knowledge/ */
+	/** Relative path to the .md file within knowledge/ */
 	path: string
 	/** Short summary for use in summary injection mode */
 	summary: string
 	/** Kind of knowledge document */
 	kind: KnowledgeKind
+	/** Domain classification (graphics entries are filtered from the universal knowledge index) */
+	domain?: string
 	/** Tags for categorization */
 	tags: string[]
 	/** Trigger keywords for routing (case-insensitive matching) */
 	triggers: string[]
 	/** Scenario identifiers for intent-based routing */
 	scenarios: string[]
+	/** Which modes this knowledge applies to */
+	modes?: string[]
 	/** Priority score (higher = more important, used for conflict resolution) */
 	priority: number
 	/** Related skill IDs */

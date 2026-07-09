@@ -13,11 +13,10 @@ import type { KnowledgeEntry } from "./types"
 
 /**
  * Path to the universal knowledge directory.
+ * In bundled code, __dirname points to src/dist/, so we use a relative path from there.
  */
-const KNOWLEDGE_DIR = path.join(
+export const KNOWLEDGE_DIR = path.join(
 	__dirname,
-	"..",
-	"..",
 	"core",
 	"prompts",
 	"sections",

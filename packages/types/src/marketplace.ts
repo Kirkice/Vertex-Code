@@ -27,7 +27,7 @@ export type McpInstallationMethod = z.infer<typeof mcpInstallationMethodSchema>
 /**
  * Component type validation
  */
-export const marketplaceItemTypeSchema = z.enum(["mode", "mcp", "skill"] as const)
+export const marketplaceItemTypeSchema = z.enum(["mode", "mcp", "skill", "knowledge"] as const)
 
 export type MarketplaceItemType = z.infer<typeof marketplaceItemTypeSchema>
 
@@ -96,6 +96,34 @@ export const skillMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
 export type SkillMarketplaceItem = z.infer<typeof skillMarketplaceItemSchema>
 
 /**
+ * Schema for a single file within a knowledge package.
+ * Reuses the same structure as skill files.
+ */
+export const knowledgeFileSchema = skillFileSchema
+
+export type KnowledgeFile = z.infer<typeof knowledgeFileSchema>
+
+export const knowledgeMarketplaceGroupSchema = skillMarketplaceGroupSchema
+
+export type KnowledgeMarketplaceGroup = z.infer<typeof knowledgeMarketplaceGroupSchema>
+
+/**
+ * Knowledge marketplace item schema.
+ * Knowledge documents are hosted on GitHub and downloaded at install time,
+ * placed into the local .roo/knowledge/ directory.
+ */
+export const knowledgeMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
+	source: z.string().url(), // GitHub repository URL, e.g. "https://github.com/user/repo"
+	sourcePath: z.string().optional().default(""), // Path within the repo to the knowledge directory
+	branch: z.string().optional().default("main"), // Git branch name
+	files: z.array(knowledgeFileSchema).min(1), // List of files to download
+	modeSlugs: z.array(z.string()).optional(), // Applicable mode slugs (e.g. ["graphics", "code"])
+	group: knowledgeMarketplaceGroupSchema.optional(), // Optional visual grouping for marketplace display/bulk install
+})
+
+export type KnowledgeMarketplaceItem = z.infer<typeof knowledgeMarketplaceItemSchema>
+
+/**
  * Unified marketplace item schema using discriminated union
  */
 export const marketplaceItemSchema = z.discriminatedUnion("type", [
@@ -110,6 +138,10 @@ export const marketplaceItemSchema = z.discriminatedUnion("type", [
 	// Skill marketplace item
 	skillMarketplaceItemSchema.extend({
 		type: z.literal("skill"),
+	}),
+	// Knowledge marketplace item
+	knowledgeMarketplaceItemSchema.extend({
+		type: z.literal("knowledge"),
 	}),
 ])
 

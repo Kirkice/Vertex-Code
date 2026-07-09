@@ -9,8 +9,8 @@
  * - Map capture data to project code
  *
  * The `buildGraphicsModePrompt()` function dynamically appends relevant
- * knowledge documents from the graphics-knowledge directory based on
- * the user's message and detected intent.
+ * knowledge documents from the knowledge directory (filtered to graphics domain)
+ * based on the user's message and detected intent.
  *
  * @module prompts/sections/graphics-agent
  */

@@ -1,0 +1,86 @@
+items:
+  # Graphics Knowledge
+  - id: shadow-dpcf-pcss-stability
+    name: "DPCF 与 PCSS 阴影稳定性案例"
+    description: "DPCF 与 PCSS 软阴影稳定性分析，覆盖 blocker search 硬阈值跳变、adaptive bias 联动、sample 级分支平滑化等根因与修复思路。"
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - shadow
+      - dpcf
+      - pcss
+      - artifact
+      - soft-shadow
+      - blocker-search
+      - stability
+      - graphics
+      - knowledge
+    source: "https://github.com/Kirkice/vertex-code-market"
+    sourcePath: "knowledge/graphics"
+    branch: "main"
+    files:
+      - path: "shadow-dpcf-pcss-stability.md"
+    modeSlugs:
+      - graphics
+    group:
+      id: graphics-knowledge
+      name: Graphics Knowledge
+      description: "Graphics rendering knowledge documents covering shadow debugging, performance analysis, and case studies."
+      order: 1
+
+  - id: mobile-performance-analysis
+    name: "移动端图形性能分析方法论"
+    description: "移动端图形性能分析框架，覆盖 FPS、带宽、发热、CPU/GPU 归因、draw call、shader、overdraw 与 RT 带宽问题的系统化排查方法。"
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - performance
+      - mobile
+      - gpu-optimization
+      - bandwidth
+      - overdraw
+      - drawcall
+      - shader-analysis
+      - thermal-throttling
+      - graphics
+      - knowledge
+    source: "https://github.com/Kirkice/vertex-code-market"
+    sourcePath: "knowledge/graphics"
+    branch: "main"
+    files:
+      - path: "mobile-performance-analysis.md"
+    modeSlugs:
+      - graphics
+    group:
+      id: graphics-knowledge
+      name: Graphics Knowledge
+      description: "Graphics rendering knowledge documents covering shadow debugging, performance analysis, and case studies."
+      order: 1
+
+  # General Knowledge
+  - id: mode-handoff-validation-pattern
+    name: "Mode Handoff 验收回路模式"
+    description: "Architect → Code 执行 → 回切 Architect 验收的完整回路模式，覆盖验收标准生成、执行报告、自动回切与修复循环。"
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - mode-handoff
+      - validation
+      - acceptance-criteria
+      - execution-report
+      - quality-assurance
+      - general
+      - knowledge
+    source: "https://github.com/Kirkice/vertex-code-market"
+    sourcePath: "knowledge/general"
+    branch: "main"
+    files:
+      - path: "mode-handoff-validation-pattern.md"
+    modeSlugs:
+      - architect
+      - code
+    group:
+      id: general-knowledge
+      name: General Knowledge
+      description: "Cross-domain knowledge documents covering mode handoff, validation patterns, and workflow methodologies."
+      order: 2

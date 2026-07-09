@@ -12,7 +12,8 @@ import * as path from "path"
 import type { GraphicsKnowledgeEntry } from "./types"
 
 /**
- * Path to the graphics knowledge directory.
+ * Path to the universal knowledge directory.
+ * Graphics knowledge entries are filtered from the universal index by domain.
  */
 const KNOWLEDGE_DIR = path.join(
 	__dirname,
@@ -22,7 +23,7 @@ const KNOWLEDGE_DIR = path.join(
 	"core",
 	"prompts",
 	"sections",
-	"graphics-knowledge",
+	"knowledge",
 )
 
 /**
@@ -54,7 +55,9 @@ export function loadKnowledgeIndex(): GraphicsKnowledgeEntry[] {
 
 	try {
 		const raw = fs.readFileSync(INDEX_PATH, "utf-8")
-		cachedIndex = JSON.parse(raw) as GraphicsKnowledgeEntry[]
+		const allEntries = JSON.parse(raw) as GraphicsKnowledgeEntry[]
+		// Filter to only graphics-domain entries from the universal knowledge index
+		cachedIndex = allEntries.filter((entry) => entry.domain === "graphics")
 		return cachedIndex
 	} catch {
 		// Index file not found or invalid — return empty

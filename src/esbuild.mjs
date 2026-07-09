@@ -117,6 +117,7 @@ async function main() {
 							["node_modules/vscode-material-icons/generated", "assets/vscode-material-icons"],
 							["../webview-ui/audio", "webview-ui/audio"],
 							["assets/marketplace", "dist/assets/marketplace"],
+							["core/prompts/sections/knowledge", "dist/core/prompts/sections/knowledge"],
 						],
 						srcDir,
 						buildDir,

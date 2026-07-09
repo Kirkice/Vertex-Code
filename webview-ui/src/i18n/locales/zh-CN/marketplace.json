@@ -92,6 +92,7 @@
 		"title": "安装 {{name}}",
 		"titleMode": "安装 {{name}} 模式",
 		"titleMcp": "安装 {{name}} MCP",
+		"titleKnowledge": "安装 {{name}} 知识文档",
 		"scope": "安装范围",
 		"project": "项目（当前工作区）",
 		"global": "全局（所有工作区）",
@@ -105,6 +106,7 @@
 		"whatNextMcp": "现在您可以配置和使用此 MCP 服务。点击侧边栏中的 MCP 图标切换标签页。",
 		"whatNextMode": "现在您可以使用此模式。点击侧边栏中的模式图标切换标签页。",
 		"whatNextSkill": "现在您可以在相应模式中使用这个 Skill。",
+		"whatNextKnowledge": "现在您可以在相应模式中使用这个知识文档。",
 		"done": "完成",
 		"goToMcp": "转到 MCP 标签页",
 		"goToModes": "转到模式设置",
@@ -164,6 +166,10 @@
 		"skill": {
 			"title": "删除 Skill",
 			"message": "您确定要删除 Skill \"{{skillName}}\" 吗？"
+		},
+		"knowledge": {
+			"title": "删除知识文档",
+			"message": "您确定要删除知识文档 \"{{knowledgeName}}\" 吗？"
 		},
 		"cancel": "取消",
 		"confirm": "删除"

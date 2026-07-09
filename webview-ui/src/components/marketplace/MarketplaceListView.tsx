@@ -18,7 +18,7 @@ export interface MarketplaceListViewProps {
 	stateManager: MarketplaceViewStateManager
 	allTags: string[]
 	filteredTags: string[]
-	filterByType?: "mcp" | "mode" | "skill"
+	filterByType?: "mcp" | "mode" | "skill" | "knowledge"
 }
 
 export function MarketplaceListView({ stateManager, allTags, filteredTags, filterByType }: MarketplaceListViewProps) {
@@ -44,8 +44,8 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 
 	const isEmpty = items.length === 0 && orgMcps.length === 0
 
-	const skillGroups = React.useMemo(() => {
-		if (filterByType !== "skill") {
+	const itemGroups = React.useMemo(() => {
+		if (filterByType !== "skill" && filterByType !== "knowledge") {
 			return []
 		}
 
@@ -62,10 +62,11 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 		>()
 
 		for (const item of items) {
-			const groupId = item.type === "skill" ? item.group?.id ?? item.id : item.id
-			const groupName = item.type === "skill" ? item.group?.name ?? item.name : item.name
-			const groupDescription = item.type === "skill" ? item.group?.description : undefined
-			const groupOrder = item.type === "skill" ? item.group?.order ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
+			const hasGroup = item.type === "skill" || item.type === "knowledge"
+			const groupId = hasGroup ? item.group?.id ?? item.id : item.id
+			const groupName = hasGroup ? item.group?.name ?? item.name : item.name
+			const groupDescription = hasGroup ? item.group?.description : undefined
+			const groupOrder = hasGroup ? item.group?.order ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
 			const existing = groups.get(groupId)
 			const isInstalled =
 				!!installedMetadata?.project?.[item.id] || !!installedMetadata?.global?.[item.id]
@@ -115,7 +116,9 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 									? t("marketplace:filters.search.placeholderMode")
 									: filterByType === "skill"
 										? "Search skills..."
-										: t("marketplace:filters.search.placeholder")
+										: filterByType === "knowledge"
+											? "Search knowledge..."
+											: t("marketplace:filters.search.placeholder")
 						}
 						value={state.filters.search}
 						onChange={(e) =>
@@ -356,9 +359,9 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 									<div className="flex-1 h-px bg-vscode-input-border"></div>
 								</div>
 							)}
-							{filterByType === "skill" ? (
+							{filterByType === "skill" || filterByType === "knowledge" ? (
 								<div className="space-y-5">
-									{skillGroups.map((group) => (
+									{itemGroups.map((group) => (
 										<div key={group.key} className="space-y-3">
 											<div className="flex flex-wrap items-start justify-between gap-3 px-1">
 												<div>

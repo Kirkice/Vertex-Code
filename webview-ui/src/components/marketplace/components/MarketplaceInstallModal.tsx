@@ -46,12 +46,20 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 
 	// Check if item has multiple installation methods
 	const hasMultipleMethods = useMemo(() => {
-		return item && item.type !== "skill" && Array.isArray(item.content) && item.content.length > 1
+		return (
+			item &&
+			item.type !== "skill" &&
+			item.type !== "knowledge" &&
+			"content" in item &&
+			Array.isArray(item.content) &&
+			item.content.length > 1
+		)
 	}, [item])
 
 	// Get installation method names (for display in dropdown)
 	const methodNames = useMemo(() => {
-		if (!item || item.type === "skill" || !Array.isArray(item.content)) return []
+		if (!item || item.type === "skill" || item.type === "knowledge" || !("content" in item) || !Array.isArray(item.content))
+			return []
 
 		// Content is an array of McpInstallationMethod objects
 		return (item.content as Array<{ name: string; content: string }>).map((method) => method.name)
@@ -59,13 +67,13 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 
 	// Get effective parameters for the selected method (global + method-specific)
 	const effectiveParameters = useMemo(() => {
-		if (!item || item.type === "skill") return []
+		if (!item || item.type === "skill" || item.type === "knowledge") return []
 
 		const globalParams = item.type === "mcp" ? item.parameters || [] : []
 		let methodParams: McpParameter[] = []
 
 		// Get method-specific parameters if content is an array
-		if (Array.isArray(item.content)) {
+		if ("content" in item && Array.isArray(item.content)) {
 			const selectedMethod = item.content[selectedMethodIndex] as McpInstallationMethod
 			methodParams = selectedMethod?.parameters || []
 		}
@@ -80,13 +88,13 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 
 	// Get effective prerequisites for the selected method (global + method-specific)
 	const effectivePrerequisites = useMemo(() => {
-		if (!item || item.type === "skill") return []
+		if (!item || item.type === "skill" || item.type === "knowledge") return []
 
 		const globalPrereqs = item.prerequisites || []
 		let methodPrereqs: string[] = []
 
 		// Get method-specific prerequisites if content is an array
-		if (Array.isArray(item.content)) {
+		if ("content" in item && Array.isArray(item.content)) {
 			const selectedMethod = item.content[selectedMethodIndex] as McpInstallationMethod
 			methodPrereqs = selectedMethod?.prerequisites || []
 		}
@@ -98,12 +106,12 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 
 	// Update parameter values when method changes
 	React.useEffect(() => {
-		if (item && item.type !== "skill") {
+		if (item && item.type !== "skill" && item.type !== "knowledge") {
 			// Get effective parameters for current method
 			const globalParams = item.type === "mcp" ? item.parameters || [] : []
 			let methodParams: McpParameter[] = []
 
-			if (Array.isArray(item.content)) {
+			if ("content" in item && Array.isArray(item.content)) {
 				const selectedMethod = item.content[selectedMethodIndex] as McpInstallationMethod
 				methodParams = selectedMethod?.parameters || []
 			}
@@ -220,7 +228,9 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 								? t("marketplace:install.title", { name: item.name })
 							: item.type === "mcp"
 								? t("marketplace:install.titleMcp", { name: item.name })
-								: t("marketplace:install.titleMode", { name: item.name })}
+								: item.type === "knowledge"
+									? t("marketplace:install.titleKnowledge", { name: item.name })
+									: t("marketplace:install.titleMode", { name: item.name })}
 					</DialogTitle>
 					<DialogDescription>
 						{installationComplete ? (
@@ -247,7 +257,9 @@ export const MarketplaceInstallModal: React.FC<MarketplaceInstallModalProps> = (
 									? t("marketplace:install.whatNextMcp")
 									: item.type === "skill"
 										? t("marketplace:install.whatNextSkill")
-									: t("marketplace:install.whatNextMode")}
+										: item.type === "knowledge"
+											? t("marketplace:install.whatNextKnowledge")
+											: t("marketplace:install.whatNextMode")}
 							</p>
 						</div>
 					</div>

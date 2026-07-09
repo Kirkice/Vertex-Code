@@ -7,6 +7,7 @@ import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
 import { SkillInstaller } from "./SkillInstaller"
+import { KnowledgeInstaller } from "./KnowledgeInstaller"
 
 export interface InstallOptions extends InstallMarketplaceItemOptions {
 	target: "project" | "global"
@@ -15,12 +16,14 @@ export interface InstallOptions extends InstallMarketplaceItemOptions {
 
 export class SimpleInstaller {
 	private readonly skillInstaller: SkillInstaller
+	private readonly knowledgeInstaller: KnowledgeInstaller
 
 	constructor(
 		private readonly context: vscode.ExtensionContext,
 		private readonly customModesManager?: CustomModesManager,
 	) {
 		this.skillInstaller = new SkillInstaller()
+		this.knowledgeInstaller = new KnowledgeInstaller()
 	}
 
 	async installItem(item: MarketplaceItem, options: InstallOptions): Promise<{ filePath: string; line?: number }> {
@@ -33,6 +36,8 @@ export class SimpleInstaller {
 				return await this.installMcp(item, target, options)
 			case "skill":
 				return await this.installSkill(item, target)
+			case "knowledge":
+				return await this.installKnowledge(item, target)
 			default:
 				throw new Error(`Unsupported item type: ${(item as any).type}`)
 		}
@@ -43,6 +48,14 @@ export class SimpleInstaller {
 		target: "project" | "global",
 	): Promise<{ filePath: string; line?: number }> {
 		const result = await this.skillInstaller.installSkill(item, target)
+		return { filePath: result.dirPath }
+	}
+
+	private async installKnowledge(
+		item: MarketplaceItem,
+		target: "project" | "global",
+	): Promise<{ filePath: string; line?: number }> {
+		const result = await this.knowledgeInstaller.installKnowledge(item, target)
 		return { filePath: result.dirPath }
 	}
 
@@ -305,6 +318,9 @@ export class SimpleInstaller {
 				break
 			case "skill":
 				await this.skillInstaller.removeSkill(item, target)
+				break
+			case "knowledge":
+				await this.knowledgeInstaller.removeKnowledge(item, target)
 				break
 			default:
 				throw new Error(`Unsupported item type: ${(item as any).type}`)

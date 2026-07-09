@@ -92,6 +92,7 @@
 		"title": "Install {{name}}",
 		"titleMode": "Install {{name}} Mode",
 		"titleMcp": "Install {{name}} MCP",
+		"titleKnowledge": "Install {{name}} Knowledge",
 		"scope": "Installation Scope",
 		"project": "Project (current workspace)",
 		"global": "Global (all workspaces)",
@@ -106,6 +107,7 @@
 		"whatNextMcp": "You can now configure and use this MCP server. Click the MCP icon in the sidebar to switch tabs.",
 		"whatNextMode": "You can now use this mode. Click the Modes icon in the sidebar to switch tabs.",
 		"whatNextSkill": "You can now use this skill in the relevant mode.",
+		"whatNextKnowledge": "You can now use this knowledge document in the relevant mode.",
 		"done": "Done",
 		"goToMcp": "Go to MCP Tab",
 		"goToModes": "Go to Modes Settings",
@@ -164,6 +166,10 @@
 		"skill": {
 			"title": "Remove Skill",
 			"message": "Are you sure you want to remove the skill \"{{skillName}}\"?"
+		},
+		"knowledge": {
+			"title": "Remove Knowledge",
+			"message": "Are you sure you want to remove the knowledge document \"{{knowledgeName}}\"?"
 		},
 		"cancel": "Cancel",
 		"confirm": "Remove"
