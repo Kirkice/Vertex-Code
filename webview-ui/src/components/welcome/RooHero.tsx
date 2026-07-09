@@ -12,11 +12,11 @@ type Dot = {
 	pulse: number
 }
 
-const GRID_SIZE = 21
-const CELL_SIZE = 5
+const GRID_SIZE = 29
+const CELL_SIZE = 3.6
 const VIEWBOX_SIZE = GRID_SIZE * CELL_SIZE
 const CENTER = (GRID_SIZE - 1) / 2
-const OUTER_RADIUS = 8.9
+const OUTER_RADIUS = 12.3
 
 const smoothstep = (edge0: number, edge1: number, value: number) => {
 	const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)))
@@ -48,12 +48,12 @@ const dots: Dot[] = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => 
 	const directionY = distance === 0 ? 0 : dy / distance
 	const tangentialX = -directionY
 	const tangentialY = directionX
-	const driftStrength = 1 + normalized * 4.1
-	const swirlBias = ((x + y) % 2 === 0 ? 1 : -1) * 0.7
-	const corePresence = 1 - smoothstep(0.58, 1, normalized)
-	const edgeFeather = 1 - smoothstep(0.8, 1, normalized)
-	const opacity = 0.05 + corePresence * 0.43 + edgeFeather * 0.12
-	const radius = 0.52 + corePresence * 0.54 + edgeFeather * 0.18
+	const driftStrength = 0.7 + normalized * 3.2
+	const swirlBias = ((x + y) % 2 === 0 ? 1 : -1) * 0.5
+	const corePresence = 1 - smoothstep(0.55, 1, normalized)
+	const edgeFeather = 1 - smoothstep(0.78, 1, normalized)
+	const opacity = 0.04 + corePresence * 0.42 + edgeFeather * 0.1
+	const radius = 0.38 + corePresence * 0.42 + edgeFeather * 0.14
 
 	return {
 		cx: x * CELL_SIZE + CELL_SIZE / 2,
@@ -78,7 +78,11 @@ const getDotStyle = (dot: Dot): DotStyle => ({
 	opacity: dot.opacity,
 })
 
-const RooHero = () => {
+type RooHeroProps = {
+	size?: number
+}
+
+const RooHero = ({ size = 128 }: RooHeroProps) => {
 	return (
 		<div className="mb-4 flex flex-col items-center" data-testid="roo-hero">
 			<style>{`
@@ -128,8 +132,8 @@ const RooHero = () => {
 				}
 			`}</style>
 			<svg
-				width="128"
-				height="128"
+				width={size}
+				height={size}
 				viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
 				fill="none"
 				role="img"

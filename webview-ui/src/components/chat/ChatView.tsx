@@ -1626,7 +1626,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 <div className="flex flex-col gap-4 w-full items-center">
-							<RooHero />
+							<RooHero size={taskHistory.length === 0 ? 512 : 128} />
 							<RooTips />
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
