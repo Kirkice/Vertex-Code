@@ -48,7 +48,8 @@ export class SimpleInstaller {
 		target: "project" | "global",
 	): Promise<{ filePath: string; line?: number }> {
 		const result = await this.skillInstaller.installSkill(item, target)
-		return { filePath: result.dirPath }
+		// Return the path to SKILL.md file, not the directory
+		return { filePath: path.join(result.dirPath, "SKILL.md") }
 	}
 
 	private async installKnowledge(
@@ -56,6 +57,10 @@ export class SimpleInstaller {
 		target: "project" | "global",
 	): Promise<{ filePath: string; line?: number }> {
 		const result = await this.knowledgeInstaller.installKnowledge(item, target)
+		// Return the path to the first file in the knowledge package
+		if (item.type === "knowledge" && item.files.length > 0) {
+			return { filePath: path.join(result.dirPath, item.files[0].path) }
+		}
 		return { filePath: result.dirPath }
 	}
 
