@@ -115,7 +115,14 @@
 	},
 	"scrollToBottom": "捲動至對話底部",
 	"scrollToLatestCheckpoint": "捲動至上一個檢查點",
-	"about": "Vertex 是編輯器中的完整 AI 開發團隊。",
+	"about": "為 Shader、渲染管線與 GPU 工作流程而生。",
+	"aboutVariants": [
+		"為 Shader、渲染管線與 GPU 工作流程而生。",
+		"讓 AI 放大你的渲染開發工作流程。",
+		"從 Shader 程式碼直達畫面洞察。",
+		"渲染更快，除錯更聰明。",
+		"Vertex AI 是您專屬的圖形渲染開發智慧代理。"
+	],
 	"docs": "請參閱 <DocsLink>說明文件</DocsLink> 開始使用。",
 	"onboarding": "想要做什麼呢？",
 	"rooTips": {

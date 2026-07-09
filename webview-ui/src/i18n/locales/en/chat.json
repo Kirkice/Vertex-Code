@@ -116,7 +116,14 @@
 	},
 	"scrollToBottom": "Scroll to bottom of chat",
 	"scrollToLatestCheckpoint": "Scroll to previous checkpoint",
-"about": "Vertex AI is your dedicated agent for graphics rendering development.",
+	"about": "Built for shaders, pipelines, and GPU workflows.",
+	"aboutVariants": [
+		"Built for shaders, pipelines, and GPU workflows.",
+		"Your rendering workflow, amplified by AI.",
+		"From shader code to frame insight.",
+		"Render faster. Debug smarter.",
+		"Vertex AI is your dedicated agent for graphics rendering development."
+	],
 	"docs": "Check our <DocsLink>docs</DocsLink> to get started",
 	"onboarding": "What would you like to do?",
 	"rooTips": {

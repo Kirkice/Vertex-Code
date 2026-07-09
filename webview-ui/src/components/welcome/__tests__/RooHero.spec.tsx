@@ -7,7 +7,7 @@ describe("RooHero", () => {
 		render(<RooHero />)
 
 		const hero = screen.getByTestId("roo-hero")
-		const logo = screen.getByRole("img", { name: "Vertex ripple dot logo" })
+		const logo = screen.getByRole("img", { name: "Vertex particle dot logo" })
 		const circles = hero.querySelectorAll("circle.vertex-logo-dot")
 
 		expect(hero).toBeInTheDocument()

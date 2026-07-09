@@ -4,30 +4,33 @@ type Dot = {
 	cx: number
 	cy: number
 	radius: number
-	delay: number
 	opacity: number
+	driftX: number
+	driftY: number
+	delay: number
+	duration: number
 	pulse: number
 }
 
-const GRID_SIZE = 17
-const CELL_SIZE = 6
+const GRID_SIZE = 21
+const CELL_SIZE = 5
 const VIEWBOX_SIZE = GRID_SIZE * CELL_SIZE
 const CENTER = (GRID_SIZE - 1) / 2
-const INNER_RADIUS = 0
-const OUTER_RADIUS = 6.7
+const OUTER_RADIUS = 8.9
 
-type DotStyle = CSSProperties & {
-	"--dot-delay": string
-	"--dot-opacity": string
-	"--dot-pulse": string
+const smoothstep = (edge0: number, edge1: number, value: number) => {
+	const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)))
+	return t * t * (3 - 2 * t)
 }
 
-const getDotStyle = (dot: Dot): DotStyle => ({
-	"--dot-delay": `${dot.delay}s`,
-	"--dot-opacity": dot.opacity.toFixed(3),
-	"--dot-pulse": dot.pulse.toFixed(3),
-	opacity: dot.opacity,
-})
+type DotStyle = CSSProperties & {
+	"--dot-opacity": string
+	"--dot-drift-x": string
+	"--dot-drift-y": string
+	"--dot-delay": string
+	"--dot-duration": string
+	"--dot-pulse": string
+}
 
 const dots: Dot[] = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
 	const x = index % GRID_SIZE
@@ -36,49 +39,81 @@ const dots: Dot[] = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => 
 	const dy = y - CENTER
 	const distance = Math.hypot(dx, dy)
 
-	if (distance < INNER_RADIUS || distance > OUTER_RADIUS) {
+	if (distance > OUTER_RADIUS) {
 		return null
 	}
 
-	const normalized = (distance - INNER_RADIUS) / (OUTER_RADIUS - INNER_RADIUS)
-	const pulse = 0.95 + (1 - normalized) * 1.65
+	const normalized = distance / OUTER_RADIUS
+	const directionX = distance === 0 ? 0 : dx / distance
+	const directionY = distance === 0 ? 0 : dy / distance
+	const tangentialX = -directionY
+	const tangentialY = directionX
+	const driftStrength = 1 + normalized * 4.1
+	const swirlBias = ((x + y) % 2 === 0 ? 1 : -1) * 0.7
+	const corePresence = 1 - smoothstep(0.58, 1, normalized)
+	const edgeFeather = 1 - smoothstep(0.8, 1, normalized)
+	const opacity = 0.05 + corePresence * 0.43 + edgeFeather * 0.12
+	const radius = 0.52 + corePresence * 0.54 + edgeFeather * 0.18
 
 	return {
 		cx: x * CELL_SIZE + CELL_SIZE / 2,
 		cy: y * CELL_SIZE + CELL_SIZE / 2,
-		radius: 0.72 + (1 - normalized) * 0.78,
-		delay: normalized * 1.6,
-		opacity: 0.22 + (1 - normalized) * 0.44,
-		pulse,
+		radius: Number(radius.toFixed(3)),
+		opacity: Number(opacity.toFixed(3)),
+		driftX: Number((directionX * driftStrength + tangentialX * swirlBias).toFixed(3)),
+		driftY: Number((directionY * driftStrength + tangentialY * swirlBias).toFixed(3)),
+		delay: Number((normalized * 1.15 + ((x * 3 + y * 5) % 7) * 0.045).toFixed(3)),
+		duration: Number((4.8 + normalized * 1.1).toFixed(3)),
+		pulse: Number((1.08 + (1 - normalized) * 0.26).toFixed(3)),
 	}
 }).filter((dot): dot is Dot => dot !== null)
+
+const getDotStyle = (dot: Dot): DotStyle => ({
+	"--dot-opacity": dot.opacity.toFixed(3),
+	"--dot-drift-x": `${dot.driftX}px`,
+	"--dot-drift-y": `${dot.driftY}px`,
+	"--dot-delay": `${dot.delay}s`,
+	"--dot-duration": `${dot.duration}s`,
+	"--dot-pulse": dot.pulse.toFixed(3),
+	opacity: dot.opacity,
+})
 
 const RooHero = () => {
 	return (
 		<div className="mb-4 flex flex-col items-center" data-testid="roo-hero">
 			<style>{`
-				@keyframes vertex-dot-ripple {
-					0%, 100% {
-						opacity: var(--dot-opacity, 0.35);
-						transform: scale(1);
+				@keyframes vertex-dot-reassemble {
+					0% {
+						opacity: calc(var(--dot-opacity, 0.35) * 0.18);
+						transform: translate(var(--dot-drift-x, 0px), var(--dot-drift-y, 0px)) scale(0.68);
 						filter: drop-shadow(0 0 0 rgba(244, 244, 245, 0));
 					}
-					22% {
-						opacity: calc(var(--dot-opacity, 0.35) + 0.28);
-						transform: scale(var(--dot-pulse, 1.6));
-						filter: drop-shadow(0 0 4px rgba(244, 244, 245, 0.22));
+					24% {
+						opacity: calc(var(--dot-opacity, 0.35) + 0.12);
+						transform: translate(calc(var(--dot-drift-x, 0px) * 0.42), calc(var(--dot-drift-y, 0px) * 0.42)) scale(0.9);
+						filter: drop-shadow(0 0 2px rgba(244, 244, 245, 0.06));
 					}
-					50% {
-						opacity: calc(var(--dot-opacity, 0.35) + 0.08);
-						transform: scale(1.08);
+					48% {
+						opacity: calc(var(--dot-opacity, 0.35) + 0.3);
+						transform: translate(0px, 0px) scale(var(--dot-pulse, 1.14));
+						filter: drop-shadow(0 0 6px rgba(244, 244, 245, 0.22));
+					}
+					68% {
+						opacity: calc(var(--dot-opacity, 0.35) + 0.06);
+						transform: translate(0px, 0px) scale(1);
 						filter: drop-shadow(0 0 2px rgba(244, 244, 245, 0.08));
+					}
+					100% {
+						opacity: calc(var(--dot-opacity, 0.35) * 0.28);
+						transform: translate(calc(var(--dot-drift-x, 0px) * -0.2), calc(var(--dot-drift-y, 0px) * -0.2)) scale(0.82);
+						filter: drop-shadow(0 0 0 rgba(244, 244, 245, 0));
 					}
 				}
 
 				.vertex-logo-dot {
 					transform-box: fill-box;
 					transform-origin: center;
-					animation: vertex-dot-ripple 3.6s ease-in-out infinite;
+					animation: vertex-dot-reassemble var(--dot-duration, 5.4s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 					animation-delay: var(--dot-delay, 0s);
 					will-change: opacity, transform, filter;
 				}
@@ -87,20 +122,20 @@ const RooHero = () => {
 					.vertex-logo-dot {
 						animation: none;
 						opacity: calc(var(--dot-opacity, 0.35) + 0.08);
-						transform: scale(1);
+						transform: translate(0px, 0px) scale(1);
 						filter: none;
 					}
 				}
 			`}</style>
 			<svg
-				width="96"
-				height="96"
+				width="128"
+				height="128"
 				viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
 				fill="none"
 				role="img"
-				aria-label="Vertex ripple dot logo"
+				aria-label="Vertex particle dot logo"
 				className="mx-auto overflow-visible text-vscode-foreground">
-				<title>Vertex ripple dot logo</title>
+				<title>Vertex particle dot logo</title>
 				{dots.map((dot, index) => (
 					<circle
 						key={`${dot.cx}-${dot.cy}-${index}`}

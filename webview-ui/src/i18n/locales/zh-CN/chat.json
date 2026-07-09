@@ -89,7 +89,14 @@
 	"enqueueMessage": "将消息加入队列（当前任务完成后发送）",
 	"scrollToBottom": "滚动到聊天底部",
 	"scrollToLatestCheckpoint": "滚动到上一个检查点",
-	"about": "Vertex 是您编辑器中的整个 AI 开发团队。",
+	"about": "为 Shader、渲染管线与 GPU 工作流而生。",
+	"aboutVariants": [
+		"为 Shader、渲染管线与 GPU 工作流而生。",
+		"让 AI 放大你的渲染开发工作流。",
+		"从 Shader 代码直达帧洞察。",
+		"渲染更快，调试更聪明。",
+		"Vertex AI 是您专属的图形渲染开发智能体。"
+	],
 	"docs": "查看我们的 <DocsLink>文档</DocsLink> 了解更多信息。",
 	"onboarding": "此工作区中的任务列表为空。",
 	"rooTips": {
