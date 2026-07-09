@@ -29,7 +29,7 @@ export const noneTheme: ThemeDefinition = {
 export const jellyfishTheme: ThemeDefinition = {
 	id: "jellyfish",
 	name: "JellyFish",
-	description: "Cyber CLI dark theme with neon cyan and terminal green accents",
+	description: "Cyber CLI dark theme with multi-color neon accents",
 	colors: {
 		background: "#0A0F14",
 		foreground: "#E6F1FF",
@@ -43,8 +43,8 @@ export const jellyfishTheme: ThemeDefinition = {
 		"secondary-foreground": "#D7E7F5",
 		muted: "#13202B",
 		"muted-foreground": "#8AA0B6",
-		accent: "#00FF9C",
-		"accent-foreground": "#04120D",
+		accent: "#7C5CFF",
+		"accent-foreground": "#FFFFFF",
 		destructive: "#FF5A5F",
 		"destructive-foreground": "#FFF5F5",
 		border: "#1E2A36",
@@ -60,28 +60,28 @@ export const jellyfishTheme: ThemeDefinition = {
 		"disabledForeground": "#5B6B7A",
 		"errorForeground": "#FF5A5F",
 
-		// Buttons
+		// Buttons — primary uses cyan, secondary uses purple
 		"button-background": "#00E5FF",
 		"button-foreground": "#061017",
 		"button-hoverBackground": "#37F0FF",
-		"button-secondaryBackground": "#13202B",
-		"button-secondaryForeground": "#D7E7F5",
-		"button-secondaryHoverBackground": "#1A2A37",
+		"button-secondaryBackground": "#1A1530",
+		"button-secondaryForeground": "#C4B5FF",
+		"button-secondaryHoverBackground": "#241B40",
 
-		// Inputs / dropdowns
+		// Inputs / dropdowns — input border uses subtle purple
 		"input-background": "#0E1620",
 		"input-foreground": "#DDEAF7",
-		"input-border": "#1E2A36",
+		"input-border": "#2A1F4A",
 		"dropdown-background": "#101922",
 		"dropdown-foreground": "#E6F1FF",
-		"dropdown-border": "#203040",
+		"dropdown-border": "#2A1F4A",
 
-		// Lists / selections
-		"list-hoverBackground": "#123041",
+		// Lists / selections — hover uses purple tint
+		"list-hoverBackground": "#1A1530",
 		"list-hoverForeground": "#F4FBFF",
-		"list-activeSelectionBackground": "#11384A",
-		"list-activeSelectionForeground": "#F4FBFF",
-		"list-focusBackground": "#123847",
+		"list-activeSelectionBackground": "#241B40",
+		"list-activeSelectionForeground": "#C4B5FF",
+		"list-focusBackground": "#1A1530",
 
 		// Panels / sidebars
 		"panel-border": "#1E2A36",
@@ -91,33 +91,33 @@ export const jellyfishTheme: ThemeDefinition = {
 		"sideBarSectionHeader-background": "#0F1720",
 		"sideBarSectionHeader-foreground": "#E6F1FF",
 
-		// Badges / focus
-		"badge-background": "#00FF9C",
-		"badge-foreground": "#04120D",
+		// Badges / focus — badge uses orange for contrast
+		"badge-background": "#FF8A3D",
+		"badge-foreground": "#1A0F00",
 		"focusBorder": "#00E5FF",
 
-		// Links / text
-		"textLink-foreground": "#58F3FF",
-		"textLink-activeForeground": "#9CF9FF",
+		// Links / text — links use pink-magenta
+		"textLink-foreground": "#FF6B9D",
+		"textLink-activeForeground": "#FF9CB8",
 		"textBlockQuote-background": "#0F1720",
 		"textCodeBlock-background": "#0B141D",
-		"textBlockQuote-border": "#00E5FF",
-		"textPreformat-foreground": "#9BFFD0",
+		"textBlockQuote-border": "#7C5CFF",
+		"textPreformat-foreground": "#FFB020",
 		"textPreformat-background": "#0B141D",
 
 		// Editor groups / borders
 		"editorGroup-border": "#1E2A36",
 		"editorGroupHeader-tabsBackground": "#0A0F14",
 
-		// Notifications / hover
+		// Notifications / hover — notification border uses orange
 		"notifications-background": "#101922",
 		"notifications-foreground": "#E6F1FF",
-		"notifications-border": "#203040",
+		"notifications-border": "#FF8A3D",
 		"editorHoverWidget-background": "#101922F2",
 		"editorHoverWidget-foreground": "#E6F1FF",
-		"editorHoverWidget-border": "#203040",
+		"editorHoverWidget-border": "#7C5CFF",
 
-		// Charts / status colors
+		// Charts / status colors — full spectrum
 		"charts-green": "#00FF9C",
 		"charts-red": "#FF5A5F",
 		"charts-yellow": "#FFB020",
@@ -125,22 +125,22 @@ export const jellyfishTheme: ThemeDefinition = {
 		"charts-orange": "#FF8A3D",
 		"charts-purple": "#7C5CFF",
 
-		// Terminal
-		"terminal-foreground": "#D7FFE9",
-		"terminal-selectionBackground": "#00E5FF33",
+		// Terminal — green text on dark
+		"terminal-foreground": "#00FF9C",
+		"terminal-selectionBackground": "#7C5CFF33",
 
-		// Diff editor
+		// Diff editor — green/red
 		"diffEditor-insertedTextBackground": "#00FF9C22",
 		"diffEditor-removedTextBackground": "#FF5A5F22",
 
-		// Banner
-		"banner-background": "#0F1720",
-		"banner-foreground": "#E6F1FF",
+		// Banner — uses purple
+		"banner-background": "#1A1530",
+		"banner-foreground": "#C4B5FF",
 
-		// Toolbar
-		"toolbar-hoverBackground": "#123041",
+		// Toolbar — hover uses purple tint
+		"toolbar-hoverBackground": "#1A1530",
 
-		// Input validation
+		// Input validation — multi-color
 		"inputValidation-errorBackground": "#FF5A5F1F",
 		"inputValidation-errorBorder": "#FF5A5F",
 		"inputValidation-warningBackground": "#FFB0201F",
@@ -153,19 +153,19 @@ export const jellyfishTheme: ThemeDefinition = {
 		"editorWarning-background": "#FFB0201F",
 		"editorError-foreground": "#FF5A5F",
 
-		// Widget
-		"widget-border": "#203040",
+		// Widget — border uses purple
+		"widget-border": "#2A1F4A",
 		"widget-shadow": "#00000088",
 
 		// Title bar
 		"titleBar-activeForeground": "#C7D8E8",
 		"titleBar-inactiveForeground": "#7F93A8",
 
-		// Progress
-		"progressBar-background": "#00E5FF",
+		// Progress — uses orange
+		"progressBar-background": "#FF8A3D",
 
-		// Icon
-		"icon-foreground": "#00E5FF",
+		// Icon — uses pink-magenta
+		"icon-foreground": "#FF6B9D",
 
 		// Menu
 		"menu-background": "#101922F2",
@@ -175,15 +175,33 @@ export const jellyfishTheme: ThemeDefinition = {
 		"editor-lineHighlightBorder": "#1E2A36",
 
 		// Editor inactive selection
-		"editor-inactiveSelectionBackground": "#12304166",
+		"editor-inactiveSelectionBackground": "#1A153066",
 
 		// Testing icons
 		"testing-iconPassed": "#00FF9C",
 		"testing-iconFailed": "#FF5A5F",
 
-		// Symbol icon
-		"symbolIcon-methodForeground": "#58F3FF",
-		"stringForeground": "#9BFFD0",
+		// Symbol icon — method uses purple, string uses orange
+		"symbolIcon-methodForeground": "#7C5CFF",
+		"stringForeground": "#FFB020",
+
+		// ANSI terminal colors — full neon spectrum
+		"terminal-ansiBlack": "#0A0F14",
+		"terminal-ansiRed": "#FF5A5F",
+		"terminal-ansiGreen": "#00FF9C",
+		"terminal-ansiYellow": "#FFB020",
+		"terminal-ansiBlue": "#00E5FF",
+		"terminal-ansiMagenta": "#FF6B9D",
+		"terminal-ansiCyan": "#7C5CFF",
+		"terminal-ansiWhite": "#E6F1FF",
+		"terminal-ansiBrightBlack": "#5B6B7A",
+		"terminal-ansiBrightRed": "#FF8A8E",
+		"terminal-ansiBrightGreen": "#4DFFB8",
+		"terminal-ansiBrightYellow": "#FFD060",
+		"terminal-ansiBrightBlue": "#58F3FF",
+		"terminal-ansiBrightMagenta": "#FF9CB8",
+		"terminal-ansiBrightCyan": "#A48BFF",
+		"terminal-ansiBrightWhite": "#F4FBFF",
 	},
 }
 

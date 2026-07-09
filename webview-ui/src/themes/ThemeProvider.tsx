@@ -1,53 +1,70 @@
 /**
  * ThemeProvider — React context + CSS variable injection for webview themes.
  *
- * When a custom theme is selected, this provider overrides the `:root` CSS
- * custom properties (e.g., `--background`, `--primary`) with the theme's
- * hardcoded color values. When "None" is selected, all overrides are removed
- * so the webview falls back to VSCode's built-in color variables.
+ * Simplest possible approach:
+ * - None: do nothing, don't touch any CSS variables
+ * - JellyFish: set a CSS class on <html> that triggers all theme overrides
+ *   via a <style> tag injected into the document head
  *
- * Theme selection is persisted in `localStorage` so it survives webview reloads.
+ * This avoids all inline style / cleanup / ref issues.
  *
  * @module themes/ThemeProvider
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
-import type { ThemeId, ThemeColors } from "./types"
+import type { ThemeId } from "./types"
 import { DEFAULT_THEME_ID } from "./types"
 import { themes } from "./definitions"
 
 // ─── localStorage key ───────────────────────────────────────────────────────
 const STORAGE_KEY = "vertex-webview-theme"
 
-// ─── CSS variable names that map to :root semantic tokens ───────────────────
-const CSS_VAR_KEYS: (keyof ThemeColors)[] = [
-	"background",
-	"foreground",
-	"card",
-	"card-foreground",
-	"popover",
-	"popover-foreground",
-	"primary",
-	"primary-foreground",
-	"secondary",
-	"secondary-foreground",
-	"muted",
-	"muted-foreground",
-	"accent",
-	"accent-foreground",
-	"destructive",
-	"destructive-foreground",
-	"border",
-	"input",
-	"ring",
-]
+// ─── The style tag ID ──────────────────────────────────────────────────────
+const STYLE_TAG_ID = "vertex-theme-styles"
+
+// ─── CSS class name for active theme ────────────────────────────────────────
+const THEME_CLASS = "vertex-theme-active"
+
+// ─── Generate CSS for a theme ───────────────────────────────────────────────
+
+/**
+ * Generate a complete CSS string for a theme.
+ * Uses a class selector on <html> so it can be toggled by adding/removing the class.
+ */
+function generateThemeCSS(themeId: ThemeId): string {
+	const theme = themes[themeId]
+	if (!theme || !theme.colors) return ""
+
+	const lines: string[] = []
+
+	// Semantic variables
+	lines.push(`html.${THEME_CLASS} {`)
+	for (const [key, value] of Object.entries(theme.colors)) {
+		lines.push(`  --${key}: ${value};`)
+	}
+	// Decorative variables
+	lines.push(`  --vertex-theme-border: rgba(0, 229, 255, 0.34);`)
+	lines.push(`  --vertex-theme-border-soft: rgba(0, 229, 255, 0.18);`)
+	lines.push(`}`)
+
+	// --vscode-* overrides — set on both html and body
+	if (theme.vscodeColors) {
+		lines.push(`html.${THEME_CLASS},`)
+		lines.push(`html.${THEME_CLASS} body {`)
+		for (const [key, value] of Object.entries(theme.vscodeColors)) {
+			lines.push(`  --vscode-${key}: ${value};`)
+		}
+		lines.push(`}`)
+	}
+
+	return lines.join("\n")
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
  * Read the persisted theme ID from localStorage.
- * Falls back to DEFAULT_THEME_ID if the stored value is invalid.
  */
 function loadStoredThemeId(): ThemeId {
 	try {
@@ -56,65 +73,49 @@ function loadStoredThemeId(): ThemeId {
 			return stored as ThemeId
 		}
 	} catch {
-		// localStorage may be unavailable in some environments
+		// localStorage may be unavailable
 	}
 	return DEFAULT_THEME_ID
 }
 
 /**
- * Apply theme color overrides to `document.documentElement`.
- * Sets `--<key>` CSS custom properties for each color in the theme.
+ * Apply theme by injecting a <style> tag and toggling a CSS class on <html>.
+ * - None: remove the style tag and the class — zero footprint
+ * - JellyFish: inject style tag, add class — all overrides via CSS
  */
-function applyThemeOverrides(colors: Partial<ThemeColors>): void {
-	const root = document.documentElement
-	for (const key of CSS_VAR_KEYS) {
-		const value = colors[key]
-		if (value) {
-			root.style.setProperty(`--${key}`, value)
-		}
+function applyTheme(themeId: ThemeId): void {
+	// Remove existing style tag
+	const existing = document.getElementById(STYLE_TAG_ID)
+	if (existing) {
+		existing.remove()
 	}
-}
 
-/**
- * Apply `--vscode-*` variable overrides to `document.documentElement`.
- * Keys in the map are variable names WITHOUT the `--` prefix.
- */
-function applyVscodeOverrides(vscodeColors: Record<string, string>): void {
-	const root = document.documentElement
-	for (const [key, value] of Object.entries(vscodeColors)) {
-		root.style.setProperty(`--vscode-${key}`, value)
+	// Remove theme class from <html>
+	document.documentElement.classList.remove(THEME_CLASS)
+
+	if (themeId === "none") {
+		// Done — no style tag, no class, completely clean
+		return
 	}
-}
 
-/**
- * Remove all theme color overrides from `document.documentElement`,
- * restoring the default VSCode-derived values from the `:root` stylesheet.
- */
-function removeThemeOverrides(): void {
-	const root = document.documentElement
-	for (const key of CSS_VAR_KEYS) {
-		root.style.removeProperty(`--${key}`)
-	}
-}
+	// Generate and inject CSS
+	const css = generateThemeCSS(themeId)
+	if (css) {
+		const style = document.createElement("style")
+		style.id = STYLE_TAG_ID
+		style.textContent = css
+		document.head.appendChild(style)
 
-/**
- * Remove all `--vscode-*` variable overrides from `document.documentElement`.
- */
-function removeVscodeOverrides(vscodeColors: Record<string, string>): void {
-	const root = document.documentElement
-	for (const key of Object.keys(vscodeColors)) {
-		root.style.removeProperty(`--vscode-${key}`)
+		// Add class to <html> to activate the CSS rules
+		document.documentElement.classList.add(THEME_CLASS)
 	}
 }
 
 // ─── Context ────────────────────────────────────────────────────────────────
 
 interface ThemeContextValue {
-	/** Current theme ID */
 	themeId: ThemeId
-	/** Switch to a different theme */
 	setThemeId: (id: ThemeId) => void
-	/** List of available theme IDs in display order */
 	availableThemes: string[]
 }
 
@@ -129,49 +130,13 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children }: ThemeProviderProps) {
 	const [themeId, setThemeIdState] = useState<ThemeId>(loadStoredThemeId)
 
-	// Track previously applied vscode override keys for proper cleanup
-	const prevVscodeKeysRef = useRef<string[]>([])
-
-	// Apply / remove CSS overrides whenever the theme changes
 	useEffect(() => {
-		const theme = themes[themeId]
-		if (theme?.colors) {
-			applyThemeOverrides(theme.colors)
-		} else {
-			removeThemeOverrides()
-		}
+		applyTheme(themeId)
 
-		// Remove previously applied --vscode-* overrides first
-		if (prevVscodeKeysRef.current.length > 0) {
-			const root = document.documentElement
-			for (const key of prevVscodeKeysRef.current) {
-				root.style.removeProperty(`--vscode-${key}`)
-			}
-			prevVscodeKeysRef.current = []
-		}
-
-		// Apply new --vscode-* overrides
-		if (theme?.vscodeColors) {
-			applyVscodeOverrides(theme.vscodeColors)
-			prevVscodeKeysRef.current = Object.keys(theme.vscodeColors)
-		}
-
-		// Persist to localStorage
 		try {
 			localStorage.setItem(STORAGE_KEY, themeId)
 		} catch {
 			// Ignore storage errors
-		}
-
-		// Cleanup on unmount — remove overrides so VSCode defaults are restored
-		return () => {
-			removeThemeOverrides()
-			if (prevVscodeKeysRef.current.length > 0) {
-				const root = document.documentElement
-				for (const key of prevVscodeKeysRef.current) {
-					root.style.removeProperty(`--vscode-${key}`)
-				}
-			}
 		}
 	}, [themeId])
 
@@ -193,10 +158,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
-/**
- * Hook to access the current theme state and setter.
- * Must be used within a `<ThemeProvider>`.
- */
 export function useTheme(): ThemeContextValue {
 	const ctx = useContext(ThemeContext)
 	if (!ctx) {
