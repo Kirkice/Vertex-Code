@@ -38,6 +38,11 @@ export interface ModeHandoffExtractInput {
 	toProfile?: string
 	/** 触发类型 */
 	trigger: ModeHandoffTrigger
+	/** 是否启用了 Mode-Level LLM Routing（多模型模式）。
+	 *  - true：Mode 切换可能伴随 Profile 切换，Mode 变化即触发 Handoff
+	 *  - false（单模型）：所有 Mode 共用同一 Profile，仅 Profile 变化才触发 Handoff
+	 */
+	routingEnabled?: boolean
 	/** 验收标准：由 Architect Mode 生成，随 handoff 传递给执行 Mode */
 	acceptanceCriteria?: string[]
 	/** 验收模式：执行完毕后是否需要回切 Architect 做验收 */

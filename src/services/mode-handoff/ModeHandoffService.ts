@@ -18,7 +18,13 @@ import { shouldCreateHandoff, isHandoffConsumed } from "./ModeHandoffRules"
  * @returns ModeHandoffSummary 或 undefined（不应生成时）
  */
 export function createHandoff(input: ModeHandoffExtractInput): ModeHandoffSummary | undefined {
-	if (!shouldCreateHandoff(input)) {
+	if (!shouldCreateHandoff({
+		fromMode: input.fromMode,
+		toMode: input.toMode,
+		fromProfile: input.fromProfile,
+		toProfile: input.toProfile,
+		routingEnabled: input.routingEnabled,
+	})) {
 		return undefined
 	}
 	return extractHandoffSummary(input)

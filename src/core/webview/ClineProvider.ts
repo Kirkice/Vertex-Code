@@ -1433,6 +1433,7 @@ export class ClineProvider
 					fromProfile,
 					toProfile: task.taskApiConfigName,
 					trigger: options?.handoffTrigger ?? "user_mode_switch",
+					routingEnabled: false,
 				})
 			}
 			await this.postStateToWebview()
@@ -1488,6 +1489,7 @@ export class ClineProvider
 				fromProfile,
 				toProfile: task.taskApiConfigName,
 				trigger: options?.handoffTrigger ?? "user_mode_switch",
+				routingEnabled: true,
 			})
 		}
 

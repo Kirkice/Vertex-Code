@@ -109,6 +109,7 @@ import {
 	type ModeHandoffExtractInput,
 	type ExecutionReportInput,
 } from "../../services/mode-handoff"
+import { resolveRoutingEnabled } from "../../services/mode-routing"
 import type { ModeHandoffTrigger } from "@roo-code/types"
 
 const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
@@ -1457,8 +1458,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		fromProfile?: string
 		toProfile?: string
 		trigger: ModeHandoffTrigger
+		routingEnabled?: boolean
 	}): Promise<void> {
-		const { fromMode, toMode, fromProfile, toProfile, trigger } = params
+		const { fromMode, toMode, fromProfile, toProfile, trigger, routingEnabled } = params
 
 		let objective = ""
 		const recentAssistantTexts: string[] = []
@@ -1511,6 +1513,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			fromProfile,
 			toProfile: toProfile || fromProfile || "",
 			trigger,
+			routingEnabled,
 		}
 
 		const handoff = createHandoff(input)
@@ -1568,14 +1571,21 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					}
 				}
 	
-				// Mode Handoff: 鍦ㄥ垏鎹㈡垚鍔熷悗鐢熸垚缁撴瀯鍖栦氦鎺ユ憳瑕佸苟鍐欏叆 clineMessages銆?
-				// 鏀惧湪 setMode/setProviderProfile 涔嬪悗锛岀‘淇濆垏鎹㈠凡鐢熸晥锛岄伩鍏?鍋囦氦鎺?銆?
+				// Mode Handoff: 在切换成功后生成结构化交接摘要并写入 clineMessages。
+				// 放在 setMode/setProviderProfile 之后，确保切换已生效，避免"假交接"。
+				// 获取 routing 状态以判断是否为多模型模式
+				const handoffState = await provider.getState()
+				const handoffRoutingEnabled = resolveRoutingEnabled({
+					modeLevelLlmRoutingEnabled: handoffState?.modeLevelLlmRoutingEnabled,
+					lockApiConfigAcrossModes: (provider as any).context?.workspaceState?.get("lockApiConfigAcrossModes", false) ?? false,
+				})
 				await this.maybeCreateModeHandoff({
 					fromMode,
 					toMode: mode ?? this._taskMode,
 					fromProfile,
 					toProfile: providerProfile ?? this._taskApiConfigName,
 					trigger: autoDetectedGraphicsMode ? "auto_intent_switch" : (mode && mode !== fromMode ? "user_mode_switch" : "profile_only_switch"),
+					routingEnabled: handoffRoutingEnabled,
 				})
 	
 				this.emit(RooCodeEventName.TaskUserMessage, this.taskId)

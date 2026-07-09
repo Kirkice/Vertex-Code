@@ -56,7 +56,7 @@ const makeHandoff = (overrides: Partial<ModeHandoffSummary> = {}): ModeHandoffSu
 
 describe("ModeHandoff - Rules", () => {
 	describe("shouldCreateHandoff", () => {
-		it("mode 变化时返回 true", () => {
+		it("mode 变化时返回 true（多模型默认）", () => {
 			expect(shouldCreateHandoff({ fromMode: "code", toMode: "architect" })).toBe(true)
 		})
 
@@ -70,6 +70,54 @@ describe("ModeHandoff - Rules", () => {
 
 		it("无 fromMode 和 fromProfile 时返回 false（首次切换前）", () => {
 			expect(shouldCreateHandoff({ toMode: "code", toProfile: "a" })).toBe(false)
+		})
+
+		it("单模型模式下仅 mode 变化时返回 false（routingEnabled=false）", () => {
+			expect(
+				shouldCreateHandoff({
+					fromMode: "code",
+					toMode: "architect",
+					fromProfile: "default",
+					toProfile: "default",
+					routingEnabled: false,
+				}),
+			).toBe(false)
+		})
+
+		it("单模型模式下 profile 变化时仍返回 true（routingEnabled=false）", () => {
+			expect(
+				shouldCreateHandoff({
+					fromMode: "code",
+					toMode: "code",
+					fromProfile: "a",
+					toProfile: "b",
+					routingEnabled: false,
+				}),
+			).toBe(true)
+		})
+
+		it("多模型模式下 mode 变化时返回 true（routingEnabled=true）", () => {
+			expect(
+				shouldCreateHandoff({
+					fromMode: "code",
+					toMode: "architect",
+					fromProfile: "default",
+					toProfile: "default",
+					routingEnabled: true,
+				}),
+			).toBe(true)
+		})
+
+		it("单模型模式下 mode 和 profile 都变化时返回 true", () => {
+			expect(
+				shouldCreateHandoff({
+					fromMode: "code",
+					toMode: "architect",
+					fromProfile: "a",
+					toProfile: "b",
+					routingEnabled: false,
+				}),
+			).toBe(true)
 		})
 	})
 
