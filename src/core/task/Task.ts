@@ -101,7 +101,13 @@ import {
 	createHandoff,
 	handoffToMessage,
 	consumePendingHandoff,
+	getLatestPendingHandoff,
+	generateExecutionReport,
+	formatExecutionReportForInjection,
+	requiresAutoReturn,
+	hasAcceptanceCriteria,
 	type ModeHandoffExtractInput,
+	type ExecutionReportInput,
 } from "../../services/mode-handoff"
 import type { ModeHandoffTrigger } from "@roo-code/types"
 
@@ -3722,7 +3728,95 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		// If we exit the while loop normally (stack is empty), return false
+		// But first, check if we need to generate an execution report and
+		// trigger auto-return validation back to Architect Mode.
+		await this.maybeGenerateExecutionReportAndAutoReturn()
+
 		return false
+	}
+
+	/**
+		* After task loop completes, check if there's a pending handoff with
+		* acceptance criteria and auto_return validation mode. If so, generate
+		* an execution report and inject it as context for the return to Architect.
+		*/
+	private async maybeGenerateExecutionReportAndAutoReturn(): Promise<void> {
+		try {
+			const handoff = getLatestPendingHandoff(this.clineMessages)
+			if (!handoff) {
+				return
+			}
+
+			// Only generate report if the handoff has acceptance criteria
+			if (!hasAcceptanceCriteria(handoff)) {
+				return
+			}
+
+			// Only auto-return if validation mode is auto_return
+			if (!requiresAutoReturn(handoff)) {
+				return
+			}
+
+			// Gather execution state for the report
+			const state = await this.providerRef.deref()?.getState()
+			const currentMode = state?.mode ?? "code"
+
+			// Only generate report for execution modes (code, debug, etc.)
+			// Not for architect or ask modes
+			if (currentMode === "architect" || currentMode === "ask") {
+				return
+			}
+
+			// Extract recent assistant texts
+			const recentAssistantTexts = this.clineMessages
+				.filter((msg) => msg.type === "say" && msg.say === "text" && msg.text)
+				.slice(-5)
+				.map((msg) => msg.text || "")
+
+			// Get modified files from file context tracker
+			const modifiedFiles = this.fileContextTracker.getAndClearRecentlyModifiedFiles()
+
+			// Get current todos from cline messages
+			// The todo list is tracked via user_edit_todos say type or can be empty
+			const todos: Array<{ content?: string; status?: string; activeForm?: string }> = []
+			// Try to extract from the handoff's pending items as a fallback
+			for (const pending of handoff.pending) {
+				todos.push({ content: pending, status: "completed" })
+			}
+			for (const inProg of handoff.inProgress) {
+				todos.push({ content: inProg, status: "in_progress" })
+			}
+
+			const reportInput: ExecutionReportInput = {
+				handoff,
+				todos,
+				modifiedFiles,
+				recentAssistantTexts,
+			}
+
+			const report = generateExecutionReport(reportInput)
+			const reportText = formatExecutionReportForInjection(report)
+
+			// Log the execution report generation
+			console.log(
+				`[Task#${this.taskId}] Generated execution report for handoff ${handoff.handoffId}: ` +
+					`${report.completedItems.length} completed, ${report.incompleteItems.length} incomplete`,
+			)
+
+			// Inject the execution report as a say message for the conversation
+			await this.say("text", `<execution_report_generated>\n${reportText}\n</execution_report_generated>`)
+
+			// Trigger mode switch back to architect for validation
+			const provider = this.providerRef.deref()
+			if (provider) {
+				await provider.handleModeSwitch("architect", {
+					createModeHandoff: true,
+					handoffTrigger: "orchestrator_stage",
+				})
+			}
+		} catch (error) {
+			console.error(`[Task#${this.taskId}] Failed to generate execution report:`, error)
+		}
 	}
 
 	private extractUserMessageText(content: Anthropic.Messages.ContentBlockParam[]): string | undefined {

@@ -86,6 +86,15 @@ export function formatHandoffForInjection(handoff: ModeHandoffSummary): ModeHand
 		lines.push(`recommended_next_step: ${handoff.recommendedNextStep}`)
 	}
 
+	if (handoff.acceptanceCriteria && handoff.acceptanceCriteria.length > 0) {
+		lines.push("acceptance_criteria:")
+		lines.push(formatList(handoff.acceptanceCriteria))
+	}
+
+	if (handoff.validationMode && handoff.validationMode !== "none") {
+		lines.push(`validation_mode: ${handoff.validationMode}`)
+	}
+
 	lines.push("</mode_handoff>")
 
 	return {

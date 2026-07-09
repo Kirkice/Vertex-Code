@@ -1,0 +1,53 @@
+[
+  {
+    "id": "shadow-dpcf-pcss-stability",
+    "title": "DPCF 与 PCSS 阴影稳定性案例",
+    "path": "graphics/shadow-dpcf-pcss-stability.md",
+    "summary": "DPCF 与 PCSS 软阴影稳定性分析，覆盖 blocker search 硬阈值跳变、adaptive bias 联动、sample 级分支平滑化等根因与修复思路。",
+    "kind": "case-study",
+    "domain": "graphics",
+    "tags": ["shadow", "dpcf", "pcss", "artifact", "soft-shadow", "blocker-search", "stability"],
+    "triggers": ["阴影", "shadow", "pcss", "dpcf", "softness", "漏光", "杂点", "跳变", "blocker", "半影", "penumbra", "shadow artifact", "shadow acne", "peter panning"],
+    "scenarios": ["artifact-analysis", "shadow-debug"],
+    "modes": ["graphics"],
+    "priority": 90,
+    "relatedSkills": ["graphics-debug"],
+    "relatedPlaybooks": ["shadow_issue"],
+    "tokenBudget": 1500,
+    "alwaysInclude": false
+  },
+  {
+    "id": "mobile-performance-analysis",
+    "title": "移动端图形性能分析方法论",
+    "path": "graphics/mobile-performance-analysis.md",
+    "summary": "移动端图形性能分析框架，覆盖 FPS、带宽、发热、CPU/GPU 归因、draw call、shader、overdraw 与 RT 带宽问题的系统化排查方法。",
+    "kind": "methodology",
+    "domain": "graphics",
+    "tags": ["performance", "mobile", "gpu-optimization", "bandwidth", "overdraw", "drawcall", "shader-analysis", "thermal-throttling"],
+    "triggers": ["性能", "performance", "带宽", "bandwidth", "发热", "耗电", "overdraw", "drawcall", "draw call", "帧率", "fps", "gpu slow", "gpu 慢", "热降频", "thermal", "移动端", "mobile"],
+    "scenarios": ["performance-analysis", "mobile-optimization"],
+    "modes": ["graphics"],
+    "priority": 95,
+    "relatedSkills": ["graphics-optimization"],
+    "relatedPlaybooks": ["gpu_slow"],
+    "tokenBudget": 1500,
+    "alwaysInclude": false
+  },
+  {
+    "id": "mode-handoff-validation-pattern",
+    "title": "Mode Handoff 验收回路模式",
+    "path": "general/mode-handoff-validation-pattern.md",
+    "summary": "Architect → Code 执行 → 回切 Architect 验收的完整回路模式，覆盖验收标准生成、执行报告、自动回切与修复循环。",
+    "kind": "methodology",
+    "domain": "general",
+    "tags": ["mode-handoff", "validation", "acceptance-criteria", "execution-report", "quality-assurance"],
+    "triggers": ["验收", "validation", "acceptance", "执行报告", "execution report", "回切", "auto return", "修复循环", "repair cycle"],
+    "scenarios": ["mode-handoff", "validation"],
+    "modes": ["architect", "code"],
+    "priority": 80,
+    "relatedSkills": [],
+    "relatedPlaybooks": [],
+    "tokenBudget": 1000,
+    "alwaysInclude": false
+  }
+]

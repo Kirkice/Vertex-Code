@@ -25,6 +25,7 @@ import {
 	getSkillsSection,
 } from "./sections"
 import { GRAPHICS_MODE_PROMPT, buildGraphicsModePrompt } from "./sections/graphics-agent"
+import { buildKnowledgeContextBlock } from "../../services/knowledge"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -101,6 +102,17 @@ async function generatePrompt(
 		}
 	}
 
+	// Universal knowledge injection: inject relevant knowledge for any mode
+	// when user message is available. Graphics mode already gets knowledge via
+	// buildGraphicsModePrompt, so skip to avoid double injection.
+	let knowledgeSection = ""
+	if (userMessage && mode !== "graphics") {
+		knowledgeSection = buildKnowledgeContextBlock(userMessage, mode as string) || ""
+		if (knowledgeSection) {
+			knowledgeSection = `\n${knowledgeSection}\n`
+		}
+	}
+
 	const basePrompt = `${roleDefinition}
 
 ${markdownFormattingSection()}
@@ -113,7 +125,7 @@ ${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
 
 ${modesSection}
 ${skillsSection ? `\n${skillsSection}` : ""}
-${graphicsSection}${getRulesSection(cwd, settings)}
+${graphicsSection}${knowledgeSection}${getRulesSection(cwd, settings)}
 
 ${getSystemInfoSection(cwd)}
 

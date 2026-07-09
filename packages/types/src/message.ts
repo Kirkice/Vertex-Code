@@ -344,6 +344,10 @@ export const modeHandoffSummarySchema = z.object({
 	openQuestions: z.array(z.string()),
 	/** 给下一个 mode 的行动建议 */
 	recommendedNextStep: z.string().optional(),
+	/** 验收标准：Architect Mode 定义的完成判定条件 */
+	acceptanceCriteria: z.array(z.string()).optional(),
+	/** 验收模式：执行完毕后是否需要回切 Architect 做验收 */
+	validationMode: z.enum(["auto_return", "manual_return", "none"]).optional(),
 	/** 摘要来源消息的时间范围 */
 	sourceMessageRange: z
 		.object({
@@ -354,6 +358,74 @@ export const modeHandoffSummarySchema = z.object({
 	/** 消费时间戳（注入给模型后标记） */
 	consumedAt: z.number().optional(),
 })
+
+/**
+	* Execution Report：Code Mode 执行完毕后生成的结构化执行报告。
+	* 用于回传给 Architect Mode 做验收对照。
+	*/
+export const executionReportSchema = z.object({
+	/** 对应的 handoffId */
+	handoffId: z.string(),
+	/** 创建时间戳 */
+	createdAt: z.number(),
+	/** 完成的 TODO 项 */
+	completedItems: z.array(z.string()),
+	/** 未完成或部分完成的 TODO 项 */
+	incompleteItems: z.array(
+		z.object({
+			item: z.string(),
+			reason: z.string(),
+		}),
+	),
+	/** 实际修改的文件 */
+	modifiedFiles: z.array(z.string()),
+	/** 偏离原计划的事项 */
+	deviations: z.array(
+		z.object({
+			planned: z.string(),
+			actual: z.string(),
+			reason: z.string(),
+		}),
+	),
+	/** 自评是否符合验收标准 */
+	selfAssessment: z.array(
+		z.object({
+			criteria: z.string(),
+			met: z.boolean(),
+			evidence: z.string(),
+		}),
+	),
+	/** 总体自评结论 */
+	overallSummary: z.string(),
+})
+
+export type ExecutionReport = z.infer<typeof executionReportSchema>
+
+/**
+	* Validation Result：Architect Mode 验收后的结果。
+	*/
+export const validationResultSchema = z.object({
+	/** 对应的 handoffId */
+	handoffId: z.string(),
+	/** 验收时间戳 */
+	validatedAt: z.number(),
+	/** 是否全部通过 */
+	passed: z.boolean(),
+	/** 逐条验收结果 */
+	itemResults: z.array(
+		z.object({
+			criteria: z.string(),
+			passed: z.boolean(),
+			notes: z.string(),
+		}),
+	),
+	/** 不通过项的修复指令 */
+	repairInstructions: z.array(z.string()).optional(),
+	/** 验收总结 */
+	summary: z.string(),
+})
+
+export type ValidationResult = z.infer<typeof validationResultSchema>
 
 export type ModeHandoffSummary = z.infer<typeof modeHandoffSummarySchema>
 

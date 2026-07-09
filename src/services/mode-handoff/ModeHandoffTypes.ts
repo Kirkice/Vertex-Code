@@ -38,6 +38,10 @@ export interface ModeHandoffExtractInput {
 	toProfile?: string
 	/** 触发类型 */
 	trigger: ModeHandoffTrigger
+	/** 验收标准：由 Architect Mode 生成，随 handoff 传递给执行 Mode */
+	acceptanceCriteria?: string[]
+	/** 验收模式：执行完毕后是否需要回切 Architect 做验收 */
+	validationMode?: "auto_return" | "manual_return" | "none"
 }
 
 /**

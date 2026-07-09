@@ -108,5 +108,7 @@ export function extractHandoffSummary(input: ModeHandoffExtractInput): ModeHando
 		touchedFiles: input.touchedFiles,
 		openQuestions,
 		recommendedNextStep,
+		acceptanceCriteria: input.acceptanceCriteria,
+		validationMode: input.validationMode,
 	}
 }

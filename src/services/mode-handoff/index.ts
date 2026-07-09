@@ -27,3 +27,17 @@ export {
 	consumePendingHandoff,
 	handoffToMessage,
 } from "./ModeHandoffService"
+
+export {
+	generateExecutionReport,
+	formatExecutionReportForInjection,
+	type ExecutionReportInput,
+} from "./ExecutionReportService"
+
+export {
+	formatValidationResultForInjection,
+	needsRepairCycle,
+	buildRepairObjective,
+	requiresAutoReturn,
+	hasAcceptanceCriteria,
+} from "./ValidationService"
