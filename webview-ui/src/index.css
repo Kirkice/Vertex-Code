@@ -198,20 +198,25 @@
 
 @layer base {
 	html.vertex-theme-active {
-		--background: var(--vscode-editor-background);
-		--foreground: var(--vscode-editor-foreground);
-		--card: var(--vscode-editor-background);
-		--card-foreground: var(--vscode-editor-foreground);
-		--primary: var(--vscode-button-background);
-		--primary-foreground: var(--vscode-button-foreground);
-		--secondary: var(--vscode-button-secondaryBackground);
-		--secondary-foreground: var(--vscode-button-secondaryForeground);
-		--muted: var(--vscode-button-secondaryBackground);
-		--muted-foreground: var(--vscode-descriptionForeground);
-		--accent: var(--vscode-list-hoverBackground);
-		--accent-foreground: var(--vscode-list-hoverForeground);
-		--border: var(--vscode-input-border, transparent);
-		--input: var(--vscode-input-background);
+		/* Hard-coded JellyFish semantic tokens so background/structure do not rely
+		   on VS Code token indirection or Tailwind layer resolution. This scope is
+		   only active when ThemeProvider adds html.vertex-theme-active, so None is
+		   unaffected. */
+		--background: #18141f;
+		--foreground: #eeeaf4;
+		--card: #241d2e;
+		--card-foreground: #eeeaf4;
+		--primary: #e84393;
+		--primary-foreground: #2d1525;
+		--secondary: #31283d;
+		--secondary-foreground: #d7d0e1;
+		--muted: #2b2336;
+		--muted-foreground: #7e7888;
+		--accent: #7dd3e8;
+		--accent-foreground: #18141f;
+		--border: #4a3c59;
+		--input: #211a2b;
+		--ring: #7dd3e8b3;
 	}
 
 	html.vertex-theme-active body {

@@ -95,6 +95,18 @@ function applyTheme(themeId: ThemeId): void {
 
 	if (themeId === "none") {
 		// Done — no style tag, no class, completely clean
+		try {
+			const htmlStyles = getComputedStyle(document.documentElement)
+			const bodyStyles = getComputedStyle(document.body)
+			console.debug("[ThemeProvider.applyTheme:none]", {
+				hasThemeClass: document.documentElement.classList.contains(THEME_CLASS),
+				htmlVscodeEditorBackground: htmlStyles.getPropertyValue("--vscode-editor-background").trim(),
+				htmlBackground: htmlStyles.getPropertyValue("--background").trim(),
+				bodyBackground: bodyStyles.background,
+			})
+		} catch {
+			// Ignore debug errors
+		}
 		return
 	}
 
@@ -108,6 +120,24 @@ function applyTheme(themeId: ThemeId): void {
 
 		// Add class to <html> to activate the CSS rules
 		document.documentElement.classList.add(THEME_CLASS)
+
+		try {
+			const htmlStyles = getComputedStyle(document.documentElement)
+			const bodyStyles = getComputedStyle(document.body)
+			const root = document.getElementById("root")
+			const rootStyles = root ? getComputedStyle(root) : null
+			console.debug("[ThemeProvider.applyTheme]", {
+				themeId,
+				hasThemeClass: document.documentElement.classList.contains(THEME_CLASS),
+				htmlVscodeEditorBackground: htmlStyles.getPropertyValue("--vscode-editor-background").trim(),
+				htmlBackground: htmlStyles.getPropertyValue("--background").trim(),
+				htmlCard: htmlStyles.getPropertyValue("--card").trim(),
+				bodyBackground: bodyStyles.background,
+				rootBackground: rootStyles?.background,
+			})
+		} catch {
+			// Ignore debug errors
+		}
 	}
 }
 
