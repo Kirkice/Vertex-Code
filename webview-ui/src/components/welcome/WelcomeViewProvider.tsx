@@ -107,8 +107,8 @@ const WelcomeViewProvider = () => {
 
 	if (!showProviderSetup) {
 		return (
-			<Tab>
-				<TabContent className="relative flex flex-col gap-4 p-6 justify-center">
+			<Tab className="theme-shell theme-shell-welcome">
+				<TabContent className="theme-shell-content relative flex flex-col gap-4 p-6 justify-center">
 					<RooHero size={heroSize} />
 					<h2 className="mt-0 mb-0 text-xl">{t("welcome:landing.greeting")}</h2>
 
@@ -137,8 +137,8 @@ const WelcomeViewProvider = () => {
 	}
 
 	return (
-		<Tab>
-			<TabContent className="flex flex-col gap-4 p-6">
+		<Tab className="theme-shell theme-shell-welcome">
+			<TabContent className="theme-shell-content flex flex-col gap-4 p-6">
 				<Brain className="size-8" strokeWidth={1.5} />
 				<h2 className="mt-0 mb-0 text-xl">{t("welcome:providerSignup.heading")}</h2>
 

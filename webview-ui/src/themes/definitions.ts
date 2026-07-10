@@ -36,31 +36,31 @@ export const jellyfishTheme: ThemeDefinition = {
 	name: "JellyFish",
 	description: "Elegant purple-gray theme with pink accents",
 	colors: {
-		background: "#221E28",
-		foreground: "#E8E5ED",
-		card: "#28232F",
+		background: "#18141F",
+		foreground: "#EEEAF4",
+		card: "#241D2E",
 		"card-foreground": "#E8E5ED",
-		popover: "#28232F",
+		popover: "#241D2E",
 		"popover-foreground": "#E8E5ED",
 		primary: "#E84393",
 		"primary-foreground": "#2D1525",
-		secondary: "#332D3D",
+		secondary: "#31283D",
 		"secondary-foreground": "#CCC8D2",
-		muted: "#332D3D",
+		muted: "#2B2336",
 		"muted-foreground": "#7E7888",
 		accent: "#7DD3E8",
 		"accent-foreground": "#221E28",
 		destructive: "#E04545",
 		"destructive-foreground": "#F5F3F7",
-		border: "#3D3747",
-		input: "#28232F",
+		border: "#4A3C59",
+		input: "#211A2B",
 		ring: "#7DD3E8B3",
 	},
 	vscodeColors: {
 		// Editor / main surface
-		"editor-background": "#221E28",
-		"editor-foreground": "#E8E5ED",
-		"foreground": "#E8E5ED",
+		"editor-background": "#18141F",
+		"editor-foreground": "#EEEAF4",
+		"foreground": "#EEEAF4",
 		"descriptionForeground": "#7E7888",
 		"disabledForeground": "#655F70",
 		"errorForeground": "#E04545",
@@ -69,32 +69,32 @@ export const jellyfishTheme: ThemeDefinition = {
 		"button-background": "#E84393",
 		"button-foreground": "#2D1525",
 		"button-hoverBackground": "#F06AAF",
-		"button-secondaryBackground": "#332D3D",
-		"button-secondaryForeground": "#CCC8D2",
-		"button-secondaryHoverBackground": "#3D3649",
+		"button-secondaryBackground": "#31283D",
+		"button-secondaryForeground": "#D7D0E1",
+		"button-secondaryHoverBackground": "#3D3150",
 
 		// Inputs / dropdowns
-		"input-background": "#28232F",
-		"input-foreground": "#E8E5ED",
-		"input-border": "#3D3747",
-		"dropdown-background": "#28232F",
-		"dropdown-foreground": "#E8E5ED",
-		"dropdown-border": "#3D3747",
+		"input-background": "#211A2B",
+		"input-foreground": "#EEEAF4",
+		"input-border": "#4A3C59",
+		"dropdown-background": "#241D2E",
+		"dropdown-foreground": "#EEEAF4",
+		"dropdown-border": "#4A3C59",
 
 		// Lists / selections
-		"list-hoverBackground": "#332D3D",
+		"list-hoverBackground": "#31283D",
 		"list-hoverForeground": "#F5F3F7",
-		"list-activeSelectionBackground": "#E843932E",
+		"list-activeSelectionBackground": "#E8439342",
 		"list-activeSelectionForeground": "#E84393",
-		"list-focusBackground": "#332D3D",
+		"list-focusBackground": "#31283D",
 
 		// Panels / sidebars
-		"panel-border": "#3D3747",
-		"sideBar-background": "#1C1822",
-		"sideBar-foreground": "#CCC8D2",
-		"sideBar-border": "#352F3D",
-		"sideBarSectionHeader-background": "#28232F",
-		"sideBarSectionHeader-foreground": "#E8E5ED",
+		"panel-border": "#4A3C59",
+		"sideBar-background": "#15111B",
+		"sideBar-foreground": "#D9D2E3",
+		"sideBar-border": "#2A2235",
+		"sideBarSectionHeader-background": "#211A2B",
+		"sideBarSectionHeader-foreground": "#EEEAF4",
 
 		// Badges / focus
 		"badge-background": "#E84393",
@@ -104,22 +104,22 @@ export const jellyfishTheme: ThemeDefinition = {
 		// Links / text — cyan for links
 		"textLink-foreground": "#7DD3E8",
 		"textLink-activeForeground": "#A5E3F0",
-		"textBlockQuote-background": "#28232F",
-		"textCodeBlock-background": "#1C1822",
+		"textBlockQuote-background": "#241D2E",
+		"textCodeBlock-background": "#17121E",
 		"textBlockQuote-border": "#7DD3E8",
 		"textPreformat-foreground": "#E8C84A",
-		"textPreformat-background": "#1C1822",
+		"textPreformat-background": "#17121E",
 
 		// Editor groups / borders
-		"editorGroup-border": "#3D3747",
-		"editorGroupHeader-tabsBackground": "#221E28",
+		"editorGroup-border": "#4A3C59",
+		"editorGroupHeader-tabsBackground": "#18141F",
 
 		// Notifications / hover
-		"notifications-background": "#28232F",
-		"notifications-foreground": "#E8E5ED",
+		"notifications-background": "#241D2E",
+		"notifications-foreground": "#EEEAF4",
 		"notifications-border": "#E8944A",
-		"editorHoverWidget-background": "#28232FF2",
-		"editorHoverWidget-foreground": "#E8E5ED",
+		"editorHoverWidget-background": "#241D2EF2",
+		"editorHoverWidget-foreground": "#EEEAF4",
 		"editorHoverWidget-border": "#7DD3E8",
 
 		// Charts / status colors
@@ -139,11 +139,11 @@ export const jellyfishTheme: ThemeDefinition = {
 		"diffEditor-removedTextBackground": "#E0454522",
 
 		// Banner
-		"banner-background": "#332D3D",
-		"banner-foreground": "#CCC8D2",
+		"banner-background": "#31283D",
+		"banner-foreground": "#D9D2E3",
 
 		// Toolbar
-		"toolbar-hoverBackground": "#332D3D",
+		"toolbar-hoverBackground": "#31283D",
 
 		// Input validation
 		"inputValidation-errorBackground": "#E045451F",
@@ -159,11 +159,11 @@ export const jellyfishTheme: ThemeDefinition = {
 		"editorError-foreground": "#E04545",
 
 		// Widget
-		"widget-border": "#3D3747",
+		"widget-border": "#4A3C59",
 		"widget-shadow": "#00000088",
 
 		// Title bar
-		"titleBar-activeForeground": "#CCC8D2",
+		"titleBar-activeForeground": "#D9D2E3",
 		"titleBar-inactiveForeground": "#7E7888",
 
 		// Progress
@@ -173,14 +173,14 @@ export const jellyfishTheme: ThemeDefinition = {
 		"icon-foreground": "#E84393",
 
 		// Menu
-		"menu-background": "#28232FF2",
-		"menu-foreground": "#E8E5ED",
+		"menu-background": "#241D2EF2",
+		"menu-foreground": "#EEEAF4",
 
 		// Editor line highlight
-		"editor-lineHighlightBorder": "#3D3747",
+		"editor-lineHighlightBorder": "#4A3C59",
 
 		// Editor inactive selection
-		"editor-inactiveSelectionBackground": "#332D3D66",
+		"editor-inactiveSelectionBackground": "#31283D80",
 
 		// Testing icons
 		"testing-iconPassed": "#7DD87D",
@@ -191,14 +191,14 @@ export const jellyfishTheme: ThemeDefinition = {
 		"stringForeground": "#E8C84A",
 
 		// ANSI terminal colors
-		"terminal-ansiBlack": "#221E28",
+		"terminal-ansiBlack": "#18141F",
 		"terminal-ansiRed": "#E04545",
 		"terminal-ansiGreen": "#7DD87D",
 		"terminal-ansiYellow": "#E8C84A",
 		"terminal-ansiBlue": "#7DD3E8",
 		"terminal-ansiMagenta": "#E84393",
 		"terminal-ansiCyan": "#7DD3E8",
-		"terminal-ansiWhite": "#E8E5ED",
+		"terminal-ansiWhite": "#EEEAF4",
 		"terminal-ansiBrightBlack": "#655F70",
 		"terminal-ansiBrightRed": "#F06A6A",
 		"terminal-ansiBrightGreen": "#A5E8A5",

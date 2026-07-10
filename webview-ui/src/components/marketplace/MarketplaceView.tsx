@@ -116,8 +116,8 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 
 	return (
 		<TooltipProvider delayDuration={300}>
-			<Tab>
-				<TabHeader className="flex flex-col sticky top-0 z-10 bg-vscode-sideBar-background">
+			<Tab className="theme-shell theme-shell-marketplace">
+				<TabHeader className="theme-shell-header flex flex-col sticky top-0 z-10 bg-vscode-sideBar-background">
 					{/* Section Header - Graphics Providers style */}
 					<div className="px-5 pt-6 pb-4">
 						<div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 					</div>
 				</TabHeader>
 
-				<TabContent className="px-5 py-2">
+				<TabContent className="theme-shell-content px-5 py-2">
 					{state.activeTab === "mcp" && (
 						<MarketplaceListView
 							stateManager={stateManager}

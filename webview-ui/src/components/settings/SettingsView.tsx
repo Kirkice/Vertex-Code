@@ -658,8 +658,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	)
 
 	return (
-		<Tab>
-			<TabHeader className="flex justify-between items-center gap-2">
+		<Tab className="theme-shell theme-shell-settings">
+			<TabHeader className="theme-shell-header flex justify-between items-center gap-2">
 				<div className="flex items-center gap-2 grow">
 					<StandardTooltip content={t("settings:header.doneButtonTooltip")}>
 						<Button variant="ghost" className="px-1.5 -ml-2" onClick={() => checkUnsaveChanges(onDone)}>
@@ -694,7 +694,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			</TabHeader>
 
 			{/* Vertical tabs layout */}
-			<div ref={containerRef} className={cn(settingsTabsContainer, isCompactMode && "narrow")}>
+			<div ref={containerRef} className={cn("theme-shell-body", settingsTabsContainer, isCompactMode && "narrow")}>
 				{/* Tab sidebar */}
 				<TabList
 					value={activeTab}

@@ -107,7 +107,7 @@ const TaskHeader = ({
 	}
 
 	return (
-		<div className="group pt-2 pb-0 px-3">
+		<div data-testid="task-header" className="theme-task-header group pt-2 pb-0 px-3">
 			<div className="mb-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
 				<Button
 					variant="ghost"
@@ -129,6 +129,7 @@ const TaskHeader = ({
 			)}
 			</div>
 			<div
+				data-theme-surface="task-header-card"
 				className={cn(
 					"px-3 pt-2.5 pb-2 flex flex-col gap-1.5 relative z-1 cursor-pointer",
 					"bg-vscode-input-background hover:bg-vscode-input-background/90",

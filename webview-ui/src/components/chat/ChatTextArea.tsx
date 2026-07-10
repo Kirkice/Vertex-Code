@@ -1014,6 +1014,8 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						)}
 
 						<div
+							data-testid="chat-textarea"
+							data-theme-surface="chat-textarea-shell"
 							className={cn(
 								"relative",
 								"flex-1",
@@ -1054,6 +1056,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								}}
 							/>
 							<DynamicTextArea
+								data-theme-surface="chat-textarea-input"
 								ref={(el) => {
 									if (typeof ref === "function") {
 										ref(el)

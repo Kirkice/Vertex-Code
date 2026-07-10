@@ -187,6 +187,324 @@
 	}
 }
 
+html.vertex-theme-active body {
+	background:
+		radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
+		radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 52%),
+		var(--background);
+}
+
+html.vertex-theme-active #root {
+	min-height: 100vh;
+	background:
+		radial-gradient(1100px 560px at 50% 18%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+		radial-gradient(700px 420px at 50% 100%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 65%),
+		var(--background);
+}
+
+html.vertex-theme-active .theme-shell {
+	background:
+		radial-gradient(900px 480px at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%),
+		var(--background);
+	color: var(--foreground);
+}
+
+html.vertex-theme-active .theme-shell-chat,
+html.vertex-theme-active .theme-shell-settings,
+html.vertex-theme-active .theme-shell-marketplace,
+html.vertex-theme-active .theme-shell-welcome {
+	background:
+		radial-gradient(1200px 680px at 50% 14%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
+		radial-gradient(900px 520px at 100% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 58%),
+		linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, black), var(--background));
+}
+
+html.vertex-theme-active .theme-shell-chat::before,
+html.vertex-theme-active .theme-shell-settings::before,
+html.vertex-theme-active .theme-shell-marketplace::before,
+html.vertex-theme-active .theme-shell-welcome::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 12%, transparent 88%, color-mix(in srgb, var(--primary) 8%, transparent)),
+		radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 45%);
+	opacity: 0.85;
+	z-index: 0;
+}
+
+html.vertex-theme-active .theme-shell-chat > *,
+html.vertex-theme-active .theme-shell-settings > *,
+html.vertex-theme-active .theme-shell-marketplace > *,
+html.vertex-theme-active .theme-shell-welcome > * {
+	position: relative;
+	z-index: 1;
+}
+
+html.vertex-theme-active .theme-shell-header {
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--card) 92%, white 2%),
+			color-mix(in srgb, var(--background) 96%, black)
+		);
+	border-bottom-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+	backdrop-filter: saturate(120%);
+	box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-content,
+html.vertex-theme-active .theme-shell-body {
+	background: transparent;
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-tab-list"] {
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--card) 94%, white 2%), color-mix(in srgb, var(--background) 98%, black));
+	border-right-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+	box-shadow: inset -1px 0 0 color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"] {
+	border-left-color: transparent;
+	color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"]:hover {
+	background: color-mix(in srgb, var(--accent) 10%, transparent);
+	color: var(--foreground);
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"][aria-selected="true"] {
+	background:
+		linear-gradient(90deg, color-mix(in srgb, var(--primary) 18%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+	border-left-color: var(--primary);
+	color: var(--foreground);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"] {
+	padding: 1.25rem;
+}
+
+html.vertex-theme-active .theme-shell-settings section,
+html.vertex-theme-active .theme-shell-settings .rounded-xl,
+html.vertex-theme-active .theme-shell-settings .rounded-2xl {
+	border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"] > div > div,
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"] > div > section,
+html.vertex-theme-active .theme-shell-settings [data-setting-id] {
+	background: color-mix(in srgb, var(--card) 72%, transparent);
+	border-radius: 16px;
+}
+
+html.vertex-theme-active .theme-shell-settings [data-testid="save-button"] {
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-settings input,
+html.vertex-theme-active .theme-shell-settings textarea,
+html.vertex-theme-active .theme-shell-settings [role="combobox"],
+html.vertex-theme-active .theme-shell-settings button[role="tab"] {
+	transition:
+		border-color 160ms ease,
+		background-color 160ms ease,
+		box-shadow 160ms ease,
+		color 160ms ease;
+}
+
+html.vertex-theme-active .theme-shell-settings input:focus,
+html.vertex-theme-active .theme-shell-settings textarea:focus,
+html.vertex-theme-active .theme-shell-settings [role="combobox"][aria-expanded="true"] {
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-marketplace .rounded-md.border.border-vscode-panel-border.bg-vscode-editor-background {
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, white 2%), color-mix(in srgb, var(--background) 98%, black));
+	border-color: color-mix(in srgb, var(--accent) 16%, var(--border));
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-marketplace [class*="MarketplaceItemCard"],
+html.vertex-theme-active .theme-shell-marketplace .border-vscode-panel-border.bg-vscode-editor-background,
+html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-editor-foreground\/5 {
+	border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--card) 95%, white 2%),
+		color-mix(in srgb, var(--background) 98%, black)
+	);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.16),
+		inset 0 0 0 1px color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-list-hoverBackground:hover,
+html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-editor-foreground\/5:hover {
+	background: color-mix(in srgb, var(--accent) 10%, var(--card)) !important;
+}
+
+html.vertex-theme-active .theme-shell-marketplace h3,
+html.vertex-theme-active .theme-shell-marketplace .font-semibold {
+	letter-spacing: 0.01em;
+}
+
+html.vertex-theme-active .theme-shell-marketplace .rounded-md.border.border-vscode-panel-border.bg-vscode-editor-background button[class*="bg-vscode-button-background"] {
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content,
+html.vertex-theme-active .theme-shell-chat:not(.hidden) {
+	background:
+		radial-gradient(800px 360px at 50% 18%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 58%),
+		var(--background);
+}
+
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content {
+	align-items: center;
+	text-align: center;
+}
+
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content > * {
+	position: relative;
+	z-index: 1;
+}
+
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 14%;
+	transform: translateX(-50%);
+	width: min(520px, 70vw);
+	height: min(520px, 70vw);
+	border-radius: 999px;
+	background:
+		radial-gradient(circle, color-mix(in srgb, var(--primary) 16%, transparent) 0%, transparent 58%),
+		radial-gradient(circle, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 68%);
+	filter: blur(20px);
+	pointer-events: none;
+	z-index: 0;
+}
+
+html.vertex-theme-active .theme-shell-welcome h2 {
+	font-size: clamp(1.5rem, 2.2vw, 2rem);
+	letter-spacing: 0.02em;
+	color: var(--foreground);
+}
+
+html.vertex-theme-active .theme-shell-welcome .text-vscode-foreground,
+html.vertex-theme-active .theme-shell-welcome p {
+	color: color-mix(in srgb, var(--foreground) 92%, var(--muted-foreground));
+}
+
+html.vertex-theme-active .theme-shell-welcome button[variant="primary"],
+html.vertex-theme-active .theme-shell-welcome .bg-vscode-button-background {
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--primary) 22%, transparent),
+		0 10px 30px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-card"] {
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--card) 94%, white 2%),
+			color-mix(in srgb, var(--background) 98%, black)
+		);
+	color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground));
+	border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+	box-shadow:
+		0 10px 30px rgba(0, 0, 0, 0.22),
+		inset 0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent);
+	border-radius: 16px;
+}
+
+html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-card"]:hover {
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--card) 96%, white 2%),
+			color-mix(in srgb, var(--background) 96%, black)
+		);
+	color: var(--foreground);
+	border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+
+html.vertex-theme-active [data-theme-surface="chat-textarea-shell"] {
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--card) 96%, white 2%),
+			color-mix(in srgb, var(--background) 98%, black)
+		);
+	border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+	box-shadow:
+		0 14px 36px rgba(0, 0, 0, 0.24),
+		inset 0 0 0 1px color-mix(in srgb, var(--primary) 6%, transparent);
+	border-radius: 14px;
+}
+
+html.vertex-theme-active [data-theme-surface="chat-textarea-input"] {
+	background: color-mix(in srgb, var(--input) 88%, black) !important;
+	border-color: transparent !important;
+	color: var(--foreground);
+	box-shadow: none !important;
+}
+
+html.vertex-theme-active [data-theme-surface="chat-textarea-shell"] [data-testid="highlight-layer"] {
+	border-color: transparent !important;
+	outline-color: transparent !important;
+}
+
+html.vertex-theme-active .theme-shell-marketplace .px-5,
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"],
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content {
+	position: relative;
+	z-index: 0;
+}
+
+html.vertex-theme-active .theme-shell-marketplace .px-5::before,
+html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"]::before,
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 18px;
+	border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--card) 16%, transparent),
+		color-mix(in srgb, var(--background) 8%, transparent)
+	);
+	pointer-events: none;
+	z-index: -1;
+}
+html.vertex-theme-active .theme-shell-chat [data-testid="task-header"],
+html.vertex-theme-active .theme-shell-chat [data-testid="chat-textarea"],
+html.vertex-theme-active .theme-shell-chat [data-testid="settings-content"],
+html.vertex-theme-active .theme-shell-marketplace .px-5,
+html.vertex-theme-active .theme-shell-welcome .theme-shell-content {
+	position: relative;
+}
+
+html.vertex-theme-active .theme-shell-chat .scrollable {
+	background: transparent;
+}
+
+html.vertex-theme-active .theme-shell-chat .scrollable > div {
+	background: transparent;
+}
+
 @layer components {
 	/* Border Styles */
 	.border,
