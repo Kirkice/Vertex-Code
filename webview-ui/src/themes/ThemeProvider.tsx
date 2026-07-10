@@ -114,8 +114,18 @@ function applyTheme(themeId: ThemeId): void {
 // ─── Context ────────────────────────────────────────────────────────────────
 
 interface ThemeContextValue {
+	/** The committed theme that is currently applied (read-only for consumers). */
 	themeId: ThemeId
+	/** The pending theme selected by the user but not yet saved. */
+	pendingThemeId: ThemeId
+	/** Set the pending theme (does NOT apply until commitTheme is called). */
 	setThemeId: (id: ThemeId) => void
+	/** Commit the pending theme — applies CSS + writes localStorage. */
+	commitTheme: () => void
+	/** Reset the pending theme back to the committed theme (discard). */
+	resetPendingTheme: () => void
+	/** Whether the pending theme differs from the committed theme. */
+	hasPendingThemeChange: boolean
 	availableThemes: string[]
 }
 
@@ -128,7 +138,10 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
+	// The committed theme — actually applied to the DOM and persisted.
 	const [themeId, setThemeIdState] = useState<ThemeId>(loadStoredThemeId)
+	// The pending theme — selected by the user but not yet saved.
+	const [pendingThemeId, setPendingThemeIdState] = useState<ThemeId>(themeId)
 
 	useEffect(() => {
 		applyTheme(themeId)
@@ -140,17 +153,41 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 		}
 	}, [themeId])
 
+	// setThemeId only updates the pending state — it does NOT apply the theme.
 	const setThemeId = useCallback((id: ThemeId) => {
-		setThemeIdState(id)
+		setPendingThemeIdState(id)
 	}, [])
+
+	// Commit the pending theme — applies CSS + writes localStorage.
+	const commitTheme = useCallback(() => {
+		setThemeIdState(pendingThemeId)
+	}, [pendingThemeId])
+
+	// Reset the pending theme back to the committed theme (discard).
+	const resetPendingTheme = useCallback(() => {
+		setPendingThemeIdState(themeId)
+	}, [themeId])
+
+	const hasPendingThemeChange = pendingThemeId !== themeId
 
 	const value = useMemo<ThemeContextValue>(
 		() => ({
 			themeId,
+			pendingThemeId,
 			setThemeId,
+			commitTheme,
+			resetPendingTheme,
+			hasPendingThemeChange,
 			availableThemes: Object.keys(themes),
 		}),
-		[themeId, setThemeId],
+		[
+			themeId,
+			pendingThemeId,
+			setThemeId,
+			commitTheme,
+			resetPendingTheme,
+			hasPendingThemeChange,
+		],
 	)
 
 	return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

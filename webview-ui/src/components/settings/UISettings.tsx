@@ -32,7 +32,9 @@ export const UISettings = ({
 	...props
 }: UISettingsProps) => {
 	const { t } = useAppTranslation()
-	const { themeId, setThemeId } = useTheme()
+	// Bind the Select to pendingThemeId so changes are staged (not applied)
+	// until the user clicks Save in SettingsView.
+	const { pendingThemeId: themeId, setThemeId } = useTheme()
 
 	// Detect platform for dynamic modifier key display
 	const primaryMod = useMemo(() => {

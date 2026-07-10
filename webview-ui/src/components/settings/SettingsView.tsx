@@ -86,6 +86,7 @@ import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
 import { SettingsSearch } from "./SettingsSearch"
 import { useSearchIndexRegistry, SearchIndexProvider } from "./useSettingsSearch"
+import { useTheme } from "@/themes"
 
 export const settingsTabsContainer = "flex flex-1 overflow-hidden [&.narrow_.tab-label]:hidden"
 export const settingsTabList =
@@ -130,6 +131,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 
 	const extensionState = useExtensionState()
 	const { currentApiConfigName, listApiConfigMeta, uriScheme, settingsImportedAt, customModes } = extensionState
+
+	// Theme staging: commit on Save, reset on Discard.
+	const { hasPendingThemeChange, commitTheme, resetPendingTheme } = useTheme()
 
 	const [isDiscardDialogShow, setDiscardDialogShow] = useState(false)
 	const [isChangeDetected, setChangeDetected] = useState(false)
@@ -363,6 +367,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	}, [])
 
 	const isSettingValid = !errorMessage
+	const hasUnsavedChanges = isChangeDetected || hasPendingThemeChange
+	const saveButtonVariant = isSettingValid && hasUnsavedChanges ? "primary" : "secondary"
 
 	const handleSubmit = () => {
 		if (isSettingValid) {
@@ -439,20 +445,25 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			vscode.postMessage({ type: "telemetrySetting", text: telemetrySetting })
 			vscode.postMessage({ type: "debugSetting", bool: cachedState.debug })
 
+			// Commit the staged theme so it actually applies (CSS + localStorage).
+			if (hasPendingThemeChange) {
+				commitTheme()
+			}
+
 			setChangeDetected(false)
 		}
 	}
 
 	const checkUnsaveChanges = useCallback(
 		(then: () => void) => {
-			if (isChangeDetected) {
+			if (hasUnsavedChanges) {
 				confirmDialogHandler.current = then
 				setDiscardDialogShow(true)
 			} else {
 				then()
 			}
 		},
-		[isChangeDetected],
+		[hasUnsavedChanges],
 	)
 
 	useImperativeHandle(ref, () => ({ checkUnsaveChanges }), [checkUnsaveChanges])
@@ -463,11 +474,15 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 				// Discard changes: Reset state and flag
 				setCachedState(extensionState) // Revert to original state
 				setChangeDetected(false) // Reset change flag
+				// Reset the staged theme back to the committed theme.
+				if (hasPendingThemeChange) {
+					resetPendingTheme()
+				}
 				confirmDialogHandler.current?.() // Execute the pending action (e.g., tab switch)
 			}
 			// If confirm is false (Cancel), do nothing, dialog closes automatically
 		},
-		[extensionState], // Depend on extensionState to get the latest original state
+		[extensionState, hasPendingThemeChange, resetPendingTheme], // Depend on extensionState to get the latest original state
 	)
 
 	// Handle tab changes with unsaved changes check
@@ -662,15 +677,15 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						content={
 							!isSettingValid
 								? errorMessage
-								: isChangeDetected
+								: hasUnsavedChanges
 									? t("settings:header.saveButtonTooltip")
 									: t("settings:header.nothingChangedTooltip")
 						}>
 						<Button
-							variant={isSettingValid ? "primary" : "secondary"}
+							variant={saveButtonVariant}
 							className={!isSettingValid ? "!border-vscode-errorForeground" : ""}
 							onClick={handleSubmit}
-							disabled={!isChangeDetected || !isSettingValid}
+							disabled={!hasUnsavedChanges || !isSettingValid}
 							data-testid="save-button">
 							{t("settings:common.save")}
 						</Button>
