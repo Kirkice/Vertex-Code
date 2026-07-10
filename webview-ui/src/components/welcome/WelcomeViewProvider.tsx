@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Trans } from "react-i18next"
 import { ArrowLeft, Brain } from "lucide-react"
 
@@ -39,7 +39,15 @@ const getWelcomeApiConfiguration = (
 }
 
 const WelcomeViewProvider = () => {
-	const { apiConfiguration, currentApiConfigName, setApiConfiguration, uriScheme, vertexIsAuthenticated } =
+	const {
+		apiConfiguration,
+		currentApiConfigName,
+		setApiConfiguration,
+		uriScheme,
+		vertexIsAuthenticated,
+		taskHistory,
+		cwd,
+	} =
 		useExtensionState()
 	const { t } = useAppTranslation()
 	const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined)
@@ -47,6 +55,11 @@ const WelcomeViewProvider = () => {
 	const [welcomeApiConfiguration, setWelcomeApiConfiguration] = useState<ProviderSettings>()
 	const effectiveApiConfiguration =
 		welcomeApiConfiguration ?? getWelcomeApiConfiguration(apiConfiguration, vertexIsAuthenticated)
+	const hasRecentTasks = useMemo(
+		() => taskHistory.some((item) => item.task?.trim() && item.ts && (!item.workspace || item.workspace === cwd)),
+		[taskHistory, cwd],
+	)
+	const heroSize = hasRecentTasks ? 128 : 256
 
 	const setApiConfigurationFieldForApiOptions = useCallback(
 		<K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => {
@@ -96,7 +109,7 @@ const WelcomeViewProvider = () => {
 		return (
 			<Tab>
 				<TabContent className="relative flex flex-col gap-4 p-6 justify-center">
-					<RooHero />
+					<RooHero size={heroSize} />
 					<h2 className="mt-0 mb-0 text-xl">{t("welcome:landing.greeting")}</h2>
 
 					<div className="space-y-4 leading-normal">

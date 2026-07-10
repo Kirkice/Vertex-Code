@@ -87,7 +87,16 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		messageQueue = [],
 		showWorktreesInHomeScreen,
 		telemetrySetting,
+		cwd,
 	} = useExtensionState()
+
+	// Determine whether there are any displayable recent tasks (same filter as
+	// useTaskSearch / HistoryPreview) so the hero logo size stays consistent
+	// with what the user actually sees in the Recent Tasks list.
+	const hasRecentTasks = useMemo(
+		() => taskHistory.some((item) => item.task?.trim() && item.ts && (!item.workspace || item.workspace === cwd)),
+		[taskHistory, cwd],
+	)
 
 	// Show a WarningRow when the user sends a message with a retired provider.
 	const [showRetiredProviderWarning, setShowRetiredProviderWarning] = useState(false)
@@ -1626,10 +1635,10 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 <div className="flex flex-col gap-4 w-full items-center">
-							<RooHero size={taskHistory.length === 0 ? 512 : 128} />
+							<RooHero size={hasRecentTasks ? 128 : 256} />
 							<RooTips />
 							{/* Everyone should see their task history if any */}
-							{taskHistory.length > 0 && <HistoryPreview />}
+							{hasRecentTasks && <HistoryPreview />}
 						</div>
 					</div>
 				</div>

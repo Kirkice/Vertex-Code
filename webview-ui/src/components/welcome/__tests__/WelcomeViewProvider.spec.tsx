@@ -48,7 +48,11 @@ vi.mock("../../common/Tab", () => ({
 }))
 
 vi.mock("../RooHero", () => ({
-	default: () => <div data-testid="roo-hero">Vertex Hero</div>,
+	default: ({ size }: { size?: number }) => (
+		<div data-testid="roo-hero" data-size={size}>
+			Vertex Hero
+		</div>
+	),
 }))
 
 vi.mock("lucide-react", () => ({
@@ -95,6 +99,8 @@ const renderWelcomeViewProvider = (extensionState = {}) => {
 		currentApiConfigName: "default",
 		setApiConfiguration,
 		uriScheme: "vscode",
+		taskHistory: [],
+		cwd: "/test/workspace",
 		...extensionState,
 	} as any)
 
@@ -116,9 +122,26 @@ describe("WelcomeViewProvider", () => {
 		renderWelcomeViewProvider()
 
 		expect(screen.getByText(/welcome:landing.greeting/)).toBeInTheDocument()
+		expect(screen.getByTestId("roo-hero")).toHaveAttribute("data-size", "256")
 		expect(screen.getByTestId("trans-welcome:landing.introduction")).toBeInTheDocument()
 		expect(screen.getByTestId("button-primary")).toBeInTheDocument()
 		expect(screen.getByText(/welcome:importSettings/)).toBeInTheDocument()
+	})
+
+	it("renders a compact hero when recent task history exists", () => {
+		renderWelcomeViewProvider({
+			taskHistory: [{ id: "task-1", task: "Do work", ts: Date.now(), workspace: "/test/workspace" }],
+		})
+
+		expect(screen.getByTestId("roo-hero")).toHaveAttribute("data-size", "128")
+	})
+
+	it("renders a large hero when task history exists but recent tasks list is effectively empty", () => {
+		renderWelcomeViewProvider({
+			taskHistory: [{ id: "task-1", workspace: "/other/workspace" }],
+		})
+
+		expect(screen.getByTestId("roo-hero")).toHaveAttribute("data-size", "256")
 	})
 
 	it("opens provider setup when Get Started is clicked", () => {
