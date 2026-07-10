@@ -21,187 +21,192 @@ export const noneTheme: ThemeDefinition = {
 }
 
 /**
- * JellyFish theme — inspired by the JellyFish VSCode theme extension.
- * Deep navy/purple dark background with vibrant neon pink, cyan, and yellow accents.
+ * JellyFish theme — inspired by oh-my-pi's elegant purple-gray palette.
+ * Purple-tinted gray backgrounds with pink accent and cyan links.
  *
- * @see https://marketplace.visualstudio.com/items?itemName=PawelBorkar.jellyfish
+ * Color system derived from oh-my-pi (oklch color space converted to hex):
+ * - Purple-gray base (hue 307)
+ * - Pink accent for primary actions
+ * - Cyan for links and info states
+ *
+ * @see https://github.com/oh-my-pi/oh-my-pi
  */
 export const jellyfishTheme: ThemeDefinition = {
 	id: "jellyfish",
 	name: "JellyFish",
-	description: "Cyber CLI dark theme with multi-color neon accents",
+	description: "Elegant purple-gray theme with pink accents",
 	colors: {
-		background: "#0A0F14",
-		foreground: "#E6F1FF",
-		card: "#0F1720",
-		"card-foreground": "#E6F1FF",
-		popover: "#101922",
-		"popover-foreground": "#E6F1FF",
-		primary: "#00E5FF",
-		"primary-foreground": "#061017",
-		secondary: "#13202B",
-		"secondary-foreground": "#D7E7F5",
-		muted: "#13202B",
-		"muted-foreground": "#8AA0B6",
-		accent: "#7C5CFF",
-		"accent-foreground": "#FFFFFF",
-		destructive: "#FF5A5F",
-		"destructive-foreground": "#FFF5F5",
-		border: "#1E2A36",
-		input: "#0E1620",
-		ring: "#00E5FF",
+		background: "#221E28",
+		foreground: "#E8E5ED",
+		card: "#28232F",
+		"card-foreground": "#E8E5ED",
+		popover: "#28232F",
+		"popover-foreground": "#E8E5ED",
+		primary: "#E84393",
+		"primary-foreground": "#2D1525",
+		secondary: "#332D3D",
+		"secondary-foreground": "#CCC8D2",
+		muted: "#332D3D",
+		"muted-foreground": "#7E7888",
+		accent: "#7DD3E8",
+		"accent-foreground": "#221E28",
+		destructive: "#E04545",
+		"destructive-foreground": "#F5F3F7",
+		border: "#3D3747",
+		input: "#28232F",
+		ring: "#7DD3E8B3",
 	},
 	vscodeColors: {
 		// Editor / main surface
-		"editor-background": "#0A0F14",
-		"editor-foreground": "#E6F1FF",
-		"foreground": "#E6F1FF",
-		"descriptionForeground": "#8AA0B6",
-		"disabledForeground": "#5B6B7A",
-		"errorForeground": "#FF5A5F",
+		"editor-background": "#221E28",
+		"editor-foreground": "#E8E5ED",
+		"foreground": "#E8E5ED",
+		"descriptionForeground": "#7E7888",
+		"disabledForeground": "#655F70",
+		"errorForeground": "#E04545",
 
-		// Buttons — primary uses cyan, secondary uses purple
-		"button-background": "#00E5FF",
-		"button-foreground": "#061017",
-		"button-hoverBackground": "#37F0FF",
-		"button-secondaryBackground": "#1A1530",
-		"button-secondaryForeground": "#C4B5FF",
-		"button-secondaryHoverBackground": "#241B40",
+		// Buttons — primary uses pink, secondary uses purple-gray
+		"button-background": "#E84393",
+		"button-foreground": "#2D1525",
+		"button-hoverBackground": "#F06AAF",
+		"button-secondaryBackground": "#332D3D",
+		"button-secondaryForeground": "#CCC8D2",
+		"button-secondaryHoverBackground": "#3D3649",
 
-		// Inputs / dropdowns — input border uses subtle purple
-		"input-background": "#0E1620",
-		"input-foreground": "#DDEAF7",
-		"input-border": "#2A1F4A",
-		"dropdown-background": "#101922",
-		"dropdown-foreground": "#E6F1FF",
-		"dropdown-border": "#2A1F4A",
+		// Inputs / dropdowns
+		"input-background": "#28232F",
+		"input-foreground": "#E8E5ED",
+		"input-border": "#3D3747",
+		"dropdown-background": "#28232F",
+		"dropdown-foreground": "#E8E5ED",
+		"dropdown-border": "#3D3747",
 
-		// Lists / selections — hover uses purple tint
-		"list-hoverBackground": "#1A1530",
-		"list-hoverForeground": "#F4FBFF",
-		"list-activeSelectionBackground": "#241B40",
-		"list-activeSelectionForeground": "#C4B5FF",
-		"list-focusBackground": "#1A1530",
+		// Lists / selections
+		"list-hoverBackground": "#332D3D",
+		"list-hoverForeground": "#F5F3F7",
+		"list-activeSelectionBackground": "#E843932E",
+		"list-activeSelectionForeground": "#E84393",
+		"list-focusBackground": "#332D3D",
 
 		// Panels / sidebars
-		"panel-border": "#1E2A36",
-		"sideBar-background": "#0C1218",
-		"sideBar-foreground": "#DDEAF7",
-		"sideBar-border": "#1B2632",
-		"sideBarSectionHeader-background": "#0F1720",
-		"sideBarSectionHeader-foreground": "#E6F1FF",
+		"panel-border": "#3D3747",
+		"sideBar-background": "#1C1822",
+		"sideBar-foreground": "#CCC8D2",
+		"sideBar-border": "#352F3D",
+		"sideBarSectionHeader-background": "#28232F",
+		"sideBarSectionHeader-foreground": "#E8E5ED",
 
-		// Badges / focus — badge uses orange for contrast
-		"badge-background": "#FF8A3D",
-		"badge-foreground": "#1A0F00",
-		"focusBorder": "#00E5FF",
+		// Badges / focus
+		"badge-background": "#E84393",
+		"badge-foreground": "#2D1525",
+		"focusBorder": "#7DD3E8",
 
-		// Links / text — links use pink-magenta
-		"textLink-foreground": "#FF6B9D",
-		"textLink-activeForeground": "#FF9CB8",
-		"textBlockQuote-background": "#0F1720",
-		"textCodeBlock-background": "#0B141D",
-		"textBlockQuote-border": "#7C5CFF",
-		"textPreformat-foreground": "#FFB020",
-		"textPreformat-background": "#0B141D",
+		// Links / text — cyan for links
+		"textLink-foreground": "#7DD3E8",
+		"textLink-activeForeground": "#A5E3F0",
+		"textBlockQuote-background": "#28232F",
+		"textCodeBlock-background": "#1C1822",
+		"textBlockQuote-border": "#7DD3E8",
+		"textPreformat-foreground": "#E8C84A",
+		"textPreformat-background": "#1C1822",
 
 		// Editor groups / borders
-		"editorGroup-border": "#1E2A36",
-		"editorGroupHeader-tabsBackground": "#0A0F14",
+		"editorGroup-border": "#3D3747",
+		"editorGroupHeader-tabsBackground": "#221E28",
 
-		// Notifications / hover — notification border uses orange
-		"notifications-background": "#101922",
-		"notifications-foreground": "#E6F1FF",
-		"notifications-border": "#FF8A3D",
-		"editorHoverWidget-background": "#101922F2",
-		"editorHoverWidget-foreground": "#E6F1FF",
-		"editorHoverWidget-border": "#7C5CFF",
+		// Notifications / hover
+		"notifications-background": "#28232F",
+		"notifications-foreground": "#E8E5ED",
+		"notifications-border": "#E8944A",
+		"editorHoverWidget-background": "#28232FF2",
+		"editorHoverWidget-foreground": "#E8E5ED",
+		"editorHoverWidget-border": "#7DD3E8",
 
-		// Charts / status colors — full spectrum
-		"charts-green": "#00FF9C",
-		"charts-red": "#FF5A5F",
-		"charts-yellow": "#FFB020",
-		"charts-blue": "#00E5FF",
-		"charts-orange": "#FF8A3D",
-		"charts-purple": "#7C5CFF",
+		// Charts / status colors
+		"charts-green": "#7DD87D",
+		"charts-red": "#E04545",
+		"charts-yellow": "#E8C84A",
+		"charts-blue": "#7DD3E8",
+		"charts-orange": "#E8944A",
+		"charts-purple": "#E84393",
 
-		// Terminal — green text on dark
-		"terminal-foreground": "#00FF9C",
-		"terminal-selectionBackground": "#7C5CFF33",
+		// Terminal
+		"terminal-foreground": "#7DD87D",
+		"terminal-selectionBackground": "#E8439333",
 
-		// Diff editor — green/red
-		"diffEditor-insertedTextBackground": "#00FF9C22",
-		"diffEditor-removedTextBackground": "#FF5A5F22",
+		// Diff editor
+		"diffEditor-insertedTextBackground": "#7DD87D22",
+		"diffEditor-removedTextBackground": "#E0454522",
 
-		// Banner — uses purple
-		"banner-background": "#1A1530",
-		"banner-foreground": "#C4B5FF",
+		// Banner
+		"banner-background": "#332D3D",
+		"banner-foreground": "#CCC8D2",
 
-		// Toolbar — hover uses purple tint
-		"toolbar-hoverBackground": "#1A1530",
+		// Toolbar
+		"toolbar-hoverBackground": "#332D3D",
 
-		// Input validation — multi-color
-		"inputValidation-errorBackground": "#FF5A5F1F",
-		"inputValidation-errorBorder": "#FF5A5F",
-		"inputValidation-warningBackground": "#FFB0201F",
-		"inputValidation-warningBorder": "#FFB020",
-		"inputValidation-infoBackground": "#00E5FF1F",
-		"inputValidation-infoBorder": "#00E5FF",
+		// Input validation
+		"inputValidation-errorBackground": "#E045451F",
+		"inputValidation-errorBorder": "#E04545",
+		"inputValidation-warningBackground": "#E8C84A1F",
+		"inputValidation-warningBorder": "#E8C84A",
+		"inputValidation-infoBackground": "#7DD3E81F",
+		"inputValidation-infoBorder": "#7DD3E8",
 
 		// Editor warning/error
-		"editorWarning-foreground": "#FFB020",
-		"editorWarning-background": "#FFB0201F",
-		"editorError-foreground": "#FF5A5F",
+		"editorWarning-foreground": "#E8C84A",
+		"editorWarning-background": "#E8C84A1F",
+		"editorError-foreground": "#E04545",
 
-		// Widget — border uses purple
-		"widget-border": "#2A1F4A",
+		// Widget
+		"widget-border": "#3D3747",
 		"widget-shadow": "#00000088",
 
 		// Title bar
-		"titleBar-activeForeground": "#C7D8E8",
-		"titleBar-inactiveForeground": "#7F93A8",
+		"titleBar-activeForeground": "#CCC8D2",
+		"titleBar-inactiveForeground": "#7E7888",
 
-		// Progress — uses orange
-		"progressBar-background": "#FF8A3D",
+		// Progress
+		"progressBar-background": "#E8944A",
 
-		// Icon — uses pink-magenta
-		"icon-foreground": "#FF6B9D",
+		// Icon
+		"icon-foreground": "#E84393",
 
 		// Menu
-		"menu-background": "#101922F2",
-		"menu-foreground": "#E6F1FF",
+		"menu-background": "#28232FF2",
+		"menu-foreground": "#E8E5ED",
 
 		// Editor line highlight
-		"editor-lineHighlightBorder": "#1E2A36",
+		"editor-lineHighlightBorder": "#3D3747",
 
 		// Editor inactive selection
-		"editor-inactiveSelectionBackground": "#1A153066",
+		"editor-inactiveSelectionBackground": "#332D3D66",
 
 		// Testing icons
-		"testing-iconPassed": "#00FF9C",
-		"testing-iconFailed": "#FF5A5F",
+		"testing-iconPassed": "#7DD87D",
+		"testing-iconFailed": "#E04545",
 
-		// Symbol icon — method uses purple, string uses orange
-		"symbolIcon-methodForeground": "#7C5CFF",
-		"stringForeground": "#FFB020",
+		// Symbol icon
+		"symbolIcon-methodForeground": "#E84393",
+		"stringForeground": "#E8C84A",
 
-		// ANSI terminal colors — full neon spectrum
-		"terminal-ansiBlack": "#0A0F14",
-		"terminal-ansiRed": "#FF5A5F",
-		"terminal-ansiGreen": "#00FF9C",
-		"terminal-ansiYellow": "#FFB020",
-		"terminal-ansiBlue": "#00E5FF",
-		"terminal-ansiMagenta": "#FF6B9D",
-		"terminal-ansiCyan": "#7C5CFF",
-		"terminal-ansiWhite": "#E6F1FF",
-		"terminal-ansiBrightBlack": "#5B6B7A",
-		"terminal-ansiBrightRed": "#FF8A8E",
-		"terminal-ansiBrightGreen": "#4DFFB8",
-		"terminal-ansiBrightYellow": "#FFD060",
-		"terminal-ansiBrightBlue": "#58F3FF",
-		"terminal-ansiBrightMagenta": "#FF9CB8",
-		"terminal-ansiBrightCyan": "#A48BFF",
-		"terminal-ansiBrightWhite": "#F4FBFF",
+		// ANSI terminal colors
+		"terminal-ansiBlack": "#221E28",
+		"terminal-ansiRed": "#E04545",
+		"terminal-ansiGreen": "#7DD87D",
+		"terminal-ansiYellow": "#E8C84A",
+		"terminal-ansiBlue": "#7DD3E8",
+		"terminal-ansiMagenta": "#E84393",
+		"terminal-ansiCyan": "#7DD3E8",
+		"terminal-ansiWhite": "#E8E5ED",
+		"terminal-ansiBrightBlack": "#655F70",
+		"terminal-ansiBrightRed": "#F06A6A",
+		"terminal-ansiBrightGreen": "#A5E8A5",
+		"terminal-ansiBrightYellow": "#F0D87A",
+		"terminal-ansiBrightBlue": "#A5E3F0",
+		"terminal-ansiBrightMagenta": "#F06AAF",
+		"terminal-ansiBrightCyan": "#A5E3F0",
+		"terminal-ansiBrightWhite": "#F5F3F7",
 	},
 }
 

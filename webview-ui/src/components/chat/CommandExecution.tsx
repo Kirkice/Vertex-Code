@@ -199,8 +199,8 @@ export const CommandExecution = ({ executionId, text, icon, title }: CommandExec
 				</div>
 			</div>
 
-			<div className="ml-6 mt-2 rounded-lg border border-[var(--vertex-theme-border,transparent)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--vscode-textCodeBlock-background)_96%,black),color-mix(in_srgb,var(--vscode-editor-background)_90%,black))] shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
-				<div className="p-2.5">
+			<div className="bg-vscode-editor-background border border-vscode-border rounded-xs ml-6 mt-2">
+				<div className="p-2">
 					<CodeBlock source={command} language="shell" />
 					<OutputContainer isExpanded={isExpanded} output={output} />
 				</div>
