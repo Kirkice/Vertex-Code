@@ -109,7 +109,7 @@ const RooHero = ({ size = 128 }: RooHeroProps) => {
 	const viewBoxSize = dotFieldConfig.gridSize * dotFieldConfig.cellSize
 
 	return (
-		<div className="mb-4 flex flex-col items-center" data-testid="roo-hero">
+		<div className="mb-4 flex flex-col items-center theme-jellyfish-hero" data-testid="roo-hero">
 			<style>{`
 				@keyframes vertex-dot-reassemble {
 					0% {
@@ -140,6 +140,21 @@ const RooHero = ({ size = 128 }: RooHeroProps) => {
 					animation: vertex-dot-reassemble var(--dot-duration, 5.4s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 					animation-delay: var(--dot-delay, 0s);
 					will-change: opacity, transform;
+				}
+
+				html.vertex-theme-active .theme-jellyfish-hero .vertex-logo-dot {
+					fill: color-mix(in srgb, #00ff9c 62%, #bf7fff 38%);
+					filter: drop-shadow(0 0 2px rgba(0, 255, 156, 0.28));
+				}
+
+				html.vertex-theme-active .theme-jellyfish-hero .vertex-logo-dot:nth-child(3n) {
+					fill: #00ff9c;
+					filter: drop-shadow(0 0 3px rgba(0, 255, 156, 0.34));
+				}
+
+				html.vertex-theme-active .theme-jellyfish-hero .vertex-logo-dot:nth-child(5n) {
+					fill: #bf7fff;
+					filter: drop-shadow(0 0 3px rgba(191, 127, 255, 0.34));
 				}
 	
 				@media (prefers-reduced-motion: reduce) {

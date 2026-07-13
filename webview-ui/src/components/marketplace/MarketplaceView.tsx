@@ -130,13 +130,14 @@ export function MarketplaceView({ stateManager, onDone, targetTab }: Marketplace
 								<span className="sr-only">{t("settings:back")}</span>
 							</Button>
 							<div>
-								<h3 className="text-[1.25em] font-semibold text-vscode-foreground m-0">
+								<h3 className="text-[1.25em] font-semibold text-vscode-foreground m-0 flex items-center gap-2">
+									<span className="text-base">🛒</span>
 									{t("marketplace:title")}
 								</h3>
 								<p className="text-vscode-descriptionForeground text-sm mt-1 mb-0">
 									{totalCount > 0
-										? `${installedCount} of ${totalCount} item${totalCount !== 1 ? "s" : ""} installed`
-										: "Browse and install MCP servers, modes, and skills."}
+										? `✅ ${installedCount} of ${totalCount} item${totalCount !== 1 ? "s" : ""} installed`
+										: "⚡ Browse and install MCP servers, modes, and skills."}
 								</p>
 							</div>
 						</div>

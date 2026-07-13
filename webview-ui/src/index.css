@@ -202,72 +202,72 @@
 		   on VS Code token indirection or Tailwind layer resolution. This scope is
 		   only active when ThemeProvider adds html.vertex-theme-active, so None is
 		   unaffected. */
-		--background: #0f0c14;
+		--background: #000000;
 		--foreground: #eeeaf4;
-		--card: #1a1520;
+		--card: #000000;
 		--card-foreground: #eeeaf4;
 		--primary: #e84393;
 		--primary-foreground: #2d1525;
-		--secondary: #251d2e;
+		--secondary: #000000;
 		--secondary-foreground: #d7d0e1;
-		--muted: #1f1828;
+		--muted: #000000;
 		--muted-foreground: #7e7888;
 		--accent: #7dd3e8;
-		--accent-foreground: #0f0c14;
-		--border: #3d3150;
-		--input: #15111b;
+		--accent-foreground: #000000;
+		--border: #6b4d96;
+		--input: #000000;
 		--ring: #7dd3e8b3;
 		/* CRITICAL: Override the Tailwind @theme bridge variable too.
 		   Without this, .bg-vscode-editor-background resolves to the original
 		   VS Code value because @layer theme > unlayered CSS in Tailwind v4. */
-		--color-vscode-editor-background: #0f0c14;
+		--color-vscode-editor-background: #000000;
 		--color-vscode-editor-foreground: #eeeaf4;
 		--color-vscode-button-background: #e84393;
 		--color-vscode-button-foreground: #2d1525;
-		--color-vscode-button-secondaryBackground: #251d2e;
+		--color-vscode-button-secondaryBackground: #000000;
 		--color-vscode-button-secondaryForeground: #d7d0e1;
-		--color-vscode-input-background: #15111b;
+		--color-vscode-input-background: #000000;
 		--color-vscode-input-foreground: #eeeaf4;
-		--color-vscode-input-border: #3d3150;
-		--color-vscode-dropdown-background: #1a1520;
+		--color-vscode-input-border: #6b4d96;
+		--color-vscode-dropdown-background: #000000;
 		--color-vscode-dropdown-foreground: #eeeaf4;
-		--color-vscode-dropdown-border: #3d3150;
-		--color-vscode-list-hoverBackground: #251d2e;
+		--color-vscode-dropdown-border: #6b4d96;
+		--color-vscode-list-hoverBackground: #000000;
 		--color-vscode-list-activeSelectionBackground: #e8439342;
 		--color-vscode-list-activeSelectionForeground: #e84393;
-		--color-vscode-list-focusBackground: #251d2e;
-		--color-vscode-panel-border: #3d3150;
-		--color-vscode-sideBar-background: #0c0a10;
+		--color-vscode-list-focusBackground: #000000;
+		--color-vscode-panel-border: #6b4d96;
+		--color-vscode-sideBar-background: #000000;
 		--color-vscode-sideBar-foreground: #d9d2e3;
-		--color-vscode-sideBar-border: #1f1828;
-		--color-vscode-sideBarSectionHeader-background: #15111b;
+		--color-vscode-sideBar-border: #6b4d96;
+		--color-vscode-sideBarSectionHeader-background: #000000;
 		--color-vscode-sideBarSectionHeader-foreground: #eeeaf4;
 		--color-vscode-focusBorder: #7dd3e8;
 		--color-vscode-badge-background: #e84393;
 		--color-vscode-badge-foreground: #2d1525;
 		--color-vscode-textLink-foreground: #7dd3e8;
-		--color-vscode-textCodeBlock-background: #0c0a10;
+		--color-vscode-textCodeBlock-background: #000000;
 		--color-vscode-descriptionForeground: #7e7888;
 		--color-vscode-errorForeground: #e04545;
 		--color-vscode-foreground: #eeeaf4;
-		--color-vscode-editorGroup-border: #3d3150;
-		--color-vscode-editorWarning-foreground: #e8c84a;
-		--color-vscode-editorWarning-background: #e8c84a1f;
-		--color-vscode-notifications-background: #1a1520;
+		--color-vscode-editorGroup-border: #6b4d96;
+		--color-vscode-editorWarning-foreground: #ffd060;
+		--color-vscode-editorWarning-background: #ffd0601f;
+		--color-vscode-notifications-background: #000000;
 		--color-vscode-notifications-foreground: #eeeaf4;
 		--color-vscode-notifications-border: #e8944a;
-		--color-vscode-banner-background: #251d2e;
+		--color-vscode-banner-background: #000000;
 		--color-vscode-banner-foreground: #d9d2e3;
-		--color-vscode-widget-border: #3d3150;
+		--color-vscode-widget-border: #6b4d96;
 		--color-vscode-widget-shadow: #00000088;
 		--color-vscode-titleBar-activeForeground: #d9d2e3;
 		--color-vscode-titleBar-inactiveForeground: #7e7888;
-		--color-vscode-charts-green: #7dd87d;
-		--color-vscode-charts-red: #e04545;
-		--color-vscode-charts-yellow: #e8c84a;
-		--color-vscode-charts-blue: #7dd3e8;
-		--color-vscode-charts-orange: #e8944a;
-		--color-vscode-toolbar-hoverBackground: #251d2e;
+		--color-vscode-charts-green: #00ff9c;
+		--color-vscode-charts-red: #ff3b6b;
+		--color-vscode-charts-yellow: #ffd060;
+		--color-vscode-charts-blue: #00e5ff;
+		--color-vscode-charts-orange: #ff8a3d;
+		--color-vscode-toolbar-hoverBackground: #000000;
 	}
 
 	html.vertex-theme-active,
@@ -310,12 +310,12 @@ html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"] {
 }
 
 html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"]:hover {
-	background: color-mix(in srgb, var(--accent) 8%, transparent);
+	background: color-mix(in srgb, var(--accent) 8%, var(--secondary));
 	color: var(--foreground);
 }
 
 html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"][aria-selected="true"] {
-	background: color-mix(in srgb, var(--primary) 12%, transparent);
+	background: color-mix(in srgb, var(--primary) 12%, var(--secondary));
 	border-left-color: var(--primary);
 	color: var(--foreground);
 }
@@ -334,7 +334,7 @@ html.vertex-theme-active .theme-shell-settings input:focus,
 html.vertex-theme-active .theme-shell-settings textarea:focus,
 html.vertex-theme-active .theme-shell-settings [role="combobox"][aria-expanded="true"] {
 	border-color: var(--accent) !important;
-	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, var(--card));
 }
 
 /* ── Marketplace: flat cards + hairline borders ─────────────────────────── */
@@ -382,7 +382,7 @@ html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-car
 html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-card"]:hover {
 	background: var(--secondary);
 	color: var(--foreground);
-	border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+	border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
 }
 
 /* ── Chat textarea: flat terminal panel ──────────────────────────────────── */

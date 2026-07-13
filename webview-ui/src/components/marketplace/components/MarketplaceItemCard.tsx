@@ -91,24 +91,45 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 		setShowInstallModal(true)
 	}
 
+	// Cyber/tech type configuration with emoji icons and neon colors
+	const typeConfig = useMemo(() => {
+		const configs: Record<string, { emoji: string; color: string; glow: string }> = {
+			mcp: { emoji: "⚡", color: "#00E5FF", glow: "#00E5FF20" },
+			mode: { emoji: "🎮", color: "#E84393", glow: "#E8439320" },
+			skill: { emoji: "🧬", color: "#00FF9C", glow: "#00FF9C20" },
+			knowledge: { emoji: "📚", color: "#BF7FFF", glow: "#BF7FFF20" },
+		}
+		return configs[item.type] ?? { emoji: "📦", color: "#7DD3E8", glow: "#7DD3E820" }
+	}, [item.type])
+
 	// Determine color based on item type and installation status
-	const typeColor = isInstalled
-		? item.type === "mcp"
-			? "#10b981"
-			: item.type === "mode"
-				? "#7c3aed"
-				: "#3b82f6"
-		: "#6b7280"
+	const typeColor = isInstalled ? typeConfig.color : "#6b7280"
+	const statusEmoji = isInstalled ? "✅" : "🟡"
+	const statusColor = isInstalled ? "#00FF9C" : "#FFD060"
 
 	return (
 		<>
-			<div className="relative overflow-hidden rounded-md border border-vscode-panel-border bg-vscode-editor-background transition-colors hover:bg-vscode-editor-foreground/5">
-				{/* Left status color bar - Graphics Providers style */}
-				<div className="absolute bottom-0 left-0 top-0 w-1" style={{ backgroundColor: typeColor }} />
+			<div
+				className="relative overflow-hidden rounded-md border border-vscode-panel-border bg-vscode-editor-background transition-all hover:border-[var(--border)]"
+				style={{ boxShadow: isInstalled ? `inset 0 0 0 1px ${typeConfig.glow}` : undefined }}>
+				{/* Left status color bar - Graphics Providers style with glow */}
+				<div
+					className="absolute bottom-0 left-0 top-0 w-1"
+					style={{
+						backgroundColor: typeColor,
+						boxShadow: isInstalled ? `0 0 8px ${typeColor}` : undefined,
+					}}
+				/>
 
 				<div className="pl-4 pr-3 py-3">
 					<div className="flex gap-2 items-start justify-between">
 						<div className="flex gap-2 items-start min-w-0">
+							{/* Type emoji icon - cyber style */}
+							<span
+								className="text-lg shrink-0 mt-[-1px]"
+								style={{ filter: isInstalled ? `drop-shadow(0 0 4px ${typeConfig.color})` : "grayscale(0.5) opacity(0.6)" }}>
+								{typeConfig.emoji}
+							</span>
 							<div className="min-w-0">
 								<h3 className="text-sm font-semibold text-vscode-foreground mt-0 mb-1 leading-none truncate">
 									{item.type === "mcp" && item.url && isValidUrl(item.url) ? (
@@ -126,15 +147,15 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 							</div>
 						</div>
 						<div className="flex items-center gap-2 shrink-0">
-							{/* Status Badge - Graphics Providers style */}
+							{/* Status Badge - cyber style with emoji */}
 							<span
 								className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
 								style={{
-									color: isInstalled ? "#10b981" : "#6b7280",
-									backgroundColor: isInstalled ? "#10b98115" : "#6b728015",
-									border: `1px solid ${isInstalled ? "#10b98130" : "#6b728030"}`,
+									color: statusColor,
+									backgroundColor: `${statusColor}15`,
+									border: `1px solid ${statusColor}30`,
 								}}>
-								<span style={{ fontSize: "10px" }}>●</span>
+								<span style={{ fontSize: "10px" }}>{statusEmoji}</span>
 								{isInstalled ? t("marketplace:items.card.installed") : "Available"}
 							</span>
 
@@ -163,7 +184,7 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 									variant="primary"
 									className="text-xs h-5 py-0 px-2"
 									onClick={handleInstallClick}>
-									{t("marketplace:items.card.install")}
+									⚡ {t("marketplace:items.card.install")}
 								</Button>
 							)}
 
@@ -177,7 +198,7 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 
 					<p className="my-2 text-xs text-vscode-foreground leading-relaxed">{item.description}</p>
 
-					{/* Tags - CapabilityChip style */}
+					{/* Tags - cyber CapabilityChip style with neon colors */}
 					{item.tags && item.tags.length > 0 && (
 						<div className="flex flex-wrap gap-1 mt-2">
 							{item.tags.map((tag) => {
@@ -192,17 +213,22 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 										}>
 										<button
 											className={cn(
-												"inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer",
+												"inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-all cursor-pointer",
 												isActive
-													? "border border-[#10b98130] bg-[#10b98115] text-[#10b981]"
-													: "border border-[#6b728030] bg-transparent text-[#6b7280] hover:border-[#10b98130] hover:text-[#10b981]",
+													? "border text-[#00FF9C]"
+													: "border border-[#6B4D9630] bg-transparent text-[#7E7888] hover:text-[#00E5FF] hover:border-[#00E5FF30]",
 											)}
+											style={isActive ? {
+												borderColor: "#00FF9C30",
+												backgroundColor: "#00FF9C15",
+											} : undefined}
 											onClick={() => {
 												const newTags = isActive
 													? filters.tags.filter((t: string) => t !== tag)
 													: [...filters.tags, tag]
 												setFilters({ tags: newTags })
 											}}>
+											<span className="text-[9px] opacity-70">▸</span>
 											{tag}
 										</button>
 									</StandardTooltip>

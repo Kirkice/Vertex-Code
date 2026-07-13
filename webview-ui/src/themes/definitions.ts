@@ -36,29 +36,29 @@ export const jellyfishTheme: ThemeDefinition = {
 	name: "JellyFish",
 	description: "Elegant purple-gray theme with pink accents",
 	colors: {
-		background: "#0F0C14",
+		background: "#000000",
 		foreground: "#EEEAF4",
-		card: "#1A1520",
-		"card-foreground": "#E8E5ED",
-		popover: "#1A1520",
-		"popover-foreground": "#E8E5ED",
+		card: "#000000",
+		"card-foreground": "#EEEAF4",
+		popover: "#000000",
+		"popover-foreground": "#EEEAF4",
 		primary: "#E84393",
 		"primary-foreground": "#2D1525",
-		secondary: "#251D2E",
-		"secondary-foreground": "#CCC8D2",
-		muted: "#1F1828",
+		secondary: "#000000",
+		"secondary-foreground": "#D7D0E1",
+		muted: "#000000",
 		"muted-foreground": "#7E7888",
 		accent: "#7DD3E8",
-		"accent-foreground": "#0F0C14",
-		destructive: "#E04545",
+		"accent-foreground": "#000000",
+		destructive: "#FF3B6B",
 		"destructive-foreground": "#F5F3F7",
-		border: "#3D3150",
-		input: "#15111B",
+		border: "#6B4D96",
+		input: "#000000",
 		ring: "#7DD3E8B3",
 	},
 	vscodeColors: {
 		// Editor / main surface
-		"editor-background": "#0F0C14",
+		"editor-background": "#000000",
 		"editor-foreground": "#EEEAF4",
 		"foreground": "#EEEAF4",
 		"descriptionForeground": "#7E7888",
@@ -69,31 +69,31 @@ export const jellyfishTheme: ThemeDefinition = {
 		"button-background": "#E84393",
 		"button-foreground": "#2D1525",
 		"button-hoverBackground": "#F06AAF",
-		"button-secondaryBackground": "#251D2E",
+		"button-secondaryBackground": "#000000",
 		"button-secondaryForeground": "#D7D0E1",
-		"button-secondaryHoverBackground": "#312850",
+		"button-secondaryHoverBackground": "#000000",
 
 		// Inputs / dropdowns
-		"input-background": "#15111B",
+		"input-background": "#000000",
 		"input-foreground": "#EEEAF4",
-		"input-border": "#3D3150",
-		"dropdown-background": "#1A1520",
+		"input-border": "#6B4D96",
+		"dropdown-background": "#000000",
 		"dropdown-foreground": "#EEEAF4",
-		"dropdown-border": "#3D3150",
+		"dropdown-border": "#6B4D96",
 
 		// Lists / selections
-		"list-hoverBackground": "#251D2E",
+		"list-hoverBackground": "#000000",
 		"list-hoverForeground": "#F5F3F7",
 		"list-activeSelectionBackground": "#E8439342",
 		"list-activeSelectionForeground": "#E84393",
-		"list-focusBackground": "#251D2E",
+		"list-focusBackground": "#000000",
 
 		// Panels / sidebars
-		"panel-border": "#3D3150",
-		"sideBar-background": "#0C0A10",
+		"panel-border": "#6B4D96",
+		"sideBar-background": "#000000",
 		"sideBar-foreground": "#D9D2E3",
-		"sideBar-border": "#1F1828",
-		"sideBarSectionHeader-background": "#15111B",
+		"sideBar-border": "#6B4D96",
+		"sideBarSectionHeader-background": "#000000",
 		"sideBarSectionHeader-foreground": "#EEEAF4",
 
 		// Badges / focus
@@ -104,62 +104,62 @@ export const jellyfishTheme: ThemeDefinition = {
 		// Links / text — cyan for links
 		"textLink-foreground": "#7DD3E8",
 		"textLink-activeForeground": "#A5E3F0",
-		"textBlockQuote-background": "#241D2E",
-		"textCodeBlock-background": "#17121E",
+		"textBlockQuote-background": "#000000",
+		"textCodeBlock-background": "#000000",
 		"textBlockQuote-border": "#7DD3E8",
 		"textPreformat-foreground": "#E8C84A",
-		"textPreformat-background": "#17121E",
+		"textPreformat-background": "#000000",
 
 		// Editor groups / borders
-		"editorGroup-border": "#4A3C59",
-		"editorGroupHeader-tabsBackground": "#18141F",
+		"editorGroup-border": "#6B4D96",
+		"editorGroupHeader-tabsBackground": "#000000",
 
 		// Notifications / hover
-		"notifications-background": "#241D2E",
+		"notifications-background": "#000000",
 		"notifications-foreground": "#EEEAF4",
 		"notifications-border": "#E8944A",
-		"editorHoverWidget-background": "#241D2EF2",
+		"editorHoverWidget-background": "#000000",
 		"editorHoverWidget-foreground": "#EEEAF4",
 		"editorHoverWidget-border": "#7DD3E8",
 
-		// Charts / status colors
-		"charts-green": "#7DD87D",
-		"charts-red": "#E04545",
-		"charts-yellow": "#E8C84A",
-		"charts-blue": "#7DD3E8",
-		"charts-orange": "#E8944A",
-		"charts-purple": "#E84393",
+		// Charts / status colors — neon spectrum
+		"charts-green": "#00FF9C",
+		"charts-red": "#FF3B6B",
+		"charts-yellow": "#FFD060",
+		"charts-blue": "#00E5FF",
+		"charts-orange": "#FF8A3D",
+		"charts-purple": "#BF7FFF",
 
-		// Terminal
-		"terminal-foreground": "#7DD87D",
-		"terminal-selectionBackground": "#E8439333",
+		// Terminal — neon green on dark
+		"terminal-foreground": "#00FF9C",
+		"terminal-selectionBackground": "#E8439344",
 
-		// Diff editor
-		"diffEditor-insertedTextBackground": "#7DD87D22",
-		"diffEditor-removedTextBackground": "#E0454522",
+		// Diff editor — neon green/red
+		"diffEditor-insertedTextBackground": "#00FF9C22",
+		"diffEditor-removedTextBackground": "#FF3B6B22",
 
 		// Banner
-		"banner-background": "#31283D",
+		"banner-background": "#000000",
 		"banner-foreground": "#D9D2E3",
 
 		// Toolbar
-		"toolbar-hoverBackground": "#31283D",
+		"toolbar-hoverBackground": "#000000",
 
 		// Input validation
-		"inputValidation-errorBackground": "#E045451F",
-		"inputValidation-errorBorder": "#E04545",
-		"inputValidation-warningBackground": "#E8C84A1F",
-		"inputValidation-warningBorder": "#E8C84A",
-		"inputValidation-infoBackground": "#7DD3E81F",
-		"inputValidation-infoBorder": "#7DD3E8",
+		"inputValidation-errorBackground": "#FF3B6B1F",
+		"inputValidation-errorBorder": "#FF3B6B",
+		"inputValidation-warningBackground": "#FFD0601F",
+		"inputValidation-warningBorder": "#FFD060",
+		"inputValidation-infoBackground": "#00E5FF1F",
+		"inputValidation-infoBorder": "#00E5FF",
 
 		// Editor warning/error
-		"editorWarning-foreground": "#E8C84A",
-		"editorWarning-background": "#E8C84A1F",
-		"editorError-foreground": "#E04545",
+		"editorWarning-foreground": "#FFD060",
+		"editorWarning-background": "#FFD0601F",
+		"editorError-foreground": "#FF3B6B",
 
 		// Widget
-		"widget-border": "#4A3C59",
+		"widget-border": "#6B4D96",
 		"widget-shadow": "#00000088",
 
 		// Title bar
@@ -173,39 +173,39 @@ export const jellyfishTheme: ThemeDefinition = {
 		"icon-foreground": "#E84393",
 
 		// Menu
-		"menu-background": "#241D2EF2",
+		"menu-background": "#000000",
 		"menu-foreground": "#EEEAF4",
 
 		// Editor line highlight
-		"editor-lineHighlightBorder": "#4A3C59",
+		"editor-lineHighlightBorder": "#6B4D96",
 
 		// Editor inactive selection
-		"editor-inactiveSelectionBackground": "#31283D80",
+		"editor-inactiveSelectionBackground": "#000000",
 
 		// Testing icons
-		"testing-iconPassed": "#7DD87D",
-		"testing-iconFailed": "#E04545",
+		"testing-iconPassed": "#00FF9C",
+		"testing-iconFailed": "#FF3B6B",
 
 		// Symbol icon
 		"symbolIcon-methodForeground": "#E84393",
-		"stringForeground": "#E8C84A",
+		"stringForeground": "#FFD060",
 
-		// ANSI terminal colors
-		"terminal-ansiBlack": "#18141F",
-		"terminal-ansiRed": "#E04545",
-		"terminal-ansiGreen": "#7DD87D",
-		"terminal-ansiYellow": "#E8C84A",
-		"terminal-ansiBlue": "#7DD3E8",
+		// ANSI terminal colors — full neon spectrum
+		"terminal-ansiBlack": "#0F0C14",
+		"terminal-ansiRed": "#FF3B6B",
+		"terminal-ansiGreen": "#00FF9C",
+		"terminal-ansiYellow": "#FFD060",
+		"terminal-ansiBlue": "#00E5FF",
 		"terminal-ansiMagenta": "#E84393",
-		"terminal-ansiCyan": "#7DD3E8",
+		"terminal-ansiCyan": "#BF7FFF",
 		"terminal-ansiWhite": "#EEEAF4",
 		"terminal-ansiBrightBlack": "#655F70",
-		"terminal-ansiBrightRed": "#F06A6A",
-		"terminal-ansiBrightGreen": "#A5E8A5",
-		"terminal-ansiBrightYellow": "#F0D87A",
-		"terminal-ansiBrightBlue": "#A5E3F0",
-		"terminal-ansiBrightMagenta": "#F06AAF",
-		"terminal-ansiBrightCyan": "#A5E3F0",
+		"terminal-ansiBrightRed": "#FF6A8E",
+		"terminal-ansiBrightGreen": "#4DFFB8",
+		"terminal-ansiBrightYellow": "#FFE87A",
+		"terminal-ansiBrightBlue": "#58F3FF",
+		"terminal-ansiBrightMagenta": "#FF6BC8",
+		"terminal-ansiBrightCyan": "#D4A8FF",
 		"terminal-ansiBrightWhite": "#F5F3F7",
 	},
 }

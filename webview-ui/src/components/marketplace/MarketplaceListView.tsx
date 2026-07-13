@@ -303,22 +303,29 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 
 			{!state.isFetching && !isEmpty && (
 				<div className="pb-3">
-					{/* Statistics Summary Bar - Graphics Providers style */}
+					{/* Statistics Summary Bar - Cyber/tech style with emoji */}
 					<div className="mb-3 flex items-center gap-4 text-xs text-vscode-descriptionForeground">
 						<div className="flex items-center gap-1.5">
-							<div className="h-2 w-2 rounded-full bg-[#10b981]" />
-							{installedCount} Installed
+							<span className="text-[10px]">✅</span>
+							<span style={{ color: "#00FF9C" }}>{installedCount}</span>
+							<span>Installed</span>
 						</div>
 						<div className="flex items-center gap-1.5">
-							<div className="h-2 w-2 rounded-full bg-[#6b7280]" />
-							{availableCount} Available
+							<span className="text-[10px]">🟡</span>
+							<span style={{ color: "#FFD060" }}>{availableCount}</span>
+							<span>Available</span>
+						</div>
+						<div className="flex items-center gap-1.5">
+							<span className="text-[10px]">⚡</span>
+							<span style={{ color: "#00E5FF" }}>{items.length + orgMcps.length}</span>
+							<span>Total</span>
 						</div>
 					</div>
 
 					{orgMcps.length > 0 && (
 						<div className="mb-6">
 							<div className="flex items-center gap-2 mb-3 px-1">
-								<span className="codicon codicon-organization text-lg"></span>
+								<span className="text-base">🏢</span>
 								<h3 className="text-sm font-semibold text-vscode-foreground">
 									{t("marketplace:sections.organizationMcps", {
 										organization: cloudUserInfo?.organizationName,
@@ -352,7 +359,7 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 						<div>
 							{orgMcps.length > 0 && (
 								<div className="flex items-center gap-2 mb-3 px-1">
-									<span className="codicon codicon-globe text-lg"></span>
+									<span className="text-base">🌐</span>
 									<h3 className="text-sm font-semibold text-vscode-foreground">
 										{t("marketplace:sections.marketplace")}
 									</h3>
