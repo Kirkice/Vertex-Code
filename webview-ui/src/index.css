@@ -286,10 +286,38 @@ html.vertex-theme-active .theme-shell {
 	color: var(--foreground);
 }
 
+/* ── Global border width 2x for JellyFish theme ─────────────────────────── */
+html.vertex-theme-active .border {
+	border-width: 2px !important;
+}
+html.vertex-theme-active .border-t {
+	border-top-width: 2px !important;
+}
+html.vertex-theme-active .border-b {
+	border-bottom-width: 2px !important;
+}
+html.vertex-theme-active .border-l {
+	border-left-width: 2px !important;
+}
+html.vertex-theme-active .border-r {
+	border-right-width: 2px !important;
+}
+html.vertex-theme-active .border-x {
+	border-left-width: 2px !important;
+	border-right-width: 2px !important;
+}
+html.vertex-theme-active .border-y {
+	border-top-width: 2px !important;
+	border-bottom-width: 2px !important;
+}
+html.vertex-theme-active .h-px {
+	height: 2px !important;
+}
+
 /* ── Header: flat surface-2 + hairline bottom stroke ────────────────────── */
 html.vertex-theme-active .theme-shell-header {
 	background: var(--secondary);
-	border-bottom: 1px solid var(--border);
+	border-bottom: 2px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-content,
@@ -300,11 +328,11 @@ html.vertex-theme-active .theme-shell-body {
 /* ── Settings: sidebar rail + active tab ─────────────────────────────────── */
 html.vertex-theme-active .theme-shell-settings [data-testid="settings-tab-list"] {
 	background: var(--secondary);
-	border-right: 1px solid var(--border);
+	border-right: 2px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"] {
-	border-left: 2px solid transparent;
+	border-left: 4px solid transparent;
 	color: var(--muted-foreground);
 	transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
@@ -327,27 +355,27 @@ html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"] 
 html.vertex-theme-active .theme-shell-settings [data-setting-id] {
 	background: var(--card);
 	border-radius: 8px;
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-settings input:focus,
 html.vertex-theme-active .theme-shell-settings textarea:focus,
 html.vertex-theme-active .theme-shell-settings [role="combobox"][aria-expanded="true"] {
 	border-color: var(--accent) !important;
-	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, var(--card));
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, var(--card));
 }
 
 /* ── Marketplace: flat cards + hairline borders ─────────────────────────── */
 html.vertex-theme-active .theme-shell-marketplace .rounded-md.border.border-vscode-panel-border.bg-vscode-editor-background {
 	background: var(--card);
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-marketplace [class*="MarketplaceItemCard"],
 html.vertex-theme-active .theme-shell-marketplace .border-vscode-panel-border.bg-vscode-editor-background,
 html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-editor-foreground\/5 {
 	background: var(--card);
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-list-hoverBackground:hover,
@@ -375,7 +403,7 @@ html.vertex-theme-active .theme-shell-welcome p {
 html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-card"] {
 	background: var(--card);
 	color: var(--muted-foreground);
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 	border-radius: 8px;
 }
 
@@ -388,7 +416,7 @@ html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-car
 /* ── Chat textarea: flat terminal panel ──────────────────────────────────── */
 html.vertex-theme-active [data-theme-surface="chat-textarea-shell"] {
 	background: var(--card);
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 	border-radius: 8px;
 }
 
@@ -418,6 +446,39 @@ html.vertex-theme-active [data-theme-surface="user-feedback-bubble"] {
 html.vertex-theme-active [data-theme-surface="user-feedback-bubble"].bg-vscode-editor-foreground\/70 {
 	background: var(--secondary) !important;
 	color: var(--foreground) !important;
+}
+
+/* ── Checkbox: cyber style with border + accent ─────────────────────────── */
+html.vertex-theme-active [role="checkbox"] {
+	border-color: var(--border) !important;
+	background-color: transparent !important;
+}
+html.vertex-theme-active [role="checkbox"][data-state="checked"] {
+	background-color: var(--primary) !important;
+	border-color: var(--primary) !important;
+	box-shadow: 0 0 6px var(--primary);
+}
+html.vertex-theme-active [role="checkbox"][data-state="checked"] svg {
+	color: #000000 !important;
+}
+
+/* ── Toggle switch: cyber style with border + glow ──────────────────────── */
+html.vertex-theme-active [role="switch"] {
+	border: 2px solid var(--border) !important;
+}
+html.vertex-theme-active [role="switch"][aria-checked="true"] {
+	box-shadow: 0 0 6px var(--primary);
+}
+
+/* ── Radio group: cyber style ───────────────────────────────────────────── */
+html.vertex-theme-active [role="radio"] {
+	border-color: var(--border) !important;
+	background-color: transparent !important;
+}
+html.vertex-theme-active [role="radio"][data-state="checked"] {
+	background-color: var(--accent) !important;
+	border-color: var(--accent) !important;
+	box-shadow: 0 0 6px var(--accent);
 }
 
 @layer components {
