@@ -52,7 +52,7 @@ export const jellyfishTheme: ThemeDefinition = {
 		"accent-foreground": "#000000",
 		destructive: "#FF3B6B",
 		"destructive-foreground": "#F5F3F7",
-		border: "#6B4D96",
+		border: "#B366FF",
 		input: "#000000",
 		ring: "#7DD3E8B3",
 	},
@@ -76,10 +76,10 @@ export const jellyfishTheme: ThemeDefinition = {
 		// Inputs / dropdowns
 		"input-background": "#000000",
 		"input-foreground": "#EEEAF4",
-		"input-border": "#6B4D96",
+		"input-border": "#B366FF",
 		"dropdown-background": "#000000",
 		"dropdown-foreground": "#EEEAF4",
-		"dropdown-border": "#6B4D96",
+		"dropdown-border": "#B366FF",
 
 		// Lists / selections
 		"list-hoverBackground": "#000000",
@@ -89,10 +89,10 @@ export const jellyfishTheme: ThemeDefinition = {
 		"list-focusBackground": "#000000",
 
 		// Panels / sidebars
-		"panel-border": "#6B4D96",
+		"panel-border": "#B366FF",
 		"sideBar-background": "#000000",
 		"sideBar-foreground": "#D9D2E3",
-		"sideBar-border": "#6B4D96",
+		"sideBar-border": "#B366FF",
 		"sideBarSectionHeader-background": "#000000",
 		"sideBarSectionHeader-foreground": "#EEEAF4",
 
@@ -111,7 +111,7 @@ export const jellyfishTheme: ThemeDefinition = {
 		"textPreformat-background": "#000000",
 
 		// Editor groups / borders
-		"editorGroup-border": "#6B4D96",
+		"editorGroup-border": "#B366FF",
 		"editorGroupHeader-tabsBackground": "#000000",
 
 		// Notifications / hover
@@ -159,7 +159,7 @@ export const jellyfishTheme: ThemeDefinition = {
 		"editorError-foreground": "#FF3B6B",
 
 		// Widget
-		"widget-border": "#6B4D96",
+		"widget-border": "#B366FF",
 		"widget-shadow": "#00000088",
 
 		// Title bar
@@ -177,7 +177,7 @@ export const jellyfishTheme: ThemeDefinition = {
 		"menu-foreground": "#EEEAF4",
 
 		// Editor line highlight
-		"editor-lineHighlightBorder": "#6B4D96",
+		"editor-lineHighlightBorder": "#B366FF",
 
 		// Editor inactive selection
 		"editor-inactiveSelectionBackground": "#000000",

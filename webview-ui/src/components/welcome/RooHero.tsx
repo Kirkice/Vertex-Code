@@ -25,9 +25,9 @@ const DEFAULT_DOT_FIELD_CONFIG: DotFieldConfig = {
 }
 
 const LARGE_DOT_FIELD_CONFIG: DotFieldConfig = {
-	gridSize: 37,
-	cellSize: 2.9,
-	outerRadius: 17,
+	gridSize: 27,
+	cellSize: 4.0,
+	outerRadius: 12.3,
 }
 
 const smoothstep = (edge0: number, edge1: number, value: number) => {

@@ -214,7 +214,7 @@
 		--muted-foreground: #7e7888;
 		--accent: #7dd3e8;
 		--accent-foreground: #000000;
-		--border: #6b4d96;
+		--border: #b366ff;
 		--input: #000000;
 		--ring: #7dd3e8b3;
 		/* CRITICAL: Override the Tailwind @theme bridge variable too.
@@ -228,18 +228,18 @@
 		--color-vscode-button-secondaryForeground: #d7d0e1;
 		--color-vscode-input-background: #000000;
 		--color-vscode-input-foreground: #eeeaf4;
-		--color-vscode-input-border: #6b4d96;
+		--color-vscode-input-border: #b366ff;
 		--color-vscode-dropdown-background: #000000;
 		--color-vscode-dropdown-foreground: #eeeaf4;
-		--color-vscode-dropdown-border: #6b4d96;
+		--color-vscode-dropdown-border: #b366ff;
 		--color-vscode-list-hoverBackground: #000000;
 		--color-vscode-list-activeSelectionBackground: #e8439342;
 		--color-vscode-list-activeSelectionForeground: #e84393;
 		--color-vscode-list-focusBackground: #000000;
-		--color-vscode-panel-border: #6b4d96;
+		--color-vscode-panel-border: #b366ff;
 		--color-vscode-sideBar-background: #000000;
 		--color-vscode-sideBar-foreground: #d9d2e3;
-		--color-vscode-sideBar-border: #6b4d96;
+		--color-vscode-sideBar-border: #b366ff;
 		--color-vscode-sideBarSectionHeader-background: #000000;
 		--color-vscode-sideBarSectionHeader-foreground: #eeeaf4;
 		--color-vscode-focusBorder: #7dd3e8;
@@ -250,7 +250,7 @@
 		--color-vscode-descriptionForeground: #7e7888;
 		--color-vscode-errorForeground: #e04545;
 		--color-vscode-foreground: #eeeaf4;
-		--color-vscode-editorGroup-border: #6b4d96;
+		--color-vscode-editorGroup-border: #b366ff;
 		--color-vscode-editorWarning-foreground: #ffd060;
 		--color-vscode-editorWarning-background: #ffd0601f;
 		--color-vscode-notifications-background: #000000;
@@ -258,7 +258,7 @@
 		--color-vscode-notifications-border: #e8944a;
 		--color-vscode-banner-background: #000000;
 		--color-vscode-banner-foreground: #d9d2e3;
-		--color-vscode-widget-border: #6b4d96;
+		--color-vscode-widget-border: #b366ff;
 		--color-vscode-widget-shadow: #00000088;
 		--color-vscode-titleBar-activeForeground: #d9d2e3;
 		--color-vscode-titleBar-inactiveForeground: #7e7888;
@@ -286,38 +286,10 @@ html.vertex-theme-active .theme-shell {
 	color: var(--foreground);
 }
 
-/* ── Global border width 2x for JellyFish theme ─────────────────────────── */
-html.vertex-theme-active .border {
-	border-width: 2px !important;
-}
-html.vertex-theme-active .border-t {
-	border-top-width: 2px !important;
-}
-html.vertex-theme-active .border-b {
-	border-bottom-width: 2px !important;
-}
-html.vertex-theme-active .border-l {
-	border-left-width: 2px !important;
-}
-html.vertex-theme-active .border-r {
-	border-right-width: 2px !important;
-}
-html.vertex-theme-active .border-x {
-	border-left-width: 2px !important;
-	border-right-width: 2px !important;
-}
-html.vertex-theme-active .border-y {
-	border-top-width: 2px !important;
-	border-bottom-width: 2px !important;
-}
-html.vertex-theme-active .h-px {
-	height: 2px !important;
-}
-
 /* ── Header: flat surface-2 + hairline bottom stroke ────────────────────── */
 html.vertex-theme-active .theme-shell-header {
 	background: var(--secondary);
-	border-bottom: 2px solid var(--border);
+	border-bottom: 1px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-content,
@@ -328,11 +300,11 @@ html.vertex-theme-active .theme-shell-body {
 /* ── Settings: sidebar rail + active tab ─────────────────────────────────── */
 html.vertex-theme-active .theme-shell-settings [data-testid="settings-tab-list"] {
 	background: var(--secondary);
-	border-right: 2px solid var(--border);
+	border-right: 1px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-settings [data-testid^="tab-"] {
-	border-left: 4px solid transparent;
+	border-left: 2px solid transparent;
 	color: var(--muted-foreground);
 	transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
@@ -355,27 +327,27 @@ html.vertex-theme-active .theme-shell-settings [data-testid="settings-content"] 
 html.vertex-theme-active .theme-shell-settings [data-setting-id] {
 	background: var(--card);
 	border-radius: 8px;
-	border: 2px solid var(--border);
+	border: 1px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-settings input:focus,
 html.vertex-theme-active .theme-shell-settings textarea:focus,
 html.vertex-theme-active .theme-shell-settings [role="combobox"][aria-expanded="true"] {
 	border-color: var(--accent) !important;
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, var(--card));
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, var(--card));
 }
 
 /* ── Marketplace: flat cards + hairline borders ─────────────────────────── */
 html.vertex-theme-active .theme-shell-marketplace .rounded-md.border.border-vscode-panel-border.bg-vscode-editor-background {
 	background: var(--card);
-	border: 2px solid var(--border);
+	border: 1px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-marketplace [class*="MarketplaceItemCard"],
 html.vertex-theme-active .theme-shell-marketplace .border-vscode-panel-border.bg-vscode-editor-background,
 html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-editor-foreground\/5 {
 	background: var(--card);
-	border: 2px solid var(--border);
+	border: 1px solid var(--border);
 }
 
 html.vertex-theme-active .theme-shell-marketplace .hover\:bg-vscode-list-hoverBackground:hover,
@@ -403,7 +375,7 @@ html.vertex-theme-active .theme-shell-welcome p {
 html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-card"] {
 	background: var(--card);
 	color: var(--muted-foreground);
-	border: 2px solid var(--border);
+	border: 1px solid var(--border);
 	border-radius: 8px;
 }
 
@@ -416,7 +388,7 @@ html.vertex-theme-active .theme-task-header [data-theme-surface="task-header-car
 /* ── Chat textarea: flat terminal panel ──────────────────────────────────── */
 html.vertex-theme-active [data-theme-surface="chat-textarea-shell"] {
 	background: var(--card);
-	border: 2px solid var(--border);
+	border: 1px solid var(--border);
 	border-radius: 8px;
 }
 
@@ -464,7 +436,7 @@ html.vertex-theme-active [role="checkbox"][data-state="checked"] svg {
 
 /* ── Toggle switch: cyber style with border + glow ──────────────────────── */
 html.vertex-theme-active [role="switch"] {
-	border: 2px solid var(--border) !important;
+	border: 1px solid var(--border) !important;
 }
 html.vertex-theme-active [role="switch"][aria-checked="true"] {
 	box-shadow: 0 0 6px var(--primary);
@@ -479,6 +451,100 @@ html.vertex-theme-active [role="radio"][data-state="checked"] {
 	background-color: var(--accent) !important;
 	border-color: var(--accent) !important;
 	box-shadow: 0 0 6px var(--accent);
+}
+
+/* ── Chat highlight colors: neon spectrum for richer conversation ────────── */
+
+/* Completion result text — neon green */
+html.vertex-theme-active [style*="var(--vscode-charts-green)"] {
+	color: #00FF9C !important;
+	text-shadow: 0 0 8px rgba(0, 255, 156, 0.3);
+}
+
+/* Tool use block headers — cyan */
+html.vertex-theme-active [data-theme-surface="task-header-card"] .font-semibold,
+html.vertex-theme-active .theme-shell-chat .font-bold {
+	color: #00E5FF !important;
+}
+
+/* API request cost badge — purple */
+html.vertex-theme-active .theme-shell-chat [class*="rounded-lg"][class*="border"][style*="opacity"] {
+	border-color: #BF7FFF !important;
+	color: #BF7FFF !important;
+}
+
+/* Reasoning block left border — magenta */
+html.vertex-theme-active .theme-shell-chat .border-l.border-vscode-descriptionForeground\/20 {
+	border-left-color: #E84393 !important;
+}
+
+/* Reasoning block text — light purple */
+html.vertex-theme-active .theme-shell-chat .border-l + .text-vscode-descriptionForeground {
+	color: #D4A8FF !important;
+}
+
+/* Warning rows — neon yellow */
+html.vertex-theme-active .text-vscode-editorWarning-foreground {
+	color: #FFD060 !important;
+}
+
+/* Error rows — neon red */
+html.vertex-theme-active .text-vscode-errorForeground {
+	color: #FF3B6B !important;
+}
+
+/* Description foreground — light gray-purple for secondary text */
+html.vertex-theme-active .text-vscode-descriptionForeground {
+	color: #9B8FB0 !important;
+}
+
+/* Links — neon cyan */
+html.vertex-theme-active .text-vscode-textLink-foreground {
+	color: #00E5FF !important;
+}
+html.vertex-theme-active .text-vscode-textLink-foreground:hover {
+	color: #58F3FF !important;
+	text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+}
+
+/* Code blocks — subtle purple tint background */
+html.vertex-theme-active .theme-shell-chat pre,
+html.vertex-theme-active .theme-shell-chat code {
+	background-color: #0D0A12 !important;
+	border: 1px solid #B366FF20 !important;
+}
+
+/* Follow-up suggestions — pink accent */
+html.vertex-theme-active .theme-shell-chat [class*="FollowUpSuggest"] {
+	border-color: #E8439340 !important;
+}
+
+/* Context window progress bar — neon gradient */
+html.vertex-theme-active .theme-shell-chat [class*="ContextWindowProgress"] .bg-\[var\(--vscode-foreground\)\] {
+	background: linear-gradient(90deg, #00FF9C, #00E5FF) !important;
+	box-shadow: 0 0 4px rgba(0, 255, 156, 0.4);
+}
+
+/* Todo list in-progress — neon yellow */
+html.vertex-theme-active .text-vscode-charts-yellow {
+	color: #FFD060 !important;
+	text-shadow: 0 0 4px rgba(255, 208, 96, 0.3);
+}
+
+/* Todo list completed — neon green */
+html.vertex-theme-active .text-vscode-charts-green {
+	color: #00FF9C !important;
+}
+
+/* File changes added/removed — neon green/red */
+html.vertex-theme-active .text-vscode-charts-red {
+	color: #FF3B6B !important;
+}
+
+/* Mode handoff — purple accent */
+html.vertex-theme-active .theme-shell-chat [class*="Mode Handoff"],
+html.vertex-theme-active .theme-shell-chat .text-base + .font-bold {
+	color: #BF7FFF !important;
 }
 
 @layer components {

@@ -110,11 +110,11 @@ export const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({ item, 
 	return (
 		<>
 			<div
-				className="relative overflow-hidden rounded-md border-2 border-vscode-panel-border bg-vscode-editor-background transition-all hover:border-[var(--border)]"
-				style={{ boxShadow: isInstalled ? `inset 0 0 0 2px ${typeConfig.glow}` : undefined }}>
+				className="relative overflow-hidden rounded-md border border-vscode-panel-border bg-vscode-editor-background transition-all hover:border-[var(--border)]"
+				style={{ boxShadow: isInstalled ? `inset 0 0 0 1px ${typeConfig.glow}` : undefined }}>
 				{/* Left status color bar - Graphics Providers style with glow */}
 				<div
-					className="absolute bottom-0 left-0 top-0 w-2"
+					className="absolute bottom-0 left-0 top-0 w-1"
 					style={{
 						backgroundColor: typeColor,
 						boxShadow: isInstalled ? `0 0 8px ${typeColor}` : undefined,
