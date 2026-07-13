@@ -19,9 +19,9 @@ type DotFieldConfig = {
 }
 
 const DEFAULT_DOT_FIELD_CONFIG: DotFieldConfig = {
-	gridSize: 29,
-	cellSize: 3.6,
-	outerRadius: 12.3,
+	gridSize: 21,
+	cellSize: 5.0,
+	outerRadius: 8.9,
 }
 
 const LARGE_DOT_FIELD_CONFIG: DotFieldConfig = {
