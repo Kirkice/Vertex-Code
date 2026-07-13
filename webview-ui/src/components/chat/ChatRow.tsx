@@ -1279,7 +1279,8 @@ export const ChatRowContent = ({
 									isEditing
 										? "bg-vscode-editor-background text-vscode-editor-foreground"
 										: "cursor-text p-1 bg-vscode-editor-foreground/70 text-vscode-editor-background",
-								)}>
+								)}
+								data-theme-surface="user-feedback-bubble">
 								{isEditing ? (
 									<div className="flex flex-col gap-2">
 										<ChatTextArea
