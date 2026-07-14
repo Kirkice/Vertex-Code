@@ -220,6 +220,14 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		apiConfiguration: {},
 		version: "",
 		clineMessages: [],
+		desmosScriptUri: undefined,
+		builtinProtocolCapabilities: {
+			desmos: {
+				enabled: true,
+				trigger: "fenced_code_block",
+				language: "desmos",
+			},
+		},
 		taskHistory: [],
 		shouldShowAnnouncement: false,
 		allowedCommands: [],

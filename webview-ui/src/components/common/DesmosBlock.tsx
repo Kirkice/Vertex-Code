@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import styled from "styled-components"
+import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useCopyToClipboard } from "@src/utils/clipboard"
@@ -30,7 +31,7 @@ const DEFAULT_COLORS = [
 /**
  * Load the Desmos API script if not already loaded.
  */
-function loadDesmosApi(): Promise<void> {
+function loadDesmosApi(scriptSrc?: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		if (window.Desmos) {
 			resolve()
@@ -38,7 +39,7 @@ function loadDesmosApi(): Promise<void> {
 		}
 
 		const script = document.createElement("script")
-		script.src = "/desmos/calculator.js"
+		script.src = scriptSrc || "/desmos/calculator.js"
 		script.async = true
 		script.onload = () => resolve()
 		script.onerror = () => reject(new Error("Failed to load Desmos API"))
@@ -121,6 +122,7 @@ interface DesmosBlockProps {
 export default function DesmosBlock({ code }: DesmosBlockProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const calculatorRef = useRef<DesmosCalculator | null>(null)
+	const { desmosScriptUri } = useExtensionState()
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [isErrorExpanded, setIsErrorExpanded] = useState(false)
@@ -157,7 +159,7 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 				setIsLoading(true)
 
 				// Load Desmos API
-				await loadDesmosApi()
+				await loadDesmosApi(desmosScriptUri)
 
 				if (destroyed || !containerRef.current) return
 
@@ -250,7 +252,7 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 				calculatorRef.current = null
 			}
 		}
-	}, [config])
+	}, [config, desmosScriptUri])
 
 	// Export screenshot
 	const handleExport = useCallback(() => {

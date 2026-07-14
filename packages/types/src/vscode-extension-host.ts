@@ -320,6 +320,14 @@ export type ExtensionState = Pick<
 	modeLevelLlmRoutingEnabled?: boolean
 	version: string
 	clineMessages: ClineMessage[]
+	desmosScriptUri?: string
+	builtinProtocolCapabilities?: {
+		desmos?: {
+			enabled: boolean
+			trigger: "fenced_code_block"
+			language: "desmos"
+		}
+	}
 	currentTaskId?: string
 	currentTaskItem?: HistoryItem
 	currentTaskTodos?: TodoItem[] // Initial todos for the current task

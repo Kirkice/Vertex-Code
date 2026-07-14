@@ -24,6 +24,19 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	}),
 }))
 
+vi.mock("@src/context/ExtensionStateContext", () => ({
+	useExtensionState: () => ({
+		desmosScriptUri: undefined,
+		builtinProtocolCapabilities: {
+			desmos: {
+				enabled: true,
+				trigger: "fenced_code_block",
+				language: "desmos",
+			},
+		},
+	}),
+}))
+
 // Mock the clipboard utility
 vi.mock("@src/utils/clipboard", () => ({
 	useCopyToClipboard: () => ({

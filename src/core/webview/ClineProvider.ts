@@ -2309,6 +2309,18 @@ export class ClineProvider
 
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
+			desmosScriptUri: this.view?.webview
+				? this.view.webview
+					.asWebviewUri(vscode.Uri.joinPath(this.contextProxy.extensionUri, "webview-ui", "public", "desmos", "calculator.js"))
+					.toString()
+				: undefined,
+			builtinProtocolCapabilities: {
+				desmos: {
+					enabled: true,
+					trigger: "fenced_code_block",
+					language: "desmos",
+				},
+			},
 			apiConfiguration,
 			customInstructions,
 			alwaysAllowReadOnly: alwaysAllowReadOnly ?? false,
