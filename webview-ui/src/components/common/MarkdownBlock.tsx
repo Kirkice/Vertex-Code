@@ -11,6 +11,7 @@ import { type AlertType, remarkGithubAlerts } from "@src/utils/markdown"
 
 import CodeBlock from "./CodeBlock"
 import MermaidBlock from "./MermaidBlock"
+import DesmosBlock from "./DesmosBlock"
 
 // Codicon glyphs used as the leading icon for each GitHub-style alert type.
 const ALERT_ICONS: Record<AlertType, string> = {
@@ -346,6 +347,15 @@ const MarkdownBlock = memo(({ markdown }: MarkdownBlockProps) => {
 					return (
 						<div style={{ margin: "1em 0" }}>
 							<MermaidBlock code={codeString} />
+						</div>
+					)
+				}
+
+				// Handle desmos function plots
+				if (className.includes("language-desmos")) {
+					return (
+						<div style={{ margin: "1em 0" }}>
+							<DesmosBlock code={codeString} />
 						</div>
 					)
 				}

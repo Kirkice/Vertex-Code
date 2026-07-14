@@ -48,6 +48,12 @@
 			"copyError": "Error copying image"
 		}
 	},
+	"desmos": {
+		"loading": "Loading Desmos calculator...",
+		"render_error": "Failed to Render Function",
+		"export": "Export as PNG",
+		"copy": "Copy configuration"
+	},
 	"image": {
 		"tabs": {
 			"view": "Image"

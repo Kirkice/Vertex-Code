@@ -14,6 +14,14 @@ vi.mock("@src/context/ExtensionStateContext", () => ({
 	}),
 }))
 
+vi.mock("../MermaidBlock", () => ({
+	default: ({ code }: { code: string }) => <div data-testid="mock-mermaid-block">{code}</div>,
+}))
+
+vi.mock("../DesmosBlock", () => ({
+	default: ({ code }: { code: string }) => <div data-testid="mock-desmos-block">{code}</div>,
+}))
+
 describe("MarkdownBlock", () => {
 	it("should correctly handle URLs with trailing punctuation", async () => {
 		const markdown = "Check out this link: https://example.com."
@@ -212,5 +220,50 @@ describe("MarkdownBlock", () => {
 		expect(screen.getByText("Second level unordered")).toBeInTheDocument()
 		expect(screen.getByText("Third level ordered")).toBeInTheDocument()
 		expect(screen.getByText("Back to first level")).toBeInTheDocument()
+	})
+
+	it("should render mermaid code blocks with MermaidBlock", async () => {
+		const markdown = "```mermaid\ngraph TD\nA-->B\n```"
+
+		render(<MarkdownBlock markdown={markdown} />)
+
+		const mermaidBlock = await screen.findByTestId("mock-mermaid-block")
+		expect(mermaidBlock).toBeInTheDocument()
+		expect(mermaidBlock.textContent).toContain("graph TD")
+	})
+
+	it("should render desmos code blocks with DesmosBlock", async () => {
+		const markdown = `\
+\
+\
+\
+\
+\`\`\`desmos
+{
+  "version": 1,
+  "expressions": [
+    { "latex": "y = x^2" }
+  ]
+}
+\`\`\``
+
+		render(<MarkdownBlock markdown={markdown} />)
+
+		const desmosBlock = await screen.findByTestId("mock-desmos-block")
+		expect(desmosBlock).toBeInTheDocument()
+		expect(desmosBlock.textContent).toContain('"version": 1')
+		expect(desmosBlock.textContent).toContain('"latex": "y = x^2"')
+	})
+
+	it("should keep ordinary code blocks rendered as code", async () => {
+		const markdown = "```ts\nconst value = 42\n```"
+
+		const { container } = render(<MarkdownBlock markdown={markdown} />)
+
+		await screen.findByText(/const value = 42/, { exact: false })
+
+		expect(screen.queryByTestId("mock-mermaid-block")).not.toBeInTheDocument()
+		expect(screen.queryByTestId("mock-desmos-block")).not.toBeInTheDocument()
+		expect(container.querySelector("pre")).not.toBeNull()
 	})
 })
