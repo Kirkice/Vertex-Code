@@ -1,4 +1,109 @@
 items:
+  # Graphics MCP Servers (file-based, downloaded from GitHub)
+  - id: asset-studio-mcp
+    name: Asset Studio MCP
+    description: >
+      Unity asset extraction MCP server based on AssetStudio. Extract textures, models, audio, and other resources
+      from Unity projects. Provides browsing, searching, previewing, and exporting capabilities for Unity asset bundles.
+      Windows only (.NET 6 runtime required).
+    author: "@Kirkice"
+    authorUrl: "https://github.com/Kirkice"
+    tags:
+      - unity
+      - asset-extraction
+      - texture
+      - model
+      - audio
+      - mcp
+      - graphics
+    prerequisites:
+      - ".NET 6.0 Desktop Runtime (https://dotnet.microsoft.com/download/dotnet/6.0)"
+      - "Windows OS"
+    source: "https://github.com/Kirkice/vertex-code-market"
+    sourcePath: "mcps/asset_studio_mcp"
+    branch: "main"
+    executable: "AssetStudio.McpServer.exe"
+    files:
+      # Main program
+      - path: "AssetStudio.McpServer.exe"
+      - path: "AssetStudio.McpServer.dll"
+      - path: "AssetStudio.McpServer.deps.json"
+      - path: "AssetStudio.McpServer.runtimeconfig.json"
+      # Core AssetStudio libraries
+      - path: "AssetStudio.dll"
+      - path: "AssetStudio.PInvoke.dll"
+      - path: "AssetStudioUtility.dll"
+      - path: "AssetStudioFBXNative.dll"
+      - path: "AssetStudioFBXWrapper.dll"
+      - path: "Texture2DDecoderNative.dll"
+      - path: "Texture2DDecoderWrapper.dll"
+      # .NET hosting and DI
+      - path: "Microsoft.Extensions.Hosting.dll"
+      - path: "Microsoft.Extensions.Hosting.Abstractions.dll"
+      - path: "Microsoft.Extensions.DependencyInjection.dll"
+      - path: "Microsoft.Extensions.DependencyInjection.Abstractions.dll"
+      - path: "Microsoft.Extensions.Logging.dll"
+      - path: "Microsoft.Extensions.Logging.Abstractions.dll"
+      - path: "Microsoft.Extensions.Logging.Console.dll"
+      - path: "Microsoft.Extensions.Logging.Debug.dll"
+      - path: "Microsoft.Extensions.Logging.Configuration.dll"
+      - path: "Microsoft.Extensions.Logging.EventLog.dll"
+      - path: "Microsoft.Extensions.Logging.EventSource.dll"
+      # .NET AI abstractions
+      - path: "Microsoft.Extensions.AI.Abstractions.dll"
+      # .NET configuration
+      - path: "Microsoft.Extensions.Configuration.dll"
+      - path: "Microsoft.Extensions.Configuration.Abstractions.dll"
+      - path: "Microsoft.Extensions.Configuration.Binder.dll"
+      - path: "Microsoft.Extensions.Configuration.CommandLine.dll"
+      - path: "Microsoft.Extensions.Configuration.EnvironmentVariables.dll"
+      - path: "Microsoft.Extensions.Configuration.FileExtensions.dll"
+      - path: "Microsoft.Extensions.Configuration.Json.dll"
+      - path: "Microsoft.Extensions.Configuration.UserSecrets.dll"
+      # .NET file providers
+      - path: "Microsoft.Extensions.FileProviders.Abstractions.dll"
+      - path: "Microsoft.Extensions.FileProviders.Physical.dll"
+      - path: "Microsoft.Extensions.FileSystemGlobbing.dll"
+      # .NET options and diagnostics
+      - path: "Microsoft.Extensions.Options.dll"
+      - path: "Microsoft.Extensions.Options.ConfigurationExtensions.dll"
+      - path: "Microsoft.Extensions.Primitives.dll"
+      - path: "Microsoft.Extensions.Diagnostics.dll"
+      - path: "Microsoft.Extensions.Diagnostics.Abstractions.dll"
+      - path: "Microsoft.Bcl.AsyncInterfaces.dll"
+      - path: "Microsoft.Bcl.Memory.dll"
+      # MCP protocol
+      - path: "ModelContextProtocol.dll"
+      - path: "ModelContextProtocol.Core.dll"
+      # Third-party dependencies
+      - path: "Newtonsoft.Json.dll"
+      - path: "SixLabors.Fonts.dll"
+      - path: "SixLabors.ImageSharp.dll"
+      - path: "SixLabors.ImageSharp.Drawing.dll"
+      - path: "K4os.Compression.LZ4.dll"
+      - path: "Mono.Cecil.dll"
+      - path: "Mono.Cecil.Mdb.dll"
+      - path: "Mono.Cecil.Pdb.dll"
+      - path: "Mono.Cecil.Rocks.dll"
+      # System libraries
+      - path: "System.Diagnostics.DiagnosticSource.dll"
+      - path: "System.Diagnostics.EventLog.dll"
+      - path: "System.IO.Pipelines.dll"
+      - path: "System.Net.ServerSentEvents.dll"
+      - path: "System.Text.Encodings.Web.dll"
+      - path: "System.Text.Json.dll"
+      - path: "System.Threading.Channels.dll"
+      # Windows runtime dependencies
+      - path: "runtimes/win/lib/net6.0/System.Diagnostics.EventLog.dll"
+      - path: "runtimes/win/lib/net6.0/System.Diagnostics.EventLog.Messages.dll"
+      # Documentation
+      - path: "README.md"
+    group:
+      id: graphics-mcp
+      name: Graphics MCP Servers
+      description: "MCP servers for graphics programming and Unity asset management."
+      order: 1
+
   - id: apify
     name: Apify Actors
     description: Enables AI assistants to interact with Apify's web scraping and automation actors, providing access to

@@ -8,6 +8,7 @@ import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
 import { SkillInstaller } from "./SkillInstaller"
 import { KnowledgeInstaller } from "./KnowledgeInstaller"
+import { McpFileInstaller } from "./McpFileInstaller"
 
 export interface InstallOptions extends InstallMarketplaceItemOptions {
 	target: "project" | "global"
@@ -17,6 +18,7 @@ export interface InstallOptions extends InstallMarketplaceItemOptions {
 export class SimpleInstaller {
 	private readonly skillInstaller: SkillInstaller
 	private readonly knowledgeInstaller: KnowledgeInstaller
+	private readonly mcpFileInstaller: McpFileInstaller
 
 	constructor(
 		private readonly context: vscode.ExtensionContext,
@@ -24,6 +26,7 @@ export class SimpleInstaller {
 	) {
 		this.skillInstaller = new SkillInstaller()
 		this.knowledgeInstaller = new KnowledgeInstaller()
+		this.mcpFileInstaller = new McpFileInstaller(context)
 	}
 
 	async installItem(item: MarketplaceItem, options: InstallOptions): Promise<{ filePath: string; line?: number }> {
@@ -192,6 +195,13 @@ export class SimpleInstaller {
 		target: "project" | "global",
 		options?: InstallOptions,
 	): Promise<{ filePath: string; line?: number }> {
+		// File download mode: download binary files from GitHub
+		if (item.source && item.files && item.files.length > 0) {
+			const result = await this.mcpFileInstaller.installMcpWithFiles(item, target)
+			return { filePath: result.configFilePath, line: result.line }
+		}
+
+		// Configuration mode: use JSON config (npx/docker)
 		if (!item.content) {
 			throw new Error("MCP item missing content")
 		}
@@ -319,7 +329,11 @@ export class SimpleInstaller {
 				await this.removeMode(item, target)
 				break
 			case "mcp":
-				await this.removeMcp(item, target)
+				if (item.source && item.files && item.files.length > 0) {
+					await this.mcpFileInstaller.removeMcpWithFiles(item, target)
+				} else {
+					await this.removeMcp(item, target)
+				}
 				break
 			case "skill":
 				await this.skillInstaller.removeSkill(item, target)
@@ -381,7 +395,7 @@ export class SimpleInstaller {
 					// Array of McpInstallationMethod objects - use first method
 					content = item.content[0].content
 				} else {
-					content = item.content
+					content = item.content || ""
 				}
 
 				const serverName = item.id

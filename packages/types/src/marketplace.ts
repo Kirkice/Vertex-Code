@@ -53,14 +53,6 @@ export const modeMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
 
 export type ModeMarketplaceItem = z.infer<typeof modeMarketplaceItemSchema>
 
-export const mcpMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
-	url: z.string().url(), // Required url field
-	content: z.union([z.string().min(1), z.array(mcpInstallationMethodSchema)]), // Single config or array of methods
-	parameters: z.array(mcpParameterSchema).optional(),
-})
-
-export type McpMarketplaceItem = z.infer<typeof mcpMarketplaceItemSchema>
-
 /**
  * Schema for a single file within a skill package
  */
@@ -79,6 +71,41 @@ export const skillMarketplaceGroupSchema = z.object({
 })
 
 export type SkillMarketplaceGroup = z.infer<typeof skillMarketplaceGroupSchema>
+
+/**
+ * Schema for a single file within an MCP package.
+ * Reuses the same structure as skill files.
+ */
+export const mcpFileSchema = skillFileSchema
+
+export type McpFile = z.infer<typeof mcpFileSchema>
+
+export const mcpMarketplaceGroupSchema = skillMarketplaceGroupSchema
+
+export type McpMarketplaceGroup = z.infer<typeof mcpMarketplaceGroupSchema>
+
+/**
+ * MCP marketplace item schema.
+ * Supports two modes:
+ * 1. Configuration mode: Provide url + content (JSON config for npx/docker)
+ * 2. File download mode: Provide source + files (download binary files from GitHub)
+ */
+export const mcpMarketplaceItemSchema = baseMarketplaceItemSchema.extend({
+	// Configuration mode fields (optional when using file download mode)
+	url: z.string().url().optional(),
+	content: z.union([z.string().min(1), z.array(mcpInstallationMethodSchema)]).optional(),
+	parameters: z.array(mcpParameterSchema).optional(),
+	// File download mode fields (for binary MCP servers like .NET applications)
+	source: z.string().url().optional(), // GitHub repository URL, e.g. "https://github.com/user/repo"
+	sourcePath: z.string().optional().default(""), // Path within the repo to the MCP directory
+	branch: z.string().optional().default("main"), // Git branch name
+	files: z.array(mcpFileSchema).optional(), // List of files to download
+	executable: z.string().optional(), // Relative path to the executable file within the downloaded files
+	modeSlugs: z.array(z.string()).optional(), // Applicable mode slugs (e.g. ["graphics", "code"])
+	group: mcpMarketplaceGroupSchema.optional(), // Optional visual grouping for marketplace display/bulk install
+})
+
+export type McpMarketplaceItem = z.infer<typeof mcpMarketplaceItemSchema>
 
 /**
  * Skill marketplace item schema

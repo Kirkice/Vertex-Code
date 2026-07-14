@@ -113,30 +113,40 @@ export async function activate(context: vscode.ExtensionContext) {
 	outputChannel = vscode.window.createOutputChannel(Package.outputChannel)
 	context.subscriptions.push(outputChannel)
 	outputChannel.appendLine(`${Package.name} extension activated - ${JSON.stringify(Package)}`)
+	outputChannel.appendLine("[Activation] Starting extension activation")
 
 	// Initialize network proxy configuration early, before any network requests.
 	// When proxyUrl is configured, all HTTP/HTTPS traffic will be routed through it.
 	// Only applied in debug mode (F5).
+	outputChannel.appendLine("[Activation] initializeNetworkProxy:start")
 	await initializeNetworkProxy(context, outputChannel)
+	outputChannel.appendLine("[Activation] initializeNetworkProxy:done")
 
 	// Set extension path for custom tool registry to find bundled esbuild
 	customToolRegistry.setExtensionPath(context.extensionPath)
+	outputChannel.appendLine("[Activation] customToolRegistry:setExtensionPath")
 
 	// Migrate old settings to new
+	outputChannel.appendLine("[Activation] migrateSettings:start")
 	await migrateSettings(context, outputChannel)
+	outputChannel.appendLine("[Activation] migrateSettings:done")
 
 	// Initialize i18n for internationalization support.
 	initializeI18n(context.globalState.get("language") ?? formatLanguage(vscode.env.language))
+	outputChannel.appendLine("[Activation] initializeI18n:done")
 
 	// Initialize terminal shell execution handlers.
 	TerminalRegistry.initialize()
+	outputChannel.appendLine("[Activation] TerminalRegistry.initialize:done")
 
 	// Initialize OpenAI Codex OAuth manager for ChatGPT subscription-based access.
 	openAiCodexOAuthManager.initialize(context, (message) => outputChannel.appendLine(message))
+	outputChannel.appendLine("[Activation] openAiCodexOAuthManager.initialize:done")
 
 	// Create the shared context proxy immediately so the sidebar can register
 	// before slower migrations / secret reads finish.
 	const contextProxy = ContextProxy.createInstance(context)
+	outputChannel.appendLine("[Activation] ContextProxy.createInstance:done")
 
 	// Initialize code index managers for all workspace folders.
 	const codeIndexManagers: CodeIndexManager[] = []
@@ -144,15 +154,19 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize the provider early so Reload Window can render the sidebar
 	// even if follow-up startup work is slow or flaky.
 	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
+	outputChannel.appendLine("[Activation] ClineProvider:constructed")
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {
 			webviewOptions: { retainContextWhenHidden: true },
 		}),
 	)
+	outputChannel.appendLine("[Activation] registerWebviewViewProvider:done")
 
 	// Initialize Vertex auth service for extension session token management.
+	outputChannel.appendLine("[Activation] initVertexAuth:start")
 	await initVertexAuth(context)
+	outputChannel.appendLine("[Activation] initVertexAuth:done")
 
 	// Get default commands from configuration.
 	const defaultCommands = vscode.workspace.getConfiguration(Package.name).get<string[]>("allowedCommands") || []
@@ -162,7 +176,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.globalState.update("allowedCommands", defaultCommands)
 	}
 
+	outputChannel.appendLine("[Activation] contextProxy.whenReady:start")
 	await contextProxy.whenReady()
+	outputChannel.appendLine("[Activation] contextProxy.whenReady:done")
 
 	if (vscode.workspace.workspaceFolders) {
 		for (const folder of vscode.workspace.workspaceFolders) {
@@ -185,15 +201,19 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	// Check for worktree auto-open path (set when switching to a worktree)
+	outputChannel.appendLine("[Activation] checkWorktreeAutoOpen:start")
 	await checkWorktreeAutoOpen(context, outputChannel)
+	outputChannel.appendLine("[Activation] checkWorktreeAutoOpen:done")
 
 	// Auto-import configuration if specified in settings.
 	try {
+		outputChannel.appendLine("[Activation] autoImportSettings:start")
 		await autoImportSettings(outputChannel, {
 			providerSettingsManager: provider.providerSettingsManager,
 			contextProxy: provider.contextProxy,
 			customModesManager: provider.customModesManager,
 		})
+		outputChannel.appendLine("[Activation] autoImportSettings:done")
 	} catch (error) {
 		outputChannel.appendLine(
 			`[AutoImport] Error during auto-import: ${error instanceof Error ? error.message : String(error)}`,
@@ -201,6 +221,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	registerCommands({ context, outputChannel, provider })
+	outputChannel.appendLine("[Activation] registerCommands:done")
 
 	/**
 	 * We use the text document content provider API to show the left side for diff
@@ -239,9 +260,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	registerCodeActions(context)
 	registerTerminalActions(context)
+	outputChannel.appendLine("[Activation] registerCodeActions/registerTerminalActions:done")
 
 	// Allows other extensions to activate once Vertex is ready.
 	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
+	outputChannel.appendLine("[Activation] activationCompleted command fired")
 
 	// Implements the `RooCodeAPI` interface.
 	const socketPath = process.env.ROO_CODE_IPC_SOCKET_PATH
@@ -299,6 +322,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Initialize background model cache refresh
 	initializeModelCacheRefresh()
+	outputChannel.appendLine("[Activation] initializeModelCacheRefresh:done")
+	outputChannel.appendLine("[Activation] Extension activation complete")
 
 	return new API(outputChannel, provider, socketPath, enableLogging)
 }

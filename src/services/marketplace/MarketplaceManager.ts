@@ -11,6 +11,7 @@ import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import { t } from "../../i18n"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
 import { KNOWLEDGE_DIR, loadKnowledgeIndex } from "../knowledge/knowledgeLoader"
+import { getGlobalRooDirectory } from "../roo-config"
 
 import { ConfigLoader } from "./ConfigLoader"
 import { SimpleInstaller } from "./SimpleInstaller"
@@ -201,6 +202,18 @@ export class MarketplaceManager {
 		// Check global-level installations
 		await this.checkGlobalInstallations(metadata.global)
 
+		console.log(
+			"[Marketplace] installation metadata resolved",
+			JSON.stringify(
+				{
+					projectKeys: Object.keys(metadata.project),
+					globalKeys: Object.keys(metadata.global),
+				},
+				null,
+				2,
+			),
+		)
+
 		return metadata
 	}
 
@@ -248,6 +261,19 @@ export class MarketplaceManager {
 				// File doesn't exist or can't be read, skip
 			}
 
+			// Check file-based MCPs in .roo/mcps/
+			const projectMcpsDir = path.join(workspaceFolder.uri.fsPath, ".roo", "mcps")
+			try {
+				const entries = await fs.readdir(projectMcpsDir, { withFileTypes: true })
+				for (const entry of entries) {
+					if (entry.isDirectory()) {
+						metadata[entry.name] = { type: "mcp" }
+					}
+				}
+			} catch (error) {
+				// Directory doesn't exist, skip
+			}
+
 			// Check Skills in .roo/skills/ and .roo/skills-{mode}/
 			const rooDir = path.join(workspaceFolder.uri.fsPath, ".roo")
 			await this.scanSkillDirectories(rooDir, metadata)
@@ -265,6 +291,7 @@ export class MarketplaceManager {
 	private async checkGlobalInstallations(metadata: Record<string, { type: string }>): Promise<void> {
 		try {
 			const globalSettingsPath = await ensureSettingsDirectoryExists(this.context)
+			const globalRooDir = getGlobalRooDirectory()
 
 			// Check global modes
 			const globalModesPath = path.join(globalSettingsPath, GlobalFileNames.customModes)
@@ -284,24 +311,52 @@ export class MarketplaceManager {
 				// File doesn't exist or can't be read, skip
 			}
 
-			// Check global MCPs
-			const globalMcpPath = path.join(globalSettingsPath, GlobalFileNames.mcpSettings)
-			try {
-				const content = await fs.readFile(globalMcpPath, "utf-8")
-				const data = JSON.parse(content)
-				if (data?.mcpServers && typeof data.mcpServers === "object") {
-					for (const serverName of Object.keys(data.mcpServers)) {
-						metadata[serverName] = {
-							type: "mcp",
+
+			// Check global MCPs.
+			// We intentionally scan both the runtime settings path and the canonical
+			// ~/.roo/settings path because file-based MCP installation may target the
+			// global roo directory while runtime settings can also be redirected via
+			// custom storage path configuration.
+			const globalMcpPaths = Array.from(
+				new Set([
+					path.join(globalSettingsPath, GlobalFileNames.mcpSettings),
+					path.join(globalRooDir, "settings", GlobalFileNames.mcpSettings),
+				]),
+			)
+			for (const globalMcpPath of globalMcpPaths) {
+				try {
+					const content = await fs.readFile(globalMcpPath, "utf-8")
+					const data = JSON.parse(content)
+					if (data?.mcpServers && typeof data.mcpServers === "object") {
+						for (const serverName of Object.keys(data.mcpServers)) {
+							metadata[serverName] = {
+								type: "mcp",
+							}
 						}
+					}
+				} catch (error) {
+					// File doesn't exist or can't be read, skip
+				}
+			}
+
+			// Check global file-based MCPs in ~/.roo/mcps/
+			// Note: ensureSettingsDirectoryExists() returns the global settings dir
+			// (e.g. ~/.roo/settings), but file-based MCPs are installed under the
+			// global roo dir itself (e.g. ~/.roo/mcps). Keep this aligned with
+			// McpFileInstaller.getMcpDirectory().
+			const globalMcpsDir = path.join(globalRooDir, "mcps")
+			try {
+				const entries = await fs.readdir(globalMcpsDir, { withFileTypes: true })
+				for (const entry of entries) {
+					if (entry.isDirectory()) {
+						metadata[entry.name] = { type: "mcp" }
 					}
 				}
 			} catch (error) {
-				// File doesn't exist or can't be read, skip
+				// Directory doesn't exist, skip
 			}
 
 			// Check global Skills in ~/.roo/skills/ and ~/.roo/skills-{mode}/
-			const globalRooDir = path.join(globalSettingsPath, ".roo")
 			await this.scanSkillDirectories(globalRooDir, metadata)
 	
 			// Check global Knowledge in ~/.roo/knowledge/

@@ -2752,11 +2752,15 @@ export class ClineProvider
 	 * Fetches marketplace data on demand to avoid blocking main state updates
 	 */
 	public async fetchMarketplaceData(): Promise<void> {
+		this.log("[Marketplace] fetchMarketplaceData:start")
 		try {
 			const marketplaceResult = await this.marketplaceManager.getMarketplaceItems().catch((error) => {
 				console.error("Failed to fetch marketplace items:", error)
 				return { organizationMcps: [], marketplaceItems: [], errors: [error.message] }
 			})
+			this.log(
+				`[Marketplace] items loaded: org=${marketplaceResult.organizationMcps?.length ?? 0}, items=${marketplaceResult.marketplaceItems?.length ?? 0}, errors=${marketplaceResult.errors?.length ?? 0}`,
+			)
 
 			// Send marketplace items immediately so the UI does not stay stuck on
 			// a spinner when installation metadata is slow (for example, due to an
@@ -2768,10 +2772,14 @@ export class ClineProvider
 				marketplaceInstalledMetadata: { project: {}, global: {} },
 				errors: marketplaceResult.errors,
 			})
+			this.log("[Marketplace] initial marketplaceData posted")
 
 			void this.marketplaceManager
 				.getInstallationMetadata()
 				.then((marketplaceInstalledMetadata) => {
+					this.log(
+						`[Marketplace] installation metadata loaded: project=${Object.keys(marketplaceInstalledMetadata?.project ?? {}).length}, global=${Object.keys(marketplaceInstalledMetadata?.global ?? {}).length}`,
+					)
 					this.postMessageToWebview({
 						type: "marketplaceData",
 						organizationMcps: marketplaceResult.organizationMcps || [],
@@ -2779,12 +2787,17 @@ export class ClineProvider
 						marketplaceInstalledMetadata: marketplaceInstalledMetadata || { project: {}, global: {} },
 						errors: marketplaceResult.errors,
 					})
+					this.log("[Marketplace] enriched marketplaceData posted")
 				})
 				.catch((error) => {
 					console.error("Failed to fetch installation metadata:", error)
+					this.log(
+						`[Marketplace] installation metadata failed: ${error instanceof Error ? error.message : String(error)}`,
+					)
 				})
 		} catch (error) {
 			console.error("Failed to fetch marketplace data:", error)
+			this.log(`[Marketplace] fetchMarketplaceData:error ${error instanceof Error ? error.message : String(error)}`)
 
 			// Send empty data on error
 			this.postMessageToWebview({
@@ -2794,6 +2807,7 @@ export class ClineProvider
 				marketplaceInstalledMetadata: { project: {}, global: {} },
 				errors: [error instanceof Error ? error.message : String(error)],
 			})
+			this.log("[Marketplace] fallback empty marketplaceData posted")
 		}
 	}
 
