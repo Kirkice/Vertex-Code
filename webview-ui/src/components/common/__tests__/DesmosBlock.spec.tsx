@@ -14,25 +14,12 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	useAppTranslation: () => ({
 		t: (key: string) => {
 			const translations: Record<string, string> = {
-				"common:desmos.loading": "Loading Desmos calculator...",
-				"common:desmos.render_error": "Failed to Render Function",
-				"common:desmos.export": "Export as PNG",
+				"common:desmos.loading": "Loading plot...",
+				"common:desmos.render_error": "Failed to render function",
+				"common:desmos.export": "Export as SVG",
 				"common:desmos.copy": "Copy configuration",
 			}
 			return translations[key] || key
-		},
-	}),
-}))
-
-vi.mock("@src/context/ExtensionStateContext", () => ({
-	useExtensionState: () => ({
-		desmosScriptUri: undefined,
-		builtinProtocolCapabilities: {
-			desmos: {
-				enabled: true,
-				trigger: "fenced_code_block",
-				language: "desmos",
-			},
 		},
 	}),
 }))
@@ -50,39 +37,79 @@ vi.mock("../CodeBlock", () => ({
 	default: ({ source }: { source: string }) => <pre data-testid="code-block">{source}</pre>,
 }))
 
-// Mock Desmos API
-const mockCalculator = {
-	setExpression: vi.fn(),
-	removeExpression: vi.fn(),
-	setMathBounds: vi.fn(),
-	setGraphSettings: vi.fn(),
-	screenshot: vi.fn(() => "data:image/png;base64,mock"),
-	getState: vi.fn(() => ({})),
-	setState: vi.fn(),
-	setBlank: vi.fn(),
-	destroy: vi.fn(),
-}
+// Mock mathjs
+vi.mock("mathjs", () => {
+	const mockCompile = (expr: string) => ({
+		evaluate: (scope: { x: number }) => {
+			try {
+				if (expr === "x") return scope.x
+				if (expr === "x^2") return scope.x * scope.x
+				if (expr.includes("?")) {
+					const parts = expr.split("?")
+					const condPart = parts[0].trim()
+					const rest = parts[1].split(":")
+					const expr1 = rest[0].trim()
+					const expr2 = rest.slice(1).join(":").trim()
+					if (condPart.includes("<=")) {
+						const [left, right] = condPart.split("<=")
+						const leftVal = left.trim() === "x" ? scope.x : parseFloat(left)
+						const rightVal = parseFloat(right)
+						if (leftVal <= rightVal) return evalExpr(expr1, scope.x)
+						else return evalExpr(expr2, scope.x)
+					}
+					if (condPart.includes(">")) {
+						const [left, right] = condPart.split(">")
+						const leftVal = left.trim() === "x" ? scope.x : parseFloat(left)
+						const rightVal = parseFloat(right)
+						if (leftVal > rightVal) return evalExpr(expr1, scope.x)
+						else return evalExpr(expr2, scope.x)
+					}
+				}
+				return scope.x
+			} catch {
+				return NaN
+			}
+		},
+	})
 
-const mockDesmos = {
-	GraphingCalculator: vi.fn(() => mockCalculator),
+	const mockAll = { create: () => ({ compile: mockCompile }) }
+
+	return {
+		create: () => ({ compile: mockCompile }),
+		all: mockAll,
+	}
+})
+
+function evalExpr(expr: string, x: number): number {
+	if (expr === "x") return x
+	if (expr === "x/12.92") return x / 12.92
+	if (expr.includes("^")) {
+		const parts = expr.split("^")
+		const base = parts[0].trim()
+		const exp = parseFloat(parts[1].trim().replace(/[()]/g, ""))
+		const baseVal = evalExpr(base, x)
+		return Math.pow(baseVal, exp)
+	}
+	return x
 }
 
 describe("DesmosBlock", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		// Mock window.Desmos
-		;(window as any).Desmos = mockDesmos
 	})
 
 	describe("Configuration Validation", () => {
-		it("should render loading state initially", () => {
+		it("should render plot container for valid config", async () => {
 			const validConfig = JSON.stringify({
 				version: 1,
 				expressions: [{ latex: "y = x^2" }],
 			})
 
-			render(<DesmosBlock code={validConfig} />)
-			expect(screen.getByText("Loading Desmos calculator...")).toBeInTheDocument()
+			const { container } = render(<DesmosBlock code={validConfig} />)
+
+			await waitFor(() => {
+				expect(container.querySelector("svg")).toBeInTheDocument()
+			})
 		})
 
 		it("should show error for invalid JSON", async () => {
@@ -91,7 +118,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={invalidJson} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -103,7 +130,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -116,7 +143,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -129,7 +156,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -142,7 +169,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -156,7 +183,7 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 
@@ -170,22 +197,22 @@ describe("DesmosBlock", () => {
 			render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 		})
 	})
 
 	describe("Successful Rendering", () => {
-		it("should render calculator with valid configuration", async () => {
+		it("should render SVG with valid configuration", async () => {
 			const config = JSON.stringify({
 				version: 1,
 				expressions: [{ latex: "y = x^2" }],
 			})
 
-			render(<DesmosBlock code={config} />)
+			const { container } = render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(mockDesmos.GraphingCalculator).toHaveBeenCalled()
+				expect(container.querySelector("svg")).toBeInTheDocument()
 			})
 		})
 
@@ -203,7 +230,7 @@ describe("DesmosBlock", () => {
 			})
 		})
 
-		it("should set expressions with correct colors", async () => {
+		it("should render SVG paths for expressions", async () => {
 			const config = JSON.stringify({
 				version: 1,
 				expressions: [
@@ -212,137 +239,47 @@ describe("DesmosBlock", () => {
 				],
 			})
 
-			render(<DesmosBlock code={config} />)
+			const { container } = render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(mockCalculator.setExpression).toHaveBeenCalledTimes(2)
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						latex: "y = x^2",
-						color: "#ff0000",
-					}),
-				)
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						latex: "y = x",
-						color: "#00ff00",
-					}),
-				)
+				const paths = container.querySelectorAll("svg path")
+				expect(paths.length).toBeGreaterThanOrEqual(2)
 			})
 		})
 
-		it("should use default colors when not specified", async () => {
+		it("should render grid lines when showGrid is true", async () => {
 			const config = JSON.stringify({
 				version: 1,
 				expressions: [{ latex: "y = x^2" }],
+				options: { showGrid: true },
 			})
 
-			render(<DesmosBlock code={config} />)
+			const { container } = render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						color: "#c74440", // First default color
-					}),
-				)
+				const lines = container.querySelectorAll("svg line")
+				expect(lines.length).toBeGreaterThan(0)
 			})
 		})
 
-		it("should set viewport when provided", async () => {
+		it("should render axis labels", async () => {
 			const config = JSON.stringify({
 				version: 1,
 				expressions: [{ latex: "y = x^2" }],
-				viewport: { xmin: -5, xmax: 5, ymin: -5, ymax: 5 },
+				options: { xAxisLabel: "X-Axis", yAxisLabel: "Y-Axis" },
 			})
 
-			render(<DesmosBlock code={config} />)
+			const { container } = render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(mockCalculator.setMathBounds).toHaveBeenCalledWith({
-					left: -5,
-					right: 5,
-					top: 5,
-					bottom: -5,
-				})
+				const texts = container.querySelectorAll("svg text")
+				const labels = Array.from(texts).map((t) => t.textContent)
+				expect(labels).toContain("X-Axis")
+				expect(labels).toContain("Y-Axis")
 			})
 		})
 
-		it("should set graph settings when provided", async () => {
-			const config = JSON.stringify({
-				version: 1,
-				expressions: [{ latex: "y = x^2" }],
-				options: {
-					showGrid: false,
-					showXAxis: true,
-					showYAxis: false,
-					xAxisLabel: "X",
-					yAxisLabel: "Y",
-				},
-			})
-
-			render(<DesmosBlock code={config} />)
-
-			await waitFor(() => {
-				expect(mockCalculator.setGraphSettings).toHaveBeenCalledWith({
-					showGrid: false,
-					showXAxis: true,
-					showYAxis: false,
-					xAxisLabel: "X",
-					yAxisLabel: "Y",
-					lockViewport: false,
-				})
-			})
-		})
-
-		it("should handle parametric domain", async () => {
-			const config = JSON.stringify({
-				version: 1,
-				expressions: [
-					{
-						latex: "(cos(t), sin(t))",
-						parametricDomain: { min: 0, max: 6.28 },
-					},
-				],
-			})
-
-			render(<DesmosBlock code={config} />)
-
-			await waitFor(() => {
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						parametricDomain: { min: "0", max: "6.28" },
-					}),
-				)
-			})
-		})
-
-		it("should handle line style", async () => {
-			const config = JSON.stringify({
-				version: 1,
-				expressions: [
-					{
-						latex: "y = x^2",
-						lineStyle: { width: 3, opacity: 0.5, dashed: true },
-					},
-				],
-			})
-
-			render(<DesmosBlock code={config} />)
-
-			await waitFor(() => {
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						lineStyle: {
-							width: 3,
-							opacity: 0.5,
-							style: "DASHED",
-						},
-					}),
-				)
-			})
-		})
-
-		it("should handle label", async () => {
+		it("should render expression labels", async () => {
 			const config = JSON.stringify({
 				version: 1,
 				expressions: [
@@ -353,79 +290,31 @@ describe("DesmosBlock", () => {
 				],
 			})
 
-			render(<DesmosBlock code={config} />)
+			const { container } = render(<DesmosBlock code={config} />)
 
 			await waitFor(() => {
-				expect(mockCalculator.setExpression).toHaveBeenCalledWith(
-					expect.objectContaining({
-						label: "Quadratic",
-						showLabel: true,
-					}),
-				)
+				const texts = container.querySelectorAll("svg text")
+				const labels = Array.from(texts).map((t) => t.textContent)
+				expect(labels).toContain("Quadratic")
 			})
 		})
 	})
 
 	describe("Error Handling", () => {
-		it("should show error when Desmos API fails to load", async () => {
-			// Remove Desmos from window and simulate script load failure
-			delete (window as any).Desmos
-
-			const appendChildSpy = vi.spyOn(document.head, "appendChild").mockImplementation((node) => {
-				const script = node as HTMLScriptElement
-				queueMicrotask(() => {
-					script.onerror?.(new Event("error") as any)
-				})
-				return node
-			})
-
-			const config = JSON.stringify({
-				version: 1,
-				expressions: [{ latex: "y = x^2" }],
-			})
-
-			render(<DesmosBlock code={config} />)
-
-			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
-			})
-
-			appendChildSpy.mockRestore()
-		})
-
 		it("should expand error details when clicked", async () => {
 			const invalidJson = "{ invalid }"
 
 			render(<DesmosBlock code={invalidJson} />)
 
 			await waitFor(() => {
-				expect(screen.getByText("Failed to Render Function")).toBeInTheDocument()
+				expect(screen.getByText("Failed to render function")).toBeInTheDocument()
 			})
 
-			fireEvent.click(screen.getByText("Failed to Render Function"))
+			fireEvent.click(screen.getByText("Failed to render function"))
 
 			await waitFor(() => {
 				expect(screen.getByTestId("code-block")).toBeInTheDocument()
 			})
-		})
-	})
-
-	describe("Cleanup", () => {
-		it("should destroy calculator on unmount", async () => {
-			const config = JSON.stringify({
-				version: 1,
-				expressions: [{ latex: "y = x^2" }],
-			})
-
-			const { unmount } = render(<DesmosBlock code={config} />)
-
-			await waitFor(() => {
-				expect(mockDesmos.GraphingCalculator).toHaveBeenCalled()
-			})
-
-			unmount()
-
-			expect(mockCalculator.destroy).toHaveBeenCalled()
 		})
 	})
 })
