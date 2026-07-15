@@ -56,6 +56,7 @@ export const TerminalOutput: React.FC<TerminalOutputProps> = ({ content, classNa
 	return (
 		<pre
 			className={className}
+			data-theme-surface="terminal-output"
 			style={{
 				fontFamily:
 					"var(--vscode-editor-font-family, 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', monospace)",

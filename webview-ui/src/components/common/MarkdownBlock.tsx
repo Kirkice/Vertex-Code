@@ -104,12 +104,19 @@ const StyledMarkdown = styled.div`
 		sans-serif;
 
 	font-size: var(--vertex-chat-font-size, var(--vscode-font-size, 13px));
+	color: var(--vscode-foreground);
 
 	p,
 	li,
 	ol,
 	ul {
 		line-height: 1.35em;
+		color: var(--vscode-foreground);
+	}
+
+	p + p,
+	li + li {
+		color: color-mix(in srgb, var(--vscode-foreground) 92%, var(--vscode-descriptionForeground));
 	}
 
 	li {
@@ -143,6 +150,19 @@ const StyledMarkdown = styled.div`
 		margin: 1em 0 0.25em;
 	}
 
+	blockquote:not([data-alert-type]) {
+		margin: 1em 0;
+		padding: 0.85em 1.1em;
+		border-left: 0.25em solid var(--vscode-textBlockQuote-border);
+		background: color-mix(in srgb, var(--vscode-textBlockQuote-border) 10%, transparent);
+		color: color-mix(in srgb, var(--vscode-foreground) 78%, var(--vscode-textLink-foreground) 22%);
+	}
+
+	blockquote:not([data-alert-type]) p,
+	blockquote:not([data-alert-type]) li {
+		color: inherit;
+	}
+
 	/* Prevent layout shifts during streaming */
 	pre {
 		min-height: 3em;
@@ -160,6 +180,7 @@ const StyledMarkdown = styled.div`
 		color: var(--vscode-textLink-foreground);
 		text-decoration: none;
 		text-decoration-color: var(--vscode-textLink-foreground);
+		text-underline-offset: 0.18em;
 		&:hover {
 			color: var(--vscode-textLink-activeForeground);
 			text-decoration: underline;
@@ -170,17 +191,35 @@ const StyledMarkdown = styled.div`
 		font-size: 1.65em;
 		font-weight: 700;
 		margin: 1.35em 0 0.5em;
+		color: color-mix(in srgb, var(--vscode-textLink-foreground) 82%, white 18%);
 	}
 
 	h2 {
 		font-size: 1.35em;
 		font-weight: 500;
 		margin: 1.35em 0 0.5em;
+		color: color-mix(in srgb, var(--vscode-charts-purple, var(--vscode-textLink-foreground)) 72%, white 28%);
 	}
 
 	h3 {
 		font-size: 1.2em;
 		font-weight: 500;
+		color: color-mix(in srgb, var(--vscode-charts-green, var(--vscode-textLink-foreground)) 55%, var(--vscode-foreground) 45%);
+	}
+
+	h4,
+	h5,
+	h6 {
+		color: color-mix(in srgb, var(--vscode-foreground) 76%, var(--vscode-descriptionForeground) 24%);
+	}
+
+	strong,
+	b {
+		color: color-mix(in srgb, var(--vscode-charts-purple, var(--vscode-textLink-foreground)) 58%, var(--vscode-foreground) 42%);
+	}
+
+	em {
+		color: color-mix(in srgb, var(--vscode-charts-blue, var(--vscode-textLink-foreground)) 35%, var(--vscode-foreground) 65%);
 	}
 
 	/* Table styles for remark-gfm */
@@ -230,6 +269,7 @@ const StyledMarkdown = styled.div`
 		border-left: 0.25em solid var(--alert-accent, var(--vscode-textBlockQuote-border));
 		border-radius: 3px;
 		background-color: var(--vscode-textBlockQuote-background);
+		color: color-mix(in srgb, var(--vscode-foreground) 90%, var(--alert-accent, var(--vscode-textBlockQuote-border)) 10%);
 	}
 
 	.markdown-alert > :first-child {

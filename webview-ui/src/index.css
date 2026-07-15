@@ -409,6 +409,96 @@ html.vertex-theme-active .theme-shell-chat .scrollable > div {
 	background: transparent;
 }
 
+html.vertex-theme-active .theme-shell-chat {
+	--vertex-chat-body: #f3ecff;
+	--vertex-chat-body-soft: #d8caee;
+	--vertex-chat-body-muted: #a692c2;
+	--vertex-chat-heading-1: #62f3ff;
+	--vertex-chat-heading-2: #d8a7ff;
+	--vertex-chat-heading-3: #8fffd0;
+	--vertex-chat-strong: #ff8bd1;
+	--vertex-chat-emphasis: #9ae8ff;
+	--vertex-chat-quote: #8fe9ff;
+	--vertex-chat-quote-border: #00d9ff;
+	--vertex-chat-link: #38e8ff;
+	--vertex-chat-link-hover: #7af3ff;
+	--vertex-chat-success: #00ff9c;
+	--vertex-chat-warning: #ffd060;
+	--vertex-chat-error: #ff5b87;
+	--vertex-chat-info: #bf7fff;
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown,
+html.vertex-theme-active .theme-shell-chat .custom-markdown p,
+html.vertex-theme-active .theme-shell-chat .custom-markdown li,
+html.vertex-theme-active .theme-shell-chat .custom-markdown ol,
+html.vertex-theme-active .theme-shell-chat .custom-markdown ul {
+	color: var(--vertex-chat-body);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown p + p,
+html.vertex-theme-active .theme-shell-chat .custom-markdown li + li,
+html.vertex-theme-active .theme-shell-chat .custom-markdown ul ul,
+html.vertex-theme-active .theme-shell-chat .custom-markdown ol ol {
+	color: var(--vertex-chat-body-soft);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown h1 {
+	color: var(--vertex-chat-heading-1);
+	text-shadow: 0 0 8px rgba(0, 229, 255, 0.16);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown h2 {
+	color: var(--vertex-chat-heading-2);
+	text-shadow: 0 0 8px rgba(191, 127, 255, 0.12);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown h3,
+html.vertex-theme-active .theme-shell-chat .custom-markdown h4,
+html.vertex-theme-active .theme-shell-chat .custom-markdown h5,
+html.vertex-theme-active .theme-shell-chat .custom-markdown h6 {
+	color: var(--vertex-chat-heading-3);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown strong,
+html.vertex-theme-active .theme-shell-chat .custom-markdown b {
+	color: var(--vertex-chat-strong);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown em {
+	color: var(--vertex-chat-emphasis);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown a,
+html.vertex-theme-active .theme-shell-chat .text-vscode-textLink-foreground {
+	color: var(--vertex-chat-link) !important;
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown a:hover,
+html.vertex-theme-active .theme-shell-chat .text-vscode-textLink-foreground:hover {
+	color: var(--vertex-chat-link-hover) !important;
+	text-shadow: 0 0 6px rgba(0, 229, 255, 0.24);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown blockquote:not([data-alert-type]) {
+	color: var(--vertex-chat-quote);
+	border-left-color: var(--vertex-chat-quote-border);
+	background: color-mix(in srgb, var(--vertex-chat-quote-border) 10%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown .markdown-alert {
+	background: color-mix(in srgb, var(--alert-accent, var(--vertex-chat-info)) 8%, #05030a);
+	border-color: color-mix(in srgb, var(--alert-accent, var(--vertex-chat-info)) 30%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-chat .custom-markdown .markdown-alert-title {
+	text-shadow: 0 0 4px color-mix(in srgb, var(--alert-accent) 22%, transparent);
+}
+
+html.vertex-theme-active .theme-shell-chat [data-theme-surface="terminal-output"] span[style*="background-color"] {
+	background-color: transparent !important;
+}
+
 /* ── User feedback bubble: use secondary surface instead of white ────────── */
 html.vertex-theme-active [data-theme-surface="user-feedback-bubble"] {
 	background: var(--secondary) !important;
@@ -467,6 +557,10 @@ html.vertex-theme-active .theme-shell-chat .font-bold {
 	color: #00E5FF !important;
 }
 
+html.vertex-theme-active .theme-shell-chat .text-vscode-foreground {
+	color: var(--vertex-chat-body);
+}
+
 /* API request cost badge — purple */
 html.vertex-theme-active .theme-shell-chat [class*="rounded-lg"][class*="border"][style*="opacity"] {
 	border-color: #BF7FFF !important;
@@ -496,6 +590,10 @@ html.vertex-theme-active .text-vscode-errorForeground {
 /* Description foreground — light gray-purple for secondary text */
 html.vertex-theme-active .text-vscode-descriptionForeground {
 	color: #9B8FB0 !important;
+}
+
+html.vertex-theme-active .theme-shell-chat .text-vscode-descriptionForeground {
+	color: var(--vertex-chat-body-muted) !important;
 }
 
 /* Links — neon cyan */
@@ -545,6 +643,21 @@ html.vertex-theme-active .text-vscode-charts-red {
 html.vertex-theme-active .theme-shell-chat [class*="Mode Handoff"],
 html.vertex-theme-active .theme-shell-chat .text-base + .font-bold {
 	color: #BF7FFF !important;
+}
+
+html.vertex-theme-active .theme-shell-chat [style*="var(--vscode-charts-green)"],
+html.vertex-theme-active .theme-shell-chat .text-vscode-charts-green {
+	color: var(--vertex-chat-success) !important;
+}
+
+html.vertex-theme-active .theme-shell-chat .text-vscode-editorWarning-foreground,
+html.vertex-theme-active .theme-shell-chat .text-vscode-charts-yellow {
+	color: var(--vertex-chat-warning) !important;
+}
+
+html.vertex-theme-active .theme-shell-chat .text-vscode-errorForeground,
+html.vertex-theme-active .theme-shell-chat .text-vscode-charts-red {
+	color: var(--vertex-chat-error) !important;
 }
 
 @layer components {
