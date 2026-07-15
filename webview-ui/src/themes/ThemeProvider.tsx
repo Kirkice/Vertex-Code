@@ -11,7 +11,7 @@
  * @module themes/ThemeProvider
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react"
 
 import type { ThemeId } from "./types"
 import { DEFAULT_THEME_ID } from "./types"
@@ -141,6 +141,27 @@ function applyTheme(themeId: ThemeId): void {
 	}
 }
 
+/**
+ * Apply the persisted theme before React renders any visible UI.
+ *
+ * Webviews can paint the document between loading the CSS and mounting the
+ * React tree. If the theme is only applied from an effect, the first paint
+ * uses VS Code's colors and a later interaction can expose the saved theme.
+ */
+export function initializeTheme(): void {
+	applyTheme(loadStoredThemeId())
+}
+
+/**
+ * Ensure the persisted theme is attached before the first visible paint.
+ * [`useEffect()`](webview-ui/src/themes/ThemeProvider.tsx:176) can run too late for VS Code webviews,
+ * causing the UI to briefly render with raw VS Code theme tokens until a later
+ * interaction triggers a repaint.
+ */
+function applyThemeBeforePaint(themeId: ThemeId): void {
+	applyTheme(themeId)
+}
+
 // ─── Context ────────────────────────────────────────────────────────────────
 
 interface ThemeContextValue {
@@ -173,9 +194,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 	// The pending theme — selected by the user but not yet saved.
 	const [pendingThemeId, setPendingThemeIdState] = useState<ThemeId>(themeId)
 
-	useEffect(() => {
-		applyTheme(themeId)
+	useLayoutEffect(() => {
+		applyThemeBeforePaint(themeId)
+	}, [themeId])
 
+	useEffect(() => {
 		try {
 			localStorage.setItem(STORAGE_KEY, themeId)
 		} catch {

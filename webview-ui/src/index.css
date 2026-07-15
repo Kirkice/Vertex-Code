@@ -185,6 +185,14 @@
 	body {
 		--vscode-input-border: var(--border);
 	}
+
+	/* Let the browser know both schemes are supported so initial native UI
+	   painting in the webview does not bias toward the outer VS Code theme
+	   before [`ThemeProvider`](webview-ui/src/themes/ThemeProvider.tsx) applies the saved theme. */
+	html,
+	body {
+		color-scheme: light dark;
+	}
 }
 
 /* ── JellyFish theme: flat, opaque, CLI-terminal aesthetic ────────────────
