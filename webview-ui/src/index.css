@@ -221,7 +221,7 @@
 		--muted: #000000;
 		--muted-foreground: #7e7888;
 		--accent: #7dd3e8;
-		--accent-foreground: #000000;
+		--accent-foreground: #eeeaf4;
 		--border: #b366ff;
 		--input: #000000;
 		--ring: #7dd3e8b3;
@@ -240,7 +240,8 @@
 		--color-vscode-dropdown-background: #000000;
 		--color-vscode-dropdown-foreground: #eeeaf4;
 		--color-vscode-dropdown-border: #b366ff;
-		--color-vscode-list-hoverBackground: #000000;
+		--color-vscode-list-hoverBackground: #18231e;
+		--color-vscode-list-hoverForeground: #eeeaf4;
 		--color-vscode-list-activeSelectionBackground: #e8439342;
 		--color-vscode-list-activeSelectionForeground: #e84393;
 		--color-vscode-list-focusBackground: #000000;
@@ -275,7 +276,7 @@
 		--color-vscode-charts-yellow: #ffd060;
 		--color-vscode-charts-blue: #00e5ff;
 		--color-vscode-charts-orange: #ff8a3d;
-		--color-vscode-toolbar-hoverBackground: #000000;
+		--color-vscode-toolbar-hoverBackground: #18231e;
 	}
 
 	html.vertex-theme-active,
@@ -292,6 +293,19 @@
 html.vertex-theme-active .theme-shell {
 	background: var(--background);
 	color: var(--foreground);
+}
+
+/* Keep every interactive option readable when the Vertex theme is active.
+   cmdk marks the pointer-hovered row as data-selected, so a normal hover
+   override alone is not enough for searchable selects. */
+html.vertex-theme-active [cmdk-item]:hover,
+html.vertex-theme-active [cmdk-item][data-selected="true"],
+html.vertex-theme-active [role="option"]:hover,
+html.vertex-theme-active [role="option"][aria-selected="true"],
+html.vertex-theme-active [role="menuitem"]:hover,
+html.vertex-theme-active [data-radix-collection-item]:hover {
+	background-color: #18231e !important;
+	color: #eeeaf4 !important;
 }
 
 /* ── Header: flat surface-2 + hairline bottom stroke ────────────────────── */

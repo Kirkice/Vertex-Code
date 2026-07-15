@@ -302,17 +302,13 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 	
 				// ── Cyberpunk color palette ──
 				const CYBER = {
-					bgDark: "#0a0e1a",
-					bgGrad1: "#0d1117",
-					bgGrad2: "#161b2e",
-					gridMinor: "#1a2332",
-					gridMajor: "#2a3a52",
-					axis: "#4a9eff",
-					text: "#7a8ba8",
-					textBright: "#aabbcc",
-					legendBg: "#0d1117",
-					legendBorder: "#2a3a52",
-					scanline: "#4a9eff",
+					gridMinor: "#17452f",
+					gridMajor: "#26734a",
+					axis: "#74e595",
+					text: "#79c99a",
+					textBright: "#b8ffd0",
+					legendBorder: "#74e595",
+					scanline: "#74e595",
 				}
 	
 				// ── Defs: gradients, filters, markers ──
@@ -349,13 +345,13 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 				svgParts.push(`</defs>`)
 	
 				// ── Outer dark background ──
-				svgParts.push(`<rect x="0" y="0" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" fill="${CYBER.bgDark}" />`)
+				svgParts.push(`<rect x="0" y="0" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" fill="transparent" />`)
 	
 				// ── Plot area transparent / clean background ──
 				svgParts.push(`<rect x="${PADDING.left}" y="${PADDING.top}" width="${plotWidth}" height="${plotHeight}" rx="8" ry="8" fill="transparent" />`)
 	
 				// ── Plot area border (neon outline) ──
-				svgParts.push(`<rect x="${PADDING.left}" y="${PADDING.top}" width="${plotWidth}" height="${plotHeight}" rx="8" ry="8" fill="none" stroke="${CYBER.axis}" stroke-width="1" opacity="0.3" />`)
+				svgParts.push(`<rect x="${PADDING.left}" y="${PADDING.top}" width="${plotWidth}" height="${plotHeight}" rx="8" ry="8" fill="none" stroke="${CYBER.axis}" stroke-width="1" opacity="0.72" filter="url(#axisGlow)" />`)
 	
 				// ── Clip path ──
 				svgParts.push(`<clipPath id="plotClip"><rect x="${PADDING.left}" y="${PADDING.top}" width="${plotWidth}" height="${plotHeight}" rx="8" ry="8" /></clipPath>`)
@@ -553,7 +549,7 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 					const legendHeight = legendItems.length * 20 + 8
 					const legendWidth = 100
 
-					svgParts.push(`<rect x="${legendX - legendWidth}" y="${legendY}" width="${legendWidth}" height="${legendHeight}" rx="4" ry="4" fill="${CYBER.legendBg}" fill-opacity="0.85" stroke="${CYBER.legendBorder}" stroke-width="1" />`)
+					svgParts.push(`<rect x="${legendX - legendWidth}" y="${legendY}" width="${legendWidth}" height="${legendHeight}" rx="4" ry="4" fill="transparent" stroke="${CYBER.legendBorder}" stroke-width="1" opacity="0.72" />`)
 	
 					legendItems.forEach((item, idx) => {
 						const ly = legendY + 18 + idx * 22
@@ -692,14 +688,14 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 const DesmosBlockContainer = styled.div`
 	position: relative;
 	margin: 8px 0;
-	border: 1px solid color-mix(in srgb, var(--vscode-focusBorder) 35%, transparent);
+	border: 1px solid rgba(116, 229, 149, 0.58);
 	border-radius: 10px;
 	overflow: hidden;
-	background: linear-gradient(180deg, rgba(7, 11, 20, 0.96), rgba(8, 12, 24, 0.98));
+	background: var(--vscode-editor-background);
 	box-shadow:
-		0 0 0 1px rgba(92, 139, 255, 0.08) inset,
+		0 0 0 1px rgba(116, 229, 149, 0.16) inset,
 		0 10px 30px rgba(0, 0, 0, 0.35),
-		0 0 24px rgba(74, 158, 255, 0.08);
+		0 0 24px rgba(116, 229, 149, 0.1);
 `
 
 const PanelHeader = styled.div`
@@ -708,10 +704,8 @@ const PanelHeader = styled.div`
 	align-items: center;
 	gap: 10px;
 	padding: 8px 12px 6px;
-	border-bottom: 1px solid rgba(74, 158, 255, 0.12);
-	background:
-		linear-gradient(90deg, rgba(74, 158, 255, 0.08), transparent 18%),
-		linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+	border-bottom: 1px solid rgba(116, 229, 149, 0.28);
+	background: transparent;
 `
 
 const PanelKicker = styled.div`
@@ -719,11 +713,11 @@ const PanelKicker = styled.div`
 	line-height: 1;
 	letter-spacing: 1.8px;
 	font-weight: 700;
-	color: #59d6ff;
+	color: #74e595;
 	padding: 4px 6px;
-	border: 1px solid rgba(89, 214, 255, 0.25);
+	border: 1px solid rgba(116, 229, 149, 0.4);
 	border-radius: 999px;
-	background: rgba(89, 214, 255, 0.08);
+	background: rgba(116, 229, 149, 0.08);
 `
 
 const PanelTitleGroup = styled.div`
@@ -838,21 +832,18 @@ const PlotContainer = styled.div<{ $isLoading: boolean }>`
 	opacity: ${(props) => (props.$isLoading ? 0.3 : 1)};
 	transition: opacity 0.2s ease;
 	padding: 8px 8px 10px;
-	background:
-		radial-gradient(circle at top right, rgba(122, 68, 255, 0.16), transparent 28%),
-		radial-gradient(circle at left center, rgba(0, 224, 255, 0.12), transparent 24%),
-		linear-gradient(180deg, rgba(10, 14, 26, 0.98), rgba(8, 12, 24, 0.98));
+	background: var(--vscode-editor-background);
 `
 
 const PlotViewport = styled.div`
 	position: relative;
 	border-radius: 10px;
 	overflow: hidden;
-	background: rgba(5, 8, 16, 0.85);
+	background: transparent;
 	min-height: 320px;
 	box-shadow:
-		inset 0 0 0 1px rgba(74, 158, 255, 0.14),
-		inset 0 0 40px rgba(74, 158, 255, 0.05);
+		inset 0 0 0 1px rgba(116, 229, 149, 0.18),
+		inset 0 0 40px rgba(116, 229, 149, 0.05);
 `
 
 const HudChromeTop = styled.div`
@@ -861,7 +852,7 @@ const HudChromeTop = styled.div`
 	left: 12px;
 	width: 120px;
 	height: 1px;
-	background: linear-gradient(90deg, rgba(89, 214, 255, 0.8), transparent);
+	background: linear-gradient(90deg, rgba(116, 229, 149, 0.9), transparent);
 	z-index: 2;
 	pointer-events: none;
 `
@@ -872,7 +863,7 @@ const HudChromeBottom = styled.div`
 	right: 12px;
 	width: 140px;
 	height: 1px;
-	background: linear-gradient(90deg, transparent, rgba(255, 84, 122, 0.75));
+	background: linear-gradient(90deg, transparent, rgba(116, 229, 149, 0.75));
 	z-index: 2;
 	pointer-events: none;
 `
@@ -888,9 +879,9 @@ const Toolbar = styled.div`
 	transition: opacity 0.2s ease;
 	padding: 6px 8px;
 	border-radius: 8px;
-	background: rgba(6, 10, 18, 0.72);
+	background: color-mix(in srgb, var(--vscode-editor-background) 88%, transparent);
 	backdrop-filter: blur(10px);
-	border: 1px solid rgba(74, 158, 255, 0.14);
+	border: 1px solid rgba(116, 229, 149, 0.24);
 
 	${PlotContainer}:hover & {
 		opacity: 1;
@@ -913,9 +904,9 @@ const ToolbarButtons = styled.div`
 
 const ToolbarButton = styled.button`
 	padding: 6px;
-	background: rgba(74, 158, 255, 0.12);
-	color: #d6ecff;
-	border: 1px solid rgba(74, 158, 255, 0.16);
+	background: rgba(116, 229, 149, 0.12);
+	color: #b8ffd0;
+	border: 1px solid rgba(116, 229, 149, 0.3);
 	border-radius: 6px;
 	cursor: pointer;
 	display: flex;
@@ -923,7 +914,7 @@ const ToolbarButton = styled.button`
 	justify-content: center;
 
 	&:hover {
-		background: rgba(74, 158, 255, 0.2);
-		box-shadow: 0 0 16px rgba(74, 158, 255, 0.15);
+		background: rgba(116, 229, 149, 0.2);
+		box-shadow: 0 0 16px rgba(116, 229, 149, 0.2);
 	}
 `

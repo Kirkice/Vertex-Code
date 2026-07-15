@@ -96,6 +96,8 @@ export const ApiConfigSelector = ({
 			return (
 				<div
 					key={config.id}
+					role="option"
+					aria-selected={isCurrentConfig}
 					onClick={() => handleSelect(config.id)}
 					className={cn(
 						"px-3 py-1.5 text-sm cursor-pointer flex items-center group",
