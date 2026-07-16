@@ -52,7 +52,10 @@
 		"loading": "正在加载 Desmos 计算器...",
 		"render_error": "无法渲染函数",
 		"export": "导出为 PNG",
-		"copy": "复制配置"
+		"copy": "复制配置",
+		"expand": "展开",
+		"collapse": "收起",
+		"copied": "已复制"
 	},
 	"image": {
 		"tabs": {

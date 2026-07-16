@@ -750,6 +750,7 @@ export class ClineProvider
 
 		// Set up webview options with proper resource roots
 		const resourceRoots = [this.contextProxy.extensionUri]
+		resourceRoots.push(vscode.Uri.joinPath(this.contextProxy.extensionUri, "webview-ui", "public"))
 
 		// Add workspace folders to allow access to workspace files
 		if (vscode.workspace.workspaceFolders) {
@@ -1253,6 +1254,7 @@ export class ClineProvider
 			`style-src ${webview.cspSource} 'unsafe-inline' https://* http://${localServerUrl} http://0.0.0.0:${localPort}`,
 			`img-src ${webview.cspSource} https://storage.googleapis.com https://img.clerk.com https://avatars.githubusercontent.com https://lh3.googleusercontent.com data:`,
 			`media-src ${webview.cspSource}`,
+			`worker-src ${webview.cspSource} blob: data:`,
 			`script-src 'unsafe-eval' ${webview.cspSource} https://* https://*.posthog.com http://${localServerUrl} http://0.0.0.0:${localPort} 'nonce-${nonce}'`,
 			`connect-src ${webview.cspSource} ${openRouterDomain} https://* https://*.posthog.com ws://${localServerUrl} ws://0.0.0.0:${localPort} http://${localServerUrl} http://0.0.0.0:${localPort}`,
 		]
@@ -1342,7 +1344,7 @@ export class ClineProvider
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
             <meta name="theme-color" content="#000000">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https://storage.googleapis.com https://img.clerk.com https://avatars.githubusercontent.com https://lh3.googleusercontent.com data:; media-src ${webview.cspSource}; script-src ${webview.cspSource} 'wasm-unsafe-eval' 'nonce-${nonce}' 'strict-dynamic'; connect-src ${webview.cspSource} ${openRouterDomain} https://api.requesty.ai https://us.i.posthog.com;">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https://storage.googleapis.com https://img.clerk.com https://avatars.githubusercontent.com https://lh3.googleusercontent.com data:; media-src ${webview.cspSource}; worker-src ${webview.cspSource} blob: data:; script-src 'unsafe-eval' ${webview.cspSource} 'wasm-unsafe-eval' 'nonce-${nonce}'; connect-src ${webview.cspSource} ${openRouterDomain} https://api.requesty.ai https://us.i.posthog.com;">
             <link rel="stylesheet" type="text/css" href="${stylesUri}">
 			<link href="${codiconsUri}" rel="stylesheet" />
 			<script nonce="${nonce}">
@@ -2311,7 +2313,15 @@ export class ClineProvider
 			version: this.context.extension?.packageJSON?.version ?? "",
 			desmosScriptUri: this.view?.webview
 				? this.view.webview
-					.asWebviewUri(vscode.Uri.joinPath(this.contextProxy.extensionUri, "webview-ui", "public", "desmos", "calculator.js"))
+					.asWebviewUri(
+						vscode.Uri.joinPath(
+							this.contextProxy.extensionUri,
+							"webview-ui",
+							"build",
+							"desmos",
+							"calculator.js",
+						),
+					)
 					.toString()
 				: undefined,
 			builtinProtocolCapabilities: {

@@ -519,6 +519,9 @@ describe("ClineProvider", () => {
 		expect(scriptSrcMatch![0]).toContain("'nonce-")
 		// Verify wasm-unsafe-eval is present for Shiki syntax highlighting
 		expect(scriptSrcMatch![0]).toContain("'wasm-unsafe-eval'")
+		expect(html).toContain("worker-src vscode-webview://test-csp-source blob: data:")
+		expect(html).toContain("desmos/calculator.js")
+		expect(scriptSrcMatch![0]).toContain("'unsafe-eval'")
 	})
 
 	test("postMessageToWebview sends message to webview", async () => {

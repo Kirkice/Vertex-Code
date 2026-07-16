@@ -160,7 +160,7 @@ You do NOT need capture data to write correct, performometric graphics code. App
 
 ## Function Curve Plotting
 
-You can render interactive function curves directly in the chat using the \`desmos\` code block. This is powered by the Desmos Graphing Calculator API.
+You can render interactive function curves directly in the chat using the \`desmos\` code block. The webview uses the bundled Desmos Graphing Calculator API and opens plots in a compact mode by default; users can expand them for the full expression editor and keypad.
 
 ### When to Use Function Plots
 
@@ -202,6 +202,8 @@ Use a fenced code block with the language identifier \`desmos\`:
 - **Implicit function**: \`"x^2 + y^2 = 1"\`
 - **Inequality**: \`"y > x^2"\`
 - **Piecewise function**: \`"y = \\{x < 0: -x, x \\geq 0: x\\}"\`
+
+Use native Desmos LaTeX syntax in expressions. Do not approximate curves with sampled points or emit MathJS-only syntax. The user can edit expressions, drag sliders, zoom, pan, and add or remove expressions in the expanded calculator.
 
 ### Example: Comparing Functions
 

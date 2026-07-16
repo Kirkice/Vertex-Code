@@ -42,6 +42,13 @@ export interface DesmosExpression {
 	}
 }
 
+export interface DesmosDisplayConfig {
+	defaultMode?: "compact" | "expanded"
+	allowExpand?: boolean
+	editable?: boolean
+	persistEdits?: boolean
+}
+
 /**
  * Desmos viewport configuration.
  */
@@ -78,6 +85,7 @@ export interface DesmosConfig {
 	viewport?: DesmosViewport
 	/** Display options */
 	options?: DesmosOptions
+	display?: DesmosDisplayConfig
 }
 
 /**
@@ -85,6 +93,8 @@ export interface DesmosConfig {
  * This is a subset of the full Desmos API used by DesmosBlock.
  */
 export interface DesmosCalculator {
+	observe(event: string, callback: () => void): void
+	resize(): void
 	/** Set an expression */
 	setExpression(expr: {
 		id: string
@@ -98,6 +108,11 @@ export interface DesmosCalculator {
 		}
 		label?: string
 		showLabel?: boolean
+		sliderBounds?: {
+			min?: string
+			max?: string
+			step?: string
+		}
 		parametricDomain?: {
 			min: string
 			max: string
@@ -115,8 +130,12 @@ export interface DesmosCalculator {
 		bottom?: number
 	}): void
 
-	/** Set graph settings */
-	setGraphSettings(settings: {
+	/** Update graph settings */
+	updateSettings(settings: {
+		keypad?: boolean
+		expressions?: boolean
+		settingsMenu?: boolean
+		zoomButtons?: boolean
 		showGrid?: boolean
 		showXAxis?: boolean
 		showYAxis?: boolean

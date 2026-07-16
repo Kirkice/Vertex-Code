@@ -116,6 +116,7 @@ async function main() {
 							["../.env", ".env", { optional: true }],
 							["node_modules/vscode-material-icons/generated", "assets/vscode-material-icons"],
 							["../webview-ui/audio", "webview-ui/audio"],
+							["../webview-ui/public/desmos", "webview-ui/build/desmos"],
 							["assets/marketplace", "dist/assets/marketplace"],
 							["core/prompts/sections/knowledge", "dist/core/prompts/sections/knowledge"],
 						],
