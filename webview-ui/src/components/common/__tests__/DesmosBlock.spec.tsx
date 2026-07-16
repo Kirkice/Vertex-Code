@@ -33,6 +33,10 @@ vi.mock("@src/utils/clipboard", () => ({
 	useCopyToClipboard: () => ({ showCopyFeedback: false, copyWithFeedback: vi.fn() }),
 }))
 
+vi.mock("@src/themes/ThemeProvider", () => ({
+	useTheme: () => ({ themeId: "jellyfish" }),
+}))
+
 describe("DesmosBlock", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -50,7 +54,7 @@ describe("DesmosBlock", () => {
 			latex: "y=x^2",
 		})))
 		expect(mockCalculator.setMathBounds).toHaveBeenCalledWith({ left: -5, right: 5, bottom: -2, top: 10 })
-		expect(mockCalculator.updateSettings).toHaveBeenCalledWith(expect.objectContaining({ expressions: false }))
+		expect(mockCalculator.updateSettings).toHaveBeenCalledWith(expect.objectContaining({ expressions: false, invertedColors: true }))
 	})
 
 	it("switches from compact to expanded calculator settings", async () => {

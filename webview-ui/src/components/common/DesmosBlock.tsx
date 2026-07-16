@@ -5,6 +5,7 @@ import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useCopyToClipboard } from "@src/utils/clipboard"
 import { loadDesmos } from "@src/utils/desmosLoader"
 import type { DesmosCalculator, DesmosConfig } from "@src/types/desmos"
+import { useTheme } from "@src/themes/ThemeProvider"
 
 interface DesmosBlockProps { code: string }
 
@@ -21,9 +22,19 @@ function parseConfig(code: string): DesmosConfig {
 	return value
 }
 
+function preserveJellyfishColor(color: string | undefined, jellyfish: boolean): string | undefined {
+	if (!color || !jellyfish || !/^#[0-9a-f]{6}$/i.test(color)) return color
+
+	const red = 255 - Number.parseInt(color.slice(1, 3), 16)
+	const green = 255 - Number.parseInt(color.slice(3, 5), 16)
+	const blue = 255 - Number.parseInt(color.slice(5, 7), 16)
+	return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`
+}
+
 export default function DesmosBlock({ code }: DesmosBlockProps) {
 	const { desmosScriptUri } = useExtensionState()
 	const { t } = useAppTranslation()
+	const { themeId } = useTheme()
 	const { copyWithFeedback, showCopyFeedback } = useCopyToClipboard()
 	const containerRef = useRef<HTMLDivElement>(null)
 	const calculatorRef = useRef<DesmosCalculator | null>(null)
@@ -34,6 +45,11 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 	})
 	const [editedState, setEditedState] = useState<unknown>(null)
 	const editable = config?.display?.editable !== false
+	const jellyfish = themeId === "jellyfish"
+	// Desmos' invertedColors mode inverts expression colors as well as the
+	// canvas. Feed it complementary neon colors so the rendered result stays
+	// maximally bright cyan/pink/purple/green/yellow.
+	const jellyfishColors = ["#FF0A00", "#00D429", "#4BB200", "#FF0063", "#0019FF"]
 
 	useEffect(() => {
 		try { setConfig(parseConfig(code)); setError(null) }
@@ -59,7 +75,10 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 			config.expressions.forEach((expression, index) => calculator!.setExpression({
 				id: expression.id || `expression-${index + 1}`,
 				latex: expression.latex,
-				color: expression.color,
+				color: preserveJellyfishColor(
+					expression.color || (jellyfish ? jellyfishColors[index % jellyfishColors.length] : undefined),
+					jellyfish,
+				),
 				hidden: expression.hidden,
 				label: expression.label,
 				showLabel: Boolean(expression.label),
@@ -74,17 +93,30 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 				})
 			})
 			if (config.viewport) calculator.setMathBounds({ left: config.viewport.xmin, right: config.viewport.xmax, bottom: config.viewport.ymin, top: config.viewport.ymax })
-			calculator.updateSettings({ ...config.options, keypad: expanded && editable, expressions: expanded && editable, settingsMenu: expanded, zoomButtons: true })
+			calculator.updateSettings({
+				...config.options,
+				invertedColors: jellyfish,
+				keypad: expanded && editable,
+				expressions: expanded && editable,
+				settingsMenu: expanded,
+				zoomButtons: true,
+			})
 			calculator.observe("change", () => setEditedState(calculator?.getState()))
 		}).catch((cause) => { if (!disposed) setError(cause instanceof globalThis.Error ? cause.message : String(cause)) })
 		return () => { disposed = true; calculator?.destroy(); calculatorRef.current = null }
-	}, [config, desmosScriptUri, editable, expanded])
+	}, [config, desmosScriptUri, editable, expanded, jellyfish, themeId])
 
 	useEffect(() => {
-		calculatorRef.current?.updateSettings({ keypad: expanded && editable, expressions: expanded && editable, settingsMenu: expanded, zoomButtons: true })
+		calculatorRef.current?.updateSettings({
+			invertedColors: jellyfish,
+			keypad: expanded && editable,
+			expressions: expanded && editable,
+			settingsMenu: expanded,
+			zoomButtons: true,
+		})
 		const timer = window.setTimeout(() => calculatorRef.current?.resize(), 0)
 		return () => window.clearTimeout(timer)
-	}, [expanded, editable])
+	}, [expanded, editable, jellyfish])
 
 	const resize = useCallback(() => calculatorRef.current?.resize(), [])
 	useEffect(() => {

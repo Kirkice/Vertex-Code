@@ -132,6 +132,7 @@ export interface DesmosCalculator {
 
 	/** Update graph settings */
 	updateSettings(settings: {
+		invertedColors?: boolean
 		keypad?: boolean
 		expressions?: boolean
 		settingsMenu?: boolean
