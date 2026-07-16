@@ -6,11 +6,54 @@ import { z } from "zod"
 import {
 	type MarketplaceItem,
 	type MarketplaceItemType,
+	type SkillFile,
+	type McpFile,
+	type KnowledgeFile,
 	modeMarketplaceItemSchema,
 	mcpMarketplaceItemSchema,
 	skillMarketplaceItemSchema,
 	knowledgeMarketplaceItemSchema,
 } from "@roo-code/types"
+
+const DEFAULT_MARKET_SOURCE = "https://github.com/Kirkice/vertex-code-market"
+const DEFAULT_MARKET_BRANCH = "main"
+
+const localMarketplaceEntrySchema = z.object({
+	id: z.string().min(1).optional(),
+	name: z.string().min(1),
+	description: z.string().optional().default(""),
+	author: z.string().optional(),
+	authorUrl: z.string().url().optional(),
+	tags: z.array(z.string()).optional(),
+	prerequisites: z.array(z.string()).optional(),
+	source: z.string().url().optional(),
+	sourcePath: z.string().min(1),
+	branch: z.string().optional(),
+	files: z.array(z.object({ path: z.string().min(1), url: z.string().url().optional() })).optional(),
+	modeSlugs: z.array(z.string()).optional(),
+	group: z
+		.object({
+			id: z.string().min(1),
+			name: z.string().min(1),
+			description: z.string().optional(),
+			order: z.number().int().optional(),
+		})
+		.optional(),
+	executable: z.string().optional(),
+	url: z.string().url().optional(),
+	content: z.any().optional(),
+	parameters: z.array(z.any()).optional(),
+})
+
+const aggregateMarketplaceResponse = z.object({
+	name: z.string().optional(),
+	description: z.string().optional(),
+	source: z.string().url().optional(),
+	branch: z.string().optional(),
+	skills: z.array(localMarketplaceEntrySchema).optional().default([]),
+	knowledge: z.array(localMarketplaceEntrySchema).optional().default([]),
+	mcps: z.array(localMarketplaceEntrySchema).optional().default([]),
+})
 
 const modeMarketplaceResponse = z.object({
 	items: z.array(modeMarketplaceItemSchema),
@@ -30,19 +73,23 @@ const knowledgeMarketplaceResponse = z.object({
 
 export class ConfigLoader {
 	private readonly marketplacePaths: string[]
+	private readonly extensionPath: string
 
 	constructor(extensionPath: string) {
+		this.extensionPath = extensionPath
 		this.marketplacePaths = this.createMarketplacePaths(extensionPath)
 	}
 
 	async loadAllItems(): Promise<MarketplaceItem[]> {
-		const [modes, mcps, skills, knowledge] = await Promise.all([
+		const [modes, mcps, skills, knowledge, aggregateItems] = await Promise.all([
 			this.fetchModes(),
 			this.fetchMcps(),
 			this.fetchSkills(),
 			this.fetchKnowledge(),
+			this.fetchAggregateMarketplaceItems(),
 		])
-		return [...modes, ...mcps, ...skills, ...knowledge]
+
+		return this.dedupeItems([...modes, ...mcps, ...skills, ...knowledge, ...aggregateItems])
 	}
 
 	private async fetchModes(): Promise<MarketplaceItem[]> {
@@ -136,6 +183,337 @@ export class ConfigLoader {
 		return items.find((item) => item.id === id && item.type === type) || null
 	}
 
+	private async fetchAggregateMarketplaceItems(): Promise<MarketplaceItem[]> {
+		const aggregatePaths = this.createAggregateMarketplacePaths()
+		let lastError: unknown
+
+		for (const filePath of aggregatePaths) {
+			try {
+				const data = await fs.readFile(filePath, "utf-8")
+				const yamlData = yaml.parse(data)
+				const validated = aggregateMarketplaceResponse.parse(yamlData)
+				const baseDir = path.dirname(filePath)
+				const source = validated.source ?? DEFAULT_MARKET_SOURCE
+				const branch = validated.branch ?? DEFAULT_MARKET_BRANCH
+
+				const [skills, knowledge, mcps] = await Promise.all([
+					this.mapAggregateSkills(validated.skills, baseDir, source, branch),
+					this.mapAggregateKnowledge(validated.knowledge, baseDir, source, branch),
+					this.mapAggregateMcps(validated.mcps, baseDir, source, branch),
+				])
+				const [discoveredSkills, discoveredKnowledge, discoveredMcps] = await Promise.all([
+					this.discoverLocalSkills(baseDir, source, branch),
+					this.discoverLocalKnowledge(baseDir, source, branch),
+					this.discoverLocalMcps(baseDir, source, branch),
+				])
+
+				return this.dedupeItems([...skills, ...knowledge, ...mcps, ...discoveredSkills, ...discoveredKnowledge, ...discoveredMcps])
+			} catch (error) {
+				lastError = error
+			}
+		}
+
+		if (lastError) {
+			console.warn("Failed to load aggregate marketplace.yml:", lastError)
+		}
+
+		return []
+	}
+
+	private async mapAggregateSkills(
+		entries: z.infer<typeof localMarketplaceEntrySchema>[],
+		baseDir: string,
+		defaultSource: string,
+		defaultBranch: string,
+	): Promise<MarketplaceItem[]> {
+		const items = await Promise.all(
+			entries.map(async (entry) => {
+				const files = (entry.files ?? (await this.discoverFiles(baseDir, entry.sourcePath))) as SkillFile[]
+				const item = skillMarketplaceItemSchema.parse({
+					...this.getCommonAggregateFields(entry, defaultSource, defaultBranch),
+					files,
+				})
+				return { type: "skill" as const, ...item }
+			}),
+		)
+		return items
+	}
+
+	private async mapAggregateKnowledge(
+		entries: z.infer<typeof localMarketplaceEntrySchema>[],
+		baseDir: string,
+		defaultSource: string,
+		defaultBranch: string,
+	): Promise<MarketplaceItem[]> {
+		const items = await Promise.all(
+			entries.map(async (entry) => {
+				const files = (entry.files ?? (await this.discoverFiles(baseDir, entry.sourcePath))) as KnowledgeFile[]
+				const item = knowledgeMarketplaceItemSchema.parse({
+					...this.getCommonAggregateFields(entry, defaultSource, defaultBranch),
+					files,
+				})
+				return { type: "knowledge" as const, ...item }
+			}),
+		)
+		return items
+	}
+
+	private async mapAggregateMcps(
+		entries: z.infer<typeof localMarketplaceEntrySchema>[],
+		baseDir: string,
+		defaultSource: string,
+		defaultBranch: string,
+	): Promise<MarketplaceItem[]> {
+		const items = await Promise.all(
+			entries.map(async (entry) => {
+				const files = entry.files ?? ((entry.url || entry.content) ? undefined : await this.discoverFiles(baseDir, entry.sourcePath))
+				const item = mcpMarketplaceItemSchema.parse({
+					...this.getCommonAggregateFields(entry, defaultSource, defaultBranch),
+					files: files as McpFile[] | undefined,
+					executable: entry.executable,
+					url: entry.url,
+					content: entry.content,
+					parameters: entry.parameters,
+				})
+				return { type: "mcp" as const, ...item }
+			}),
+		)
+		return items
+	}
+
+	private getCommonAggregateFields(
+		entry: z.infer<typeof localMarketplaceEntrySchema>,
+		defaultSource: string,
+		defaultBranch: string,
+	) {
+		return {
+			id: entry.id ?? entry.name,
+			name: this.toDisplayName(entry.name),
+			description: entry.description,
+			author: entry.author ?? "@Kirkice",
+			authorUrl: entry.authorUrl ?? "https://github.com/Kirkice",
+			tags: entry.tags,
+			prerequisites: entry.prerequisites,
+			source: entry.source ?? defaultSource,
+			sourcePath: entry.sourcePath,
+			branch: entry.branch ?? defaultBranch,
+			modeSlugs: entry.modeSlugs,
+			group: entry.group,
+		}
+	}
+
+	private async discoverFiles(baseDir: string, sourcePath: string): Promise<SkillFile[]> {
+		const itemDir = path.join(baseDir, sourcePath)
+		const files: SkillFile[] = []
+
+		async function walk(currentDir: string, relativeDir = "") {
+			const entries = await fs.readdir(currentDir, { withFileTypes: true })
+			for (const entry of entries) {
+				const relativePath = relativeDir ? path.posix.join(relativeDir, entry.name) : entry.name
+				const absolutePath = path.join(currentDir, entry.name)
+
+				if (entry.isDirectory()) {
+					await walk(absolutePath, relativePath)
+				} else if (entry.isFile()) {
+					files.push({ path: relativePath })
+				}
+			}
+		}
+
+		await walk(itemDir)
+		return files.sort((a, b) => a.path.localeCompare(b.path))
+	}
+
+	private async discoverLocalSkills(baseDir: string, source: string, branch: string): Promise<MarketplaceItem[]> {
+		const skillsRoot = path.join(baseDir, "skills")
+		const skillDirs = await this.findDirectoriesContaining(skillsRoot, "SKILL.md")
+
+		const items = await Promise.all(
+			skillDirs.map(async (skillDir) => {
+				const sourcePath = this.toPosixPath(path.relative(baseDir, skillDir))
+				const id = path.basename(skillDir)
+				const files = await this.discoverFiles(baseDir, sourcePath)
+				const item = skillMarketplaceItemSchema.parse({
+					id,
+					name: this.toDisplayName(id),
+					description: await this.extractDescription(path.join(skillDir, "SKILL.md"), `Skill from ${sourcePath}`),
+					author: "@Kirkice",
+					authorUrl: "https://github.com/Kirkice",
+					source,
+					sourcePath,
+					branch,
+					files,
+				})
+				return { type: "skill" as const, ...item }
+			}),
+		)
+
+		return items
+	}
+
+	private async discoverLocalKnowledge(baseDir: string, source: string, branch: string): Promise<MarketplaceItem[]> {
+		const knowledgeRoot = path.join(baseDir, "knowledge")
+		const markdownFiles = await this.findFilesByExtension(knowledgeRoot, ".md")
+
+		const items = await Promise.all(
+			markdownFiles.map(async (filePath) => {
+				const sourcePath = this.toPosixPath(path.relative(baseDir, path.dirname(filePath)))
+				const fileName = path.basename(filePath)
+				const id = this.toId(path.basename(filePath, path.extname(filePath)))
+				const item = knowledgeMarketplaceItemSchema.parse({
+					id,
+					name: this.toDisplayName(path.basename(filePath, path.extname(filePath))),
+					description: await this.extractDescription(filePath, `Knowledge document from ${sourcePath}/${fileName}`),
+					author: "@Kirkice",
+					authorUrl: "https://github.com/Kirkice",
+					source,
+					sourcePath,
+					branch,
+					files: [{ path: fileName }],
+				})
+				return { type: "knowledge" as const, ...item }
+			}),
+		)
+
+		return items
+	}
+
+	private async discoverLocalMcps(baseDir: string, source: string, branch: string): Promise<MarketplaceItem[]> {
+		const mcpsRoot = path.join(baseDir, "mcps")
+		let entries: import("fs").Dirent[]
+		try {
+			entries = await fs.readdir(mcpsRoot, { withFileTypes: true })
+		} catch {
+			return []
+		}
+
+		const items = await Promise.all(
+			entries
+				.filter((entry) => entry.isDirectory())
+				.map(async (entry) => {
+					const sourcePath = this.toPosixPath(path.relative(baseDir, path.join(mcpsRoot, entry.name)))
+					const files = (await this.discoverFiles(baseDir, sourcePath)) as McpFile[]
+					const executable = files.find((file) => file.path.toLowerCase().endsWith(".exe"))?.path
+					const item = mcpMarketplaceItemSchema.parse({
+						id: entry.name,
+						name: this.toDisplayName(entry.name),
+						description: await this.extractDescription(
+							path.join(mcpsRoot, entry.name, "README.md"),
+							`MCP server from ${sourcePath}`,
+						),
+						author: "@Kirkice",
+						authorUrl: "https://github.com/Kirkice",
+						source,
+						sourcePath,
+						branch,
+						files,
+						executable,
+					})
+					return { type: "mcp" as const, ...item }
+				}),
+		)
+
+		return items
+	}
+
+	private async findDirectoriesContaining(rootDir: string, fileName: string): Promise<string[]> {
+		const matches: string[] = []
+
+		async function walk(currentDir: string) {
+			let entries: import("fs").Dirent[]
+			try {
+				entries = await fs.readdir(currentDir, { withFileTypes: true })
+			} catch {
+				return
+			}
+
+			if (entries.some((entry) => entry.isFile() && entry.name.toLowerCase() === fileName.toLowerCase())) {
+				matches.push(currentDir)
+				return
+			}
+
+			await Promise.all(entries.filter((entry) => entry.isDirectory()).map((entry) => walk(path.join(currentDir, entry.name))))
+		}
+
+		await walk(rootDir)
+		return matches.sort()
+	}
+
+	private async findFilesByExtension(rootDir: string, extension: string): Promise<string[]> {
+		const matches: string[] = []
+
+		async function walk(currentDir: string) {
+			let entries: import("fs").Dirent[]
+			try {
+				entries = await fs.readdir(currentDir, { withFileTypes: true })
+			} catch {
+				return
+			}
+
+			await Promise.all(
+				entries.map(async (entry) => {
+					const absolutePath = path.join(currentDir, entry.name)
+					if (entry.isDirectory()) {
+						await walk(absolutePath)
+					} else if (entry.isFile() && entry.name.toLowerCase().endsWith(extension.toLowerCase())) {
+						matches.push(absolutePath)
+					}
+				}),
+			)
+		}
+
+		await walk(rootDir)
+		return matches.sort()
+	}
+
+	private async extractDescription(filePath: string, fallback: string): Promise<string> {
+		try {
+			const content = await fs.readFile(filePath, "utf-8")
+			const lines = content
+				.split(/\r?\n/)
+				.map((line) => line.trim())
+				.filter((line) => line && !line.startsWith("---") && !line.startsWith("#"))
+			const firstUsefulLine = lines.find((line) => !line.includes(":")) ?? lines[0]
+			return firstUsefulLine?.slice(0, 240) || fallback
+		} catch {
+			return fallback
+		}
+	}
+
+	private toId(value: string): string {
+		return this.toPosixPath(value)
+			.replace(/\.[^/.]+$/g, "")
+			.replace(/[^a-zA-Z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "")
+			.toLowerCase()
+	}
+
+	private toPosixPath(value: string): string {
+		return value.split(path.sep).join("/")
+	}
+
+	private toDisplayName(value: string): string {
+		return value
+			.split(/[-_\s]+/)
+			.filter(Boolean)
+			.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+			.join(" ")
+	}
+
+	private dedupeItems(items: MarketplaceItem[]): MarketplaceItem[] {
+		const byKey = new Map<string, MarketplaceItem>()
+
+		for (const item of items) {
+			byKey.set(`${item.type}:${item.id}`, item)
+		}
+
+		return Array.from(byKey.values())
+	}
+
+	private createAggregateMarketplacePaths(): string[] {
+		return this.createExternalMarketplaceRoots(this.extensionPath).map((root) => path.join(root, "marketplace.yml"))
+	}
+
 	private createMarketplacePaths(extensionPath: string): string[] {
 		const candidates = [
 			path.join(extensionPath, "assets", "marketplace"),
@@ -145,5 +523,23 @@ export class ConfigLoader {
 		]
 
 		return [...new Set(candidates.map((candidate) => path.normalize(candidate)))]
+	}
+
+	private createExternalMarketplaceRoots(extensionPath: string): string[] {
+		const envPath = process.env.VERTEX_CODE_MARKETPLACE_PATH
+		const candidates = [
+			envPath,
+			path.join(extensionPath, "..", "..", "vertex-code-market"),
+			path.join(extensionPath, "..", "vertex-code-market"),
+			path.join(extensionPath, "..", "..", "..", "vertex-code-market"),
+		]
+
+		return [
+			...new Set(
+				candidates
+					.filter((candidate): candidate is string => Boolean(candidate))
+					.map((candidate) => path.normalize(candidate)),
+			),
+		]
 	}
 }
