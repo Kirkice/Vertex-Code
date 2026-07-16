@@ -23,6 +23,26 @@ vi.mock("../DesmosBlock", () => ({
 }))
 
 describe("MarkdownBlock", () => {
+	it("repairs a null Desmos block using its adjacent explanatory equation", () => {
+		render(
+			<MarkdownBlock markdown={"```desmos\nnull\n```\n\n曲线对应：(y=x^{0.454545454545455}=x^{1/2.2})。"} />,
+		)
+
+		expect(screen.getByTestId("mock-desmos-block")).toHaveTextContent(
+			'{"version":1,"expressions":[{"latex":"y=x^{0.454545454545455}"}]}',
+		)
+	})
+
+	it("repairs a null Desmos block when prose contains a max function", () => {
+		render(
+			<MarkdownBlock markdown={"```desmos\nnull\n```\n\n输出为 (y=\\max(x,0)^{1/2.2}=\\max(x,0)^{0.454545})。"} />,
+		)
+
+		expect(screen.getByTestId("mock-desmos-block")).toHaveTextContent(
+			'{"version":1,"expressions":[{"latex":"y=\\\\max(x,0)^{1/2.2}"}]}',
+		)
+	})
+
 	it("should correctly handle URLs with trailing punctuation", async () => {
 		const markdown = "Check out this link: https://example.com."
 		const { container } = render(<MarkdownBlock markdown={markdown} />)

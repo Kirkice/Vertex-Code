@@ -194,6 +194,8 @@ Use a fenced code block with the language identifier \`desmos\`:
 }
 \`\`\`\`
 
+Protocol requirements: the content inside the fence must be a complete JSON object, never \`null\`, an array, plain LaTeX, or another nested code fence. The object must contain \`"version": 1\` and a non-empty \`expressions\` array, and every expression must contain a non-empty \`latex\` string. If no valid expression can be produced, do not emit a \`desmos\` block; explain the limitation in normal text instead.
+
 ### Supported Expression Types
 
 - **Explicit function**: \`"y = x^2"\`, \`"y = \\sin(x)"\`

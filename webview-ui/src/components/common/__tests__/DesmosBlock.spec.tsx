@@ -57,6 +57,20 @@ describe("DesmosBlock", () => {
 		expect(mockCalculator.updateSettings).toHaveBeenCalledWith(expect.objectContaining({ expressions: false, invertedColors: true }))
 	})
 
+	it("does not pass undefined optional fields to the Desmos API", async () => {
+		render(<DesmosBlock code={JSON.stringify({
+			version: 1,
+			expressions: [{ latex: "y=x^{1/2.2}\\left\\{0\\leq x\\leq1\\right\\}" }],
+		})} />)
+
+		await waitFor(() => expect(mockCalculator.setExpression).toHaveBeenCalled())
+		expect(mockCalculator.setExpression).toHaveBeenCalledWith({
+			id: "expression-1",
+			latex: "y=x^{1/2.2}\\left\\{0\\leq x\\leq1\\right\\}",
+			color: "#00f5ff",
+		})
+	})
+
 	it("switches from compact to expanded calculator settings", async () => {
 		render(<DesmosBlock code={JSON.stringify({ version: 1, expressions: [{ latex: "y=x" }] })} />)
 		await waitFor(() => expect(mockCalculator.updateSettings).toHaveBeenCalled())
@@ -85,6 +99,18 @@ describe("DesmosBlock", () => {
 		render(<DesmosBlock code="{ invalid json }" />)
 		expect(await screen.findByText(/Failed to render function/)).toBeInTheDocument()
 		expect(loadDesmos).not.toHaveBeenCalled()
+	})
+
+	it("accepts fenced JSON accidentally nested inside the desmos block", async () => {
+		render(<DesmosBlock code={'```desmos\n{"version":1,"expressions":[{"latex":"y=x"}]}\n```'} />)
+		await waitFor(() => expect(mockCalculator.setExpression).toHaveBeenCalledWith(expect.objectContaining({ latex: "y=x" })))
+	})
+
+	it("recovers a curve equation wrapped in explanatory prose", async () => {
+		render(<DesmosBlock code="曲线对应：(y=x^{0.454545454545455}=x^{1/2.2})。" />)
+		await waitFor(() => expect(mockCalculator.setExpression).toHaveBeenCalledWith(expect.objectContaining({
+			latex: "y=x^{0.454545454545455}",
+		})))
 	})
 
 	it("exports the current calculator screenshot", async () => {

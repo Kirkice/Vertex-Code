@@ -35,6 +35,32 @@ interface MarkdownBlockProps {
 	markdown?: string
 }
 
+/**
+ * Repairs a malformed Desmos protocol block when a model emits `null` and
+ * writes the equation immediately after the block in ordinary prose.
+ *
+ * The replacement remains a normal Desmos JSON payload, so downstream
+ * rendering never has to infer a curve from unrelated Markdown nodes.
+ */
+function repairMalformedDesmosBlocks(markdown: string): string {
+	return markdown.replace(
+		/```desmos\s*\r?\n\s*(?:null|undefined|\{\}|\[\])\s*\r?\n```([\s\S]{0,2400}?)(?=\r?\n```|$)/gi,
+		(block, trailingText: string) => {
+			const candidate = trailingText
+				.replace(/^.*?[：:]\s*/, "")
+				.replace(/^\s*\(([^\n]+?)\)\s*[。；;]?\s*$/m, "$1")
+				.trim()
+			const equation = /[a-zA-Z]\s*=\s*[^。；;\n]+/.exec(candidate)?.[0]?.trim()
+
+			if (!equation) return block
+
+			const parts = equation.split("=")
+			const latex = parts.length > 2 ? `${parts[0]}=${parts[1]}` : equation
+			return `\`\`\`desmos\n${JSON.stringify({ version: 1, expressions: [{ latex }] })}\n\`\`\`${trailingText}`
+		},
+	)
+}
+
 const StyledMarkdown = styled.div`
 	* {
 		font-weight: 400;
@@ -395,7 +421,7 @@ const MarkdownBlock = memo(({ markdown }: MarkdownBlockProps) => {
 				if (className.includes("language-desmos")) {
 					return (
 						<div style={{ margin: "1em 0" }}>
-							<DesmosBlock code={codeString} />
+							<DesmosBlock code={codeString.trim()} />
 						</div>
 					)
 				}
@@ -467,7 +493,7 @@ const MarkdownBlock = memo(({ markdown }: MarkdownBlockProps) => {
 				]}
 				rehypePlugins={[rehypeKatex as any]}
 				components={components}>
-				{markdown || ""}
+				{repairMalformedDesmosBlocks(markdown || "")}
 			</ReactMarkdown>
 		</StyledMarkdown>
 	)

@@ -9,17 +9,53 @@ import { useTheme } from "@src/themes/ThemeProvider"
 
 interface DesmosBlockProps { code: string }
 
+function toFallbackConfig(source: string): DesmosConfig | null {
+	const withoutDelimiters = source
+		.trim()
+		.replace(/^\[\s*/, "")
+		.replace(/\s*\]$/, "")
+		.replace(/^\\\[\s*/, "")
+		.replace(/\s*\\\]$/, "")
+		.trim()
+	const afterLabel = withoutDelimiters.replace(/^.*?[：:]\s*/, "").trim()
+	const unwrapped = afterLabel.replace(/^\((.*)\)\s*[。；;]?$/s, "$1").trim()
+	const equation = /[a-zA-Z]\s*=\s*[^。；;\n]+/.exec(unwrapped)?.[0]?.trim()
+	const latex = equation || (/^[^\s]+$/.test(unwrapped) ? unwrapped : "")
+
+	if (!latex || !/[=<>]/.test(latex)) return null
+
+	// A response such as y=x^a=x^(1/b) is explanatory notation, not a Desmos
+	// expression. Retain the first actual equation so Desmos can graph it.
+	const parts = latex.split("=")
+	const normalizedLatex = parts.length > 2 ? `${parts[0]}=${parts[1]}` : latex
+	return { version: 1, expressions: [{ latex: normalizedLatex }] }
+}
+
 function parseConfig(code: string): DesmosConfig {
-	const value = JSON.parse(code) as DesmosConfig
-	if (value?.version !== 1 || !Array.isArray(value.expressions) || value.expressions.length === 0) {
+	const normalizedCode = code.trim().replace(/^```(?:json|desmos)?\s*/i, "").replace(/\s*```$/i, "").trim()
+	let value: unknown
+	try {
+		value = JSON.parse(normalizedCode)
+	} catch {
+		// Models occasionally emit a raw LaTeX expression inside a `desmos`
+		// fence instead of the JSON protocol. Accept that form as a safe fallback
+		// so a valid curve is still rendered rather than showing a schema error.
+		value = toFallbackConfig(normalizedCode)
+		if (!value) throw new globalThis.Error("invalid Desmos JSON or LaTeX expression")
+	}
+	if (value === null || typeof value !== "object") {
+		throw new globalThis.Error("Desmos block must contain a JSON object, not null or a primitive value")
+	}
+	const config = value as Partial<DesmosConfig>
+	if (config.version !== 1 || !Array.isArray(config.expressions) || config.expressions.length === 0) {
 		throw new globalThis.Error("version must be 1 and expressions must be a non-empty array")
 	}
-	for (const expression of value.expressions) {
+	for (const expression of config.expressions) {
 		if (!expression || typeof expression.latex !== "string" || !expression.latex.trim()) {
 			throw new globalThis.Error("each expression must contain a non-empty latex string")
 		}
 	}
-	return value
+	return config as DesmosConfig
 }
 
 function preserveJellyfishColor(color: string | undefined, jellyfish: boolean): string | undefined {
@@ -29,6 +65,10 @@ function preserveJellyfishColor(color: string | undefined, jellyfish: boolean): 
 	const green = 255 - Number.parseInt(color.slice(3, 5), 16)
 	const blue = 255 - Number.parseInt(color.slice(5, 7), 16)
 	return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`
+}
+
+function isParametricExpression(latex: string): boolean {
+	return /^\s*\([^,]+,/.test(latex)
 }
 
 export default function DesmosBlock({ code }: DesmosBlockProps) {
@@ -72,24 +112,44 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 				zoomButtons: true,
 			})
 			calculatorRef.current = calculator
-			config.expressions.forEach((expression, index) => calculator!.setExpression({
-				id: expression.id || `expression-${index + 1}`,
-				latex: expression.latex,
-				color: preserveJellyfishColor(
+			config.expressions.forEach((expression, index) => {
+				const parametricDomain =
+					expression.parametricDomain && isParametricExpression(expression.latex)
+						? {
+							min: String(expression.parametricDomain.min),
+							max: String(expression.parametricDomain.max),
+						}
+						: undefined
+				const desmosExpression: Parameters<DesmosCalculator["setExpression"]>[0] = {
+					id: expression.id || `expression-${index + 1}`,
+					latex: expression.latex,
+				}
+				const color = preserveJellyfishColor(
 					expression.color || (jellyfish ? jellyfishColors[index % jellyfishColors.length] : undefined),
 					jellyfish,
-				),
-				hidden: expression.hidden,
-				label: expression.label,
-				showLabel: Boolean(expression.label),
-				parametricDomain: expression.parametricDomain ? { min: String(expression.parametricDomain.min), max: String(expression.parametricDomain.max) } : undefined,
-			}))
+				)
+
+				if (color) desmosExpression.color = color
+				if (expression.hidden !== undefined) desmosExpression.hidden = expression.hidden
+				if (expression.label) {
+					desmosExpression.label = expression.label
+					desmosExpression.showLabel = true
+				}
+				if (parametricDomain) desmosExpression.parametricDomain = parametricDomain
+
+				calculator!.setExpression(desmosExpression)
+			})
 			config.expressions.forEach((expression, index) => {
 				if (!expression.slider) return
+				const sliderBounds: NonNullable<Parameters<DesmosCalculator["setExpression"]>[0]["sliderBounds"]> = {
+					min: String(expression.slider.min),
+					max: String(expression.slider.max),
+				}
+				if (expression.slider.step !== undefined) sliderBounds.step = String(expression.slider.step)
 				calculator!.setExpression({
 					id: `${expression.id || `expression-${index + 1}`}-slider`,
 					latex: `${expression.slider.variable}=${expression.slider.value ?? expression.slider.min}`,
-					sliderBounds: { min: String(expression.slider.min), max: String(expression.slider.max), step: expression.slider.step === undefined ? undefined : String(expression.slider.step) },
+					sliderBounds,
 				})
 			})
 			if (config.viewport) calculator.setMathBounds({ left: config.viewport.xmin, right: config.viewport.xmax, bottom: config.viewport.ymin, top: config.viewport.ymax })
