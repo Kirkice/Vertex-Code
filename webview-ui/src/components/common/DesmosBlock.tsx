@@ -47,9 +47,12 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 		void loadDesmos(desmosScriptUri).then((Desmos) => {
 			if (disposed || !containerRef.current) return
 			calculator = Desmos.GraphingCalculator(containerRef.current, {
-				keypad: false,
-				expressions: false,
-				settingsMenu: false,
+				// These are constructor options in the bundled Desmos API. Recreating
+				// the calculator when the mode changes ensures the native expression
+				// editor is actually mounted, instead of only changing the canvas size.
+				keypad: expanded && editable,
+				expressions: expanded && editable,
+				settingsMenu: expanded,
 				zoomButtons: true,
 			})
 			calculatorRef.current = calculator
@@ -75,7 +78,7 @@ export default function DesmosBlock({ code }: DesmosBlockProps) {
 			calculator.observe("change", () => setEditedState(calculator?.getState()))
 		}).catch((cause) => { if (!disposed) setError(cause instanceof globalThis.Error ? cause.message : String(cause)) })
 		return () => { disposed = true; calculator?.destroy(); calculatorRef.current = null }
-	}, [config, desmosScriptUri, editable])
+	}, [config, desmosScriptUri, editable, expanded])
 
 	useEffect(() => {
 		calculatorRef.current?.updateSettings({ keypad: expanded && editable, expressions: expanded && editable, settingsMenu: expanded, zoomButtons: true })
