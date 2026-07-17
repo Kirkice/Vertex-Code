@@ -30,7 +30,8 @@ export class MarketplaceManager {
 		private readonly context: vscode.ExtensionContext,
 		private readonly customModesManager?: CustomModesManager,
 	) {
-		this.configLoader = new ConfigLoader(context.extensionUri.fsPath)
+		const workspacePaths = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
+		this.configLoader = new ConfigLoader(context.extensionUri.fsPath, workspacePaths)
 		this.installer = new SimpleInstaller(context, customModesManager)
 	}
 

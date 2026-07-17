@@ -14,6 +14,8 @@ import { useExtensionState } from "@/context/ExtensionStateContext"
 import { IssueFooter } from "./IssueFooter"
 import { MarketplaceItem } from "@roo-code/types"
 
+const UNGROUPED_ITEMS_KEY = "__marketplace_ungrouped__"
+
 export interface MarketplaceListViewProps {
 	stateManager: MarketplaceViewStateManager
 	allTags: string[]
@@ -62,9 +64,12 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 		>()
 
 		for (const item of items) {
-			const hasGroup = item.type === "skill" || item.type === "knowledge"
-			const groupId = hasGroup ? item.group?.id ?? item.id : item.id
-			const groupName = hasGroup ? item.group?.name ?? item.name : item.name
+			const hasGroup = (item.type === "skill" || item.type === "knowledge") && !!item.group
+			// Items without an explicit group must share one flat grid. Treating
+			// every item as its own group leaves a large empty column and places a
+			// bulk-install button at the far edge of every card section.
+			const groupId = hasGroup ? item.group!.id : UNGROUPED_ITEMS_KEY
+			const groupName = hasGroup ? item.group!.name : ""
 			const groupDescription = hasGroup ? item.group?.description : undefined
 			const groupOrder = hasGroup ? item.group?.order ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
 			const existing = groups.get(groupId)
@@ -90,6 +95,8 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 		}
 
 		return Array.from(groups.values()).sort((a, b) => {
+			if (a.key === UNGROUPED_ITEMS_KEY) return 1
+			if (b.key === UNGROUPED_ITEMS_KEY) return -1
 			if (a.order !== b.order) {
 				return a.order - b.order
 			}
@@ -369,33 +376,35 @@ export function MarketplaceListView({ stateManager, allTags, filteredTags, filte
 							{filterByType === "skill" || filterByType === "knowledge" ? (
 								<div className="space-y-5">
 									{itemGroups.map((group) => (
-										<div key={group.key} className="space-y-3">
-											<div className="flex flex-wrap items-start justify-between gap-3 px-1">
-												<div>
-													<h3 className="text-base font-semibold text-vscode-foreground">{group.name}</h3>
-													<div className="text-sm text-vscode-descriptionForeground">
-														{group.description || t("marketplace:sections.skillsGroupCount", { count: group.items.length })}
-													</div>
-												</div>
-												{group.remainingItems.length > 0 && (
-													<Button
-														size="sm"
-														variant="primary"
-														className="h-7 px-3 text-xs"
-														onClick={() =>
-															setBulkInstallGroup({
-																name: group.name,
-																items: group.remainingItems,
-															})
-														}>
-														{group.remainingItems.length === group.items.length
-															? t("marketplace:items.card.installAll")
-															: t("marketplace:items.card.installRemaining", {
-																	count: group.remainingItems.length,
-																})}
-													</Button>
-												)}
-											</div>
+											<div key={group.key} className="space-y-3">
+													{group.key !== UNGROUPED_ITEMS_KEY && (
+														<div className="flex flex-wrap items-start justify-between gap-3 px-1">
+															<div>
+																<h3 className="text-base font-semibold text-vscode-foreground">{group.name}</h3>
+																<div className="text-sm text-vscode-descriptionForeground">
+																	{group.description || t("marketplace:sections.skillsGroupCount", { count: group.items.length })}
+																</div>
+															</div>
+															{group.remainingItems.length > 0 && (
+																<Button
+																	size="sm"
+																	variant="primary"
+																	className="h-7 px-3 text-xs"
+																	onClick={() =>
+																		setBulkInstallGroup({
+																			name: group.name,
+																			items: group.remainingItems,
+																		})
+																	}>
+																	{group.remainingItems.length === group.items.length
+																		? t("marketplace:items.card.installAll")
+																		: t("marketplace:items.card.installRemaining", {
+																					count: group.remainingItems.length,
+																			})}
+																</Button>
+															)}
+														</div>
+													)}
 											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
 												{group.items.map((item) => (
 													<MarketplaceItemCard

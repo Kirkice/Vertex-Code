@@ -74,16 +74,24 @@ const knowledgeMarketplaceResponse = z.object({
 export class ConfigLoader {
 	private readonly marketplacePaths: string[]
 	private readonly extensionPath: string
+	private readonly workspacePaths: string[]
 
-	constructor(extensionPath: string) {
+	constructor(extensionPath: string, workspacePaths: string[] = []) {
 		this.extensionPath = extensionPath
-		this.marketplacePaths = this.createMarketplacePaths(extensionPath)
+		this.workspacePaths = workspacePaths
+		this.marketplacePaths = this.createMarketplacePaths(extensionPath, workspacePaths)
+		console.log("[Marketplace] ConfigLoader initialized", {
+			extensionPath,
+			workspacePaths,
+			marketplacePaths: this.marketplacePaths,
+			externalMarketplacePaths: this.createAggregateMarketplacePaths(),
+		})
 	}
 
 	async loadAllItems(): Promise<MarketplaceItem[]> {
 		const [modes, mcps, skills, knowledge, aggregateItems] = await Promise.all([
-			this.fetchModes(),
-			this.fetchMcps(),
+			this.fetchModes().catch((error) => this.handleOptionalMarketplaceError("modes.yml", error)),
+			this.fetchMcps().catch((error) => this.handleOptionalMarketplaceError("mcps.yml", error)),
 			this.fetchSkills(),
 			this.fetchKnowledge(),
 			this.fetchAggregateMarketplaceItems(),
@@ -185,6 +193,7 @@ export class ConfigLoader {
 
 	private async fetchAggregateMarketplaceItems(): Promise<MarketplaceItem[]> {
 		const aggregatePaths = this.createAggregateMarketplacePaths()
+		console.log("[Marketplace] aggregate marketplace candidates", aggregatePaths)
 		let lastError: unknown
 
 		for (const filePath of aggregatePaths) {
@@ -206,10 +215,28 @@ export class ConfigLoader {
 					this.discoverLocalKnowledge(baseDir, source, branch),
 					this.discoverLocalMcps(baseDir, source, branch),
 				])
+				const declaredSkillIds = new Set(skills.map((item) => item.id))
+				const declaredKnowledgeIds = new Set(knowledge.map((item) => item.id))
+				const declaredMcpIds = new Set(mcps.map((item) => item.id))
 
-				return this.dedupeItems([...skills, ...knowledge, ...mcps, ...discoveredSkills, ...discoveredKnowledge, ...discoveredMcps])
+				const items = this.dedupeItems([
+					...skills,
+					...knowledge,
+					...mcps,
+					...discoveredSkills.filter((item) => !declaredSkillIds.has(item.id)),
+					...discoveredKnowledge.filter((item) => !declaredKnowledgeIds.has(item.id)),
+					...discoveredMcps.filter((item) => !declaredMcpIds.has(item.id)),
+				])
+				console.log("[Marketplace] aggregate marketplace loaded", {
+					filePath,
+					skills: items.filter((item) => item.type === "skill").length,
+					knowledge: items.filter((item) => item.type === "knowledge").length,
+					mcps: items.filter((item) => item.type === "mcp").length,
+				})
+				return items
 			} catch (error) {
 				lastError = error
+				console.warn("[Marketplace] aggregate marketplace candidate failed", { filePath, error })
 			}
 		}
 
@@ -231,6 +258,7 @@ export class ConfigLoader {
 				const files = (entry.files ?? (await this.discoverFiles(baseDir, entry.sourcePath))) as SkillFile[]
 				const item = skillMarketplaceItemSchema.parse({
 					...this.getCommonAggregateFields(entry, defaultSource, defaultBranch),
+					group: entry.group ?? this.getDefaultGroup("skill", entry.sourcePath),
 					files,
 				})
 				return { type: "skill" as const, ...item }
@@ -250,6 +278,7 @@ export class ConfigLoader {
 				const files = (entry.files ?? (await this.discoverFiles(baseDir, entry.sourcePath))) as KnowledgeFile[]
 				const item = knowledgeMarketplaceItemSchema.parse({
 					...this.getCommonAggregateFields(entry, defaultSource, defaultBranch),
+					group: entry.group ?? this.getDefaultGroup("knowledge", entry.sourcePath),
 					files,
 				})
 				return { type: "knowledge" as const, ...item }
@@ -302,6 +331,17 @@ export class ConfigLoader {
 		}
 	}
 
+	private getDefaultGroup(type: "skill" | "knowledge", sourcePath: string) {
+		const parts = sourcePath.split(/[\\/]+/).filter(Boolean)
+		const folder = type === "skill" ? parts[1] ?? parts[0] : parts[1] ?? "general"
+		const id = `${type}-${this.toId(folder) || "general"}`
+		return {
+			id,
+			name: this.toDisplayName(folder),
+			description: `${this.toDisplayName(folder)} ${type}s`,
+		}
+	}
+
 	private async discoverFiles(baseDir: string, sourcePath: string): Promise<SkillFile[]> {
 		const itemDir = path.join(baseDir, sourcePath)
 		const files: SkillFile[] = []
@@ -342,6 +382,7 @@ export class ConfigLoader {
 					source,
 					sourcePath,
 					branch,
+					group: this.getDefaultGroup("skill", sourcePath),
 					files,
 				})
 				return { type: "skill" as const, ...item }
@@ -369,6 +410,7 @@ export class ConfigLoader {
 					source,
 					sourcePath,
 					branch,
+					group: this.getDefaultGroup("knowledge", sourcePath),
 					files: [{ path: fileName }],
 				})
 				return { type: "knowledge" as const, ...item }
@@ -514,7 +556,7 @@ export class ConfigLoader {
 		return this.createExternalMarketplaceRoots(this.extensionPath).map((root) => path.join(root, "marketplace.yml"))
 	}
 
-	private createMarketplacePaths(extensionPath: string): string[] {
+	private createMarketplacePaths(extensionPath: string, workspacePaths: string[] = []): string[] {
 		const candidates = [
 			path.join(extensionPath, "assets", "marketplace"),
 			path.join(extensionPath, "..", "assets", "marketplace"),
@@ -522,17 +564,36 @@ export class ConfigLoader {
 			path.join(extensionPath, "..", "dist", "assets", "marketplace"),
 		]
 
+		for (const workspacePath of workspacePaths) {
+			candidates.push(
+				path.join(workspacePath, "assets", "marketplace"),
+				path.join(workspacePath, "src", "assets", "marketplace"),
+				path.join(workspacePath, "dist", "assets", "marketplace"),
+				path.join(workspacePath, "src", "dist", "assets", "marketplace"),
+			)
+		}
+
 		return [...new Set(candidates.map((candidate) => path.normalize(candidate)))]
+	}
+
+	private handleOptionalMarketplaceError(fileName: string, error: unknown): MarketplaceItem[] {
+		console.warn(`Failed to load optional marketplace file '${fileName}':`, error)
+		return []
 	}
 
 	private createExternalMarketplaceRoots(extensionPath: string): string[] {
 		const envPath = process.env.VERTEX_CODE_MARKETPLACE_PATH
-		const candidates = [
-			envPath,
-			path.join(extensionPath, "..", "..", "vertex-code-market"),
-			path.join(extensionPath, "..", "vertex-code-market"),
-			path.join(extensionPath, "..", "..", "..", "vertex-code-market"),
-		]
+		const candidates = [envPath]
+
+		for (const root of [extensionPath, ...this.workspacePaths]) {
+			let current = path.resolve(root)
+			for (let depth = 0; depth < 6; depth++) {
+				candidates.push(path.join(current, "vertex-code-market"))
+				const parent = path.dirname(current)
+				if (parent === current) break
+				current = parent
+			}
+		}
 
 		return [
 			...new Set(
