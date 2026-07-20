@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { handleWorktreeCheckpointMessage } from "../worktreeCheckpointMessageHandler"
 
@@ -24,6 +24,10 @@ const createContext = (message: unknown) => ({
 })
 
 describe("handleWorktreeCheckpointMessage", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
 	it("lists worktrees and posts the response", async () => {
 		const context = createContext({ type: "listWorktrees" })
 		await handleWorktreeCheckpointMessage(context as never)
@@ -48,5 +52,19 @@ describe("handleWorktreeCheckpointMessage", () => {
 
 	it("returns false for messages outside its boundary", async () => {
 		expect(await handleWorktreeCheckpointMessage(createContext({ type: "newTask" }) as never)).toBe(false)
+	})
+
+	it("rejects invalid checkpoint payloads without invoking the task", async () => {
+		const context = createContext({ type: "checkpointRestore", payload: { invalid: true } })
+		await handleWorktreeCheckpointMessage(context as never)
+		expect(context.provider.cancelTask).not.toHaveBeenCalled()
+		expect(context.provider.getCurrentTask).not.toHaveBeenCalled()
+	})
+
+	it("logs handler failures and consumes the message", async () => {
+		worktree.handleListWorktrees.mockRejectedValueOnce(new Error("git failure"))
+		const context = createContext({ type: "listWorktrees" })
+		await handleWorktreeCheckpointMessage(context as never)
+		expect(context.provider.log).toHaveBeenCalledWith(expect.stringContaining("git failure"))
 	})
 })

@@ -17,19 +17,16 @@ import {
 	handleCheckoutBranch,
 } from "./worktree"
 import type { WebviewHandlerContext } from "./ports"
-import type { ClineProvider } from "./ClineProvider"
 
 /** Worktree and checkpoint message boundary. / Worktree 与 checkpoint 消息边界。 */
 export async function handleWorktreeCheckpointMessage(context: WebviewHandlerContext): Promise<boolean> {
 	const { message } = context
-	// Transitional adapter: existing worktree services still depend on the full provider.
-	// 过渡适配：现有 worktree service 仍依赖完整 Provider，后续阶段再继续收窄端口。
-	const provider = context.provider as ClineProvider
+	const provider = context.provider
 	try {
 		switch (message.type) {
 			case "checkpointDiff": {
 				const result = checkoutDiffPayloadSchema.safeParse(message.payload)
-				if (result.success) await (provider.getCurrentTask() as any)?.checkpointDiff(result.data)
+				if (result.success) await provider.getCurrentTask()?.checkpointDiff(result.data)
 				return true
 			}
 			case "checkpointRestore": {
@@ -39,7 +36,7 @@ export async function handleWorktreeCheckpointMessage(context: WebviewHandlerCon
 				await pWaitFor(() => provider.getCurrentTask()?.isInitialized === true, { timeout: 3_000 }).catch(() =>
 					vscode.window.showErrorMessage(t("common:errors.checkpoint_timeout")),
 				)
-				await (provider.getCurrentTask() as any)?.checkpointRestore(result.data)
+				await provider.getCurrentTask()?.checkpointRestore(result.data)
 				return true
 			}
 			case "listWorktrees": {

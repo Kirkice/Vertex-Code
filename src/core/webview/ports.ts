@@ -6,6 +6,50 @@ import type { ProviderSettingsManager } from "../config/ProviderSettingsManager"
 import type { CustomModesManager } from "../config/CustomModesManager"
 import type { McpHub } from "../../services/mcp/McpHub"
 
+export interface WorktreeHostPort {
+	readonly cwd: string
+	readonly contextProxy: ContextProxy
+	log(message: string): void
+}
+
+export interface CheckpointTaskPort {
+	readonly cwd?: string
+	readonly isInitialized?: boolean
+	checkpointDiff(payload: unknown): Promise<void> | void
+	checkpointRestore(payload: unknown): Promise<void> | void
+}
+
+export interface TaskHistoryPort {
+	getCurrentTask(): { taskId?: string } | undefined
+	clearTask(): Promise<void>
+	exportTaskWithId(id: string): Promise<void>
+	showTaskWithId(id: string): Promise<void>
+	condenseTaskContext(id: string): Promise<void>
+	deleteTaskWithId(id: string): Promise<void>
+	getTaskWithAggregatedCosts(id: string): Promise<Record<string, unknown>>
+	log(message: string): void
+}
+
+/**
+ * Narrow read-only state port for future Task runtime extraction.
+ *
+ * Task runtime 后续迁移使用的只读状态端口；本阶段只定义稳定边界，
+ * 不把完整 Provider 类型强行替换到 Task 主循环中。
+ */
+export interface TaskStatePort {
+	getState(): Promise<{
+		mode?: string
+		currentApiConfigName?: string
+		apiConfiguration?: Record<string, unknown>
+		mcpEnabled?: boolean
+		customModes?: unknown[]
+		customSupportPrompts?: Record<string, string>
+		requestDelaySeconds?: number
+		autoApprovalEnabled?: boolean
+	}>
+	log(message: string): void
+}
+
 /**
  * Webview message handlers should depend on a minimal host contract instead of the
  * full provider implementation.
@@ -26,7 +70,8 @@ export interface WebviewHostPort {
 	postMessageToWebview(message: ExtensionMessage): Promise<void> | void
 	postStateToWebview(): Promise<void>
 	log(message: string): void
-	getCurrentTask(): { cwd?: string } | undefined
+	getCurrentTask(): (CheckpointTaskPort & { taskId?: string }) | undefined
+	cancelTask(): Promise<void>
 	getMcpHub(): McpHub | undefined
 	upsertProviderProfile(name: string, settings: ProviderSettings): Promise<string | undefined>
 	activateProviderProfile(args: { name: string } | { id: string }): Promise<void>

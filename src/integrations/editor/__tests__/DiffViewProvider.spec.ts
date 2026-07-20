@@ -19,11 +19,16 @@ vi.mock("../../../utils/fs", () => ({
 	createDirectoriesForFile: vi.fn().mockResolvedValue([]),
 }))
 
-// Mock path
-vi.mock("path", () => ({
-	resolve: vi.fn((cwd, relPath) => `${cwd}/${relPath}`),
-	basename: vi.fn((path) => path.split("/").pop()),
-}))
+// Mock only the path methods used by this suite while preserving the complete
+// Node path API for delayed callbacks and shared utility code.
+vi.mock("path", async () => {
+	const actual = await vi.importActual<typeof import("path")>("path")
+	return {
+		...actual,
+		resolve: vi.fn((cwd: string, relPath: string) => `${cwd}/${relPath}`),
+		basename: vi.fn((filePath: string) => filePath.split("/").pop()),
+	}
+})
 
 // Mock vscode
 vi.mock("vscode", () => ({

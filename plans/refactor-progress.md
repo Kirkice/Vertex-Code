@@ -1,6 +1,6 @@
 # Vertex Code 工程化重构进度记录
 
-> 最后更新：2026-07-17
+> 最后更新：2026-07-20
 >
 > 用途：下次继续工作前，先阅读本文档，快速恢复当前重构背景、已完成内容、验证结果和后续执行顺序。
 
@@ -111,6 +111,12 @@
 
 ### 已知环境信息
 
+- `.nvmrc` 与 [`.tool-versions`](../.tool-versions:1) 均声明 Node `20.20.2`；当前机器未发现可用的 Node 版本管理器，实际运行时仍为 Node `24.11.1`，因此 Node 20 验收尚未完成。
+- 在当前 Node 24 环境执行 `pnpm install --frozen-lockfile` 后，关键 [ClineProvider.spec.ts](../src/core/webview/__tests__/ClineProvider.spec.ts:362) 验证通过：`92 passed`；该结果不能替代 Node 20 发布基线。
+- `pnpm bundle` 与 [TypeScript](../src/package.json:423) 类型检查已通过，生成的 `bin/vertex-3.56.0.vsix` 包含 `extension/package.json` 与 `extension/dist/extension.js`。
+- `vsce ls --tree` 仍被当前安装树中的 `invalid`/`missing` 依赖阻断；`pnpm install --frozen-lockfile` 没有改变该问题，后续需在 Node 20 环境重新建立干净依赖树。
+- 已下载 VS Code `1.128.0` 并尝试 Extension Host smoke test，但归档版 Windows `Code.exe` 将 CLI 参数报告为 `bad option`，测试进程以 code 9 退出；这属于当前测试运行器/VS Code 下载包兼容性问题，尚不能计为 smoke test 通过。
+
 - 项目声明 Node `20.20.2`。
 - 当前执行环境是 Node `24.11.1`，pnpm 输出 engine warning，但本轮类型检查和构建均成功。
 - 当前没有把“全量测试通过”作为验收结论；此前全量测试存在既有 `vscode` 解析问题及 Graphics 相关失败，后续如果需要发布级验收，仍应单独处理。
@@ -119,7 +125,7 @@
 
 ### 1. 阶段 5：Task Runtime 解耦
 
-阶段 5目前只完成了依赖审计和安全边界评估，没有完成 `Task.ts` 的核心解耦。
+阶段 5A、5B 已完成，阶段 5C 已开始。当前已完成 Worktree/Checkpoint 与 Task History 的边界收窄，但尚未替换 `Task.ts` 的核心 Provider 依赖。
 
 `Task.ts` 仍直接或间接依赖：
 
@@ -137,17 +143,20 @@
 目前仍存在以下过渡技术债：
 
 - `WebviewHostPort` 接口偏大。
-- Worktree Handler 使用 `as ClineProvider` 过渡适配。
-- Task History Handler 使用 `as ClineProvider` 过渡适配。
-- Checkpoint 调用仍存在 `as any` 过渡调用。
+- Worktree Handler 已改为使用 `WorktreeHostPort`。
+- Checkpoint Task 调用已改为使用 `CheckpointTaskPort`，移除了该 Handler 中的 `as any`。
+- Task History Handler 已改为使用 `TaskHistoryPort` 交叉能力契约，移除了对 `ClineProvider` 的直接类型导入。
+- `WebviewHostPort` 仍承载多个能力，后续应从 `WebviewHandlerContext` 中拆出更细粒度的 capability ports。
 - Router Models 返回处仍存在 `Partial<RouterModels>` 到 `RouterModels` 的强制断言。
 - `Record<string, any>` 等宽泛类型仍需逐步替换。
+- 新增的 `TaskStatePort` 目前仅作为阶段 5C 的契约草案，尚未迁移 `Task.ts`。
 
 ### 3. 全量测试与发布级验证
 
 尚未完成：
 
-- 全量 `src` 测试的稳定通过。
+- 全量 `src` 测试的稳定通过。本次基线运行结果为：339 个测试文件中 300 个通过、36 个失败、3 个跳过；5177 个测试中 4957 个通过、186 个失败、34 个跳过，并发现 3 个未处理错误。
+- 当前全量失败主要集中在既有 Provider/Graphics/快照和 VS Code mock 兼容性问题，不能直接归因于本轮 Worktree、Task History 或端口契约修改；需要逐文件分类后再修复。
 - Graphics 相关既有失败的归因与修复。
 - Node `20.20.2` 环境下的最终验证。
 - VSIX 打包后的安装或 Extension Host smoke test。
@@ -180,8 +189,8 @@
 
 建议按以下低风险顺序推进：
 
-1. 先新增类型明确的 `TaskHostPort`，只描述一个依赖簇，不要一次覆盖整个 Provider。
-2. 优先抽离只读状态和日志能力：
+1. 以当前 `TaskStatePort` 为基础，先建立真实的只读状态 adapter 和 Task 侧 contract test。
+2. 优先迁移只读状态和日志能力：
     - `getState`
     - `log`
     - `postMessageToWebview`
@@ -192,11 +201,46 @@
 6. 最后才考虑 Tool、Checkpoint 和 API stream 主循环。
 7. 每完成一个依赖簇，都必须增加独立测试并运行类型检查、定向测试和 bundle。
 
+当前阶段状态：
+
+- 阶段 5A：已完成。
+- 阶段 5B：已完成。
+- 阶段 5C：进行中，仅完成 `TaskStatePort` 契约草案和契约测试，尚未接入 `Task.ts`。
+
 ### 下一步 C：最后评估 Provider 解耦和 Rust
 
 - 将 `ClineProvider` 拆成 Task Session、Task History、Provider Profile、Workspace、Capability 和 State Projection 服务。
 - 对 Code Index 做 benchmark。
 - 只有当 Rust 版本在真实负载下显著改善耗时或内存，并且构建发布成本可接受时，才引入 napi-rs。
+
+## 八、本次全量测试基线记录
+
+### ClineProvider 测试基线收敛（本轮）
+
+- `src/core/webview/__tests__/ClineProvider.spec.ts` 已从 `9 failed / 83 passed` 收敛到 `92 passed`。
+- 修复范围限定在测试适配层：补齐局部 `vscode`、`fs/promises`、URI、Webview 和 Task fixture；未修改 `Task.ts` 主循环。
+- 校正 `MessageManager.rewindToTimestamp` 测试替身：由测试 fixture 负责精确按时间戳截断，避免重复实现编辑边界算法。
+- 更新过时的资源根和 Webview HTML 断言；MCP 文件创建失败按当前 Handler 契约验证日志记录，不虚构模态错误提示。
+- 当前仍存在非阻断测试噪声：MCP 空 JSON 解析日志、TaskHistoryStore `fs.watch` 目录不存在日志，以及本地 Node/Vite `file://` 警告；后续在隔离测试基础设施阶段处理。
+
+执行命令：
+
+```bash
+pnpm exec vitest run --reporter=dot
+```
+
+结果：
+
+- Test Files：300 passed / 36 failed / 3 skipped，共 339 个。
+- Tests：4957 passed / 186 failed / 34 skipped，共 5177 个。
+- Unhandled Errors：3 个。
+- 观察到的代表性非本轮回归问题：
+    - `ClineProvider` 测试中的 VS Code mock URI 为 `undefined`，导致 `.toString()` 异常。
+    - `DiffViewProvider` 测试的 `path` mock 缺少 `normalize` 导出。
+    - Bedrock 错误处理测试输出大量预期错误日志。
+    - 另有快照、Graphics 和既有 Provider 测试失败，需要按测试文件逐项确认。
+
+本轮新增或修改相关测试仍需以定向测试为主要验收依据；全量失败尚未发现由本轮端口收窄直接引起的失败。
 
 ## 六、重要工程约束
 

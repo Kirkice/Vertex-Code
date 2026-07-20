@@ -1,8 +1,7 @@
 import * as vscode from "vscode"
 
 import { t } from "../../i18n"
-import type { WebviewHandlerContext } from "./ports"
-import type { ClineProvider } from "./ClineProvider"
+import type { TaskHistoryPort, WebviewHandlerContext } from "./ports"
 
 /**
  * Task history/export/delete boundary.
@@ -11,7 +10,7 @@ import type { ClineProvider } from "./ClineProvider"
  */
 export async function handleTaskHistoryMessage(context: WebviewHandlerContext): Promise<boolean> {
 	const { message } = context
-	const provider = context.provider as ClineProvider
+	const provider = context.provider as WebviewHandlerContext["provider"] & TaskHistoryPort
 
 	switch (message.type) {
 		case "clearTask":

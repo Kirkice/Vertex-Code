@@ -5,7 +5,7 @@ import { handleTaskHistoryMessage } from "../taskHistoryMessageHandler"
 const createContext = (message: unknown) => ({
 	message,
 	provider: {
-		getCurrentTask: vi.fn(() => ({ taskId: "active" })),
+		getCurrentTask: vi.fn((): { taskId: string } | undefined => ({ taskId: "active" })),
 		clearTask: vi.fn(),
 		exportTaskWithId: vi.fn(),
 		showTaskWithId: vi.fn(),
@@ -48,5 +48,29 @@ describe("handleTaskHistoryMessage", () => {
 		expect(missing.postWebviewMessage).toHaveBeenCalledWith(
 			expect.objectContaining({ type: "taskWithAggregatedCosts", error: "Error: Task ID is required" }),
 		)
+	})
+
+	it("continues batch deletion when one task fails", async () => {
+		const context = createContext({
+			type: "deleteMultipleTasksWithIds",
+			ids: ["task-1", "task-2"],
+		})
+		context.provider.deleteTaskWithId.mockRejectedValueOnce(new Error("delete failure"))
+
+		await handleTaskHistoryMessage(context as never)
+
+		expect(context.provider.deleteTaskWithId).toHaveBeenCalledTimes(2)
+		expect(context.provider.log).toHaveBeenCalledWith(expect.stringContaining("task-1"))
+		expect(context.postWebviewState).toHaveBeenCalledOnce()
+	})
+
+	it("handles current task export and no-active-task sharing", async () => {
+		const exportContext = createContext({ type: "exportCurrentTask" })
+		await handleTaskHistoryMessage(exportContext as never)
+		expect(exportContext.provider.exportTaskWithId).toHaveBeenCalledWith("active")
+
+		const shareContext = createContext({ type: "shareCurrentTask" })
+		shareContext.provider.getCurrentTask.mockReturnValue(undefined)
+		await handleTaskHistoryMessage(shareContext as never)
 	})
 })
