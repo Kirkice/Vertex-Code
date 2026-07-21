@@ -70,6 +70,7 @@ vi.mock("../../task/Task", () => ({
 		setTaskNumber: vi.fn(),
 		setParentTask: vi.fn(),
 		setRootTask: vi.fn(),
+		maybeCreateModeHandoff: vi.fn(),
 		emit: vi.fn(),
 		parentTask: options.parentTask,
 		updateApiConfiguration: vi.fn(),
@@ -202,7 +203,6 @@ describe("ClineProvider - Sticky Mode", () => {
 
 	beforeEach(async () => {
 		vi.clearAllMocks()
-
 
 		const globalState: Record<string, string | undefined> = {
 			mode: "code",

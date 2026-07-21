@@ -17,7 +17,6 @@ import {
 	ApiProviderError,
 } from "@roo-code/types"
 
-
 import type { ApiHandlerOptions } from "../../shared/api"
 
 import { calculateApiCostOpenAI } from "../../shared/cost"

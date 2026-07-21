@@ -112,6 +112,7 @@ export const webviewMessageHandler = async (
 	 */
 	const handlerContext: WebviewHandlerContext = {
 		provider,
+		mcp: provider,
 		message,
 		getCurrentCwd,
 		getGlobalState,

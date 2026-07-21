@@ -69,6 +69,7 @@ vi.mock("../../task/Task", () => ({
 		setTaskNumber: vi.fn(),
 		setParentTask: vi.fn(),
 		setRootTask: vi.fn(),
+		maybeCreateModeHandoff: vi.fn(),
 		emit: vi.fn(),
 		parentTask: options.parentTask,
 		updateApiConfiguration: vi.fn(),
@@ -207,7 +208,6 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 		taskIdCounter = 0
 		originalRooCliRuntimeEnv = process.env.ROO_CLI_RUNTIME
 		delete process.env.ROO_CLI_RUNTIME
-
 
 		const globalState: Record<string, string | undefined> = {
 			mode: "code",

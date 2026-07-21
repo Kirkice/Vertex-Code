@@ -17,7 +17,7 @@ import type { WebviewHandlerContext } from "./ports"
  * 通用设置持久化与导入导出处理器；先收敛副作用边界，再逐步细化端口接口。
  */
 export async function handleSettingsMessage(context: WebviewHandlerContext): Promise<boolean> {
-	const { provider, message } = context
+	const { provider, mcp, message } = context
 
 	if (message.type === "updateSettings") {
 		if (message.updatedSettings) {
@@ -47,7 +47,7 @@ export async function handleSettingsMessage(context: WebviewHandlerContext): Pro
 					}
 					if (key === "mcpEnabled") {
 						newValue = value ?? true
-						await provider.getMcpHub()?.handleMcpEnabledChange(newValue as boolean)
+						await mcp.getMcpHub()?.handleMcpEnabledChange(newValue as boolean)
 					}
 					if (key === "experiments") {
 						newValue = {

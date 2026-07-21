@@ -12,7 +12,6 @@ import {
 	DEEP_SEEK_DEFAULT_TEMPERATURE,
 } from "@roo-code/types"
 
-
 import { NativeToolCallParser } from "../../core/assistant-message/NativeToolCallParser"
 
 import type { ApiHandlerOptions } from "../../shared/api"
@@ -199,7 +198,7 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 		const apiError = Object.assign(
 			new ApiProviderError(rawErrorMessage, this.providerName, modelId, operation, error?.code),
 			{ status: error?.code, error },
-		)
+		)
 		throw new Error(`OpenRouter API Error ${error?.code}: ${rawErrorMessage}`)
 	}
 
@@ -358,11 +357,13 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 						status: openRouterError.error?.code,
 						error: openRouterError.error,
 					},
-				)				throw handleOpenAIError(error, this.providerName)
+				)
+				throw handleOpenAIError(error, this.providerName)
 			} else {
 				// Fallback for non-OpenRouter errors
 				const errorMessage = error instanceof Error ? error.message : String(error)
-				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "createMessage")				throw handleOpenAIError(error, this.providerName)
+				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "createMessage")
+				throw handleOpenAIError(error, this.providerName)
 			}
 		}
 
@@ -618,11 +619,13 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 						status: openRouterError.error?.code,
 						error: openRouterError.error,
 					},
-				)				throw handleOpenAIError(error, this.providerName)
+				)
+				throw handleOpenAIError(error, this.providerName)
 			} else {
 				// Fallback for non-OpenRouter errors
 				const errorMessage = error instanceof Error ? error.message : String(error)
-				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "completePrompt")				throw handleOpenAIError(error, this.providerName)
+				const apiError = new ApiProviderError(errorMessage, this.providerName, modelId, "completePrompt")
+				throw handleOpenAIError(error, this.providerName)
 			}
 		}
 

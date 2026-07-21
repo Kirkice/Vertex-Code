@@ -765,12 +765,6 @@ describe("validateAndFixToolResultIds", () => {
 		})
 	})
 
-	describe("telemetry", () => {
-		
-
-		
-	})
-
 	describe("ToolResultIdMismatchError", () => {
 		it("should create error with correct properties", () => {
 			const error = new ToolResultIdMismatchError(
@@ -801,11 +795,4 @@ describe("validateAndFixToolResultIds", () => {
 		})
 	})
 
-	describe("telemetry for missing tool_results", () => {
-		
-
-		
-
-		
-	})
 })

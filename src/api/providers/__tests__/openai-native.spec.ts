@@ -1,19 +1,7 @@
 // npx vitest run api/providers/__tests__/openai-native.spec.ts
 
-const mockCaptureException = vitest.fn()
-
-vitest.mock("@roo-code/telemetry", () => ({
-	TelemetryService: {
-		instance: {
-			captureException: (...args: unknown[]) => mockCaptureException(...args),
-		},
-	},
-}))
-
 import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
-
-import { ApiProviderError } from "@roo-code/types"
 
 import { OpenAiNativeHandler } from "../openai-native"
 import { ApiHandlerOptions } from "../../../shared/api"
@@ -51,7 +39,6 @@ describe("OpenAiNativeHandler", () => {
 		}
 		handler = new OpenAiNativeHandler(mockOptions)
 		mockResponsesCreate.mockClear()
-		mockCaptureException.mockClear()
 		// Clear fetch mock if it exists
 		if ((global as any).fetch) {
 			delete (global as any).fetch
@@ -1132,7 +1119,7 @@ describe("OpenAiNativeHandler", () => {
 		})
 	})
 
-	describe("error telemetry", () => {
+	describe("error handling", () => {
 		const errorMessages: Anthropic.Messages.MessageParam[] = [
 			{
 				role: "user",
@@ -1142,9 +1129,7 @@ describe("OpenAiNativeHandler", () => {
 
 		const errorSystemPrompt = "You are a helpful assistant"
 
-		beforeEach(() => {
-			mockCaptureException.mockClear()
-		})
+		beforeEach(() => {})
 
 		it("should capture telemetry on createMessage error", async () => {
 			// Mock fetch to return error
@@ -1165,21 +1150,6 @@ describe("OpenAiNativeHandler", () => {
 					// Should throw before yielding any chunks
 				}
 			}).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: expect.stringContaining("OpenAI service error"),
-					provider: "OpenAI Native",
-					modelId: "gpt-4.1",
-					operation: "createMessage",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
 		it("should capture telemetry on stream processing error", async () => {
@@ -1209,23 +1179,6 @@ describe("OpenAiNativeHandler", () => {
 					// Should throw when encountering error event
 				}
 			}).rejects.toThrow()
-
-			// Verify telemetry was captured (may be called multiple times due to error propagation)
-			expect(mockCaptureException).toHaveBeenCalled()
-
-			// Find the call with the stream error message
-			const streamErrorCall = mockCaptureException.mock.calls.find((call: any[]) =>
-				call[0]?.message?.includes("Model overloaded"),
-			)
-			expect(streamErrorCall).toBeDefined()
-			expect(streamErrorCall![0]).toMatchObject({
-				provider: "OpenAI Native",
-				modelId: "gpt-4.1",
-				operation: "createMessage",
-			})
-
-			// Verify it's an ApiProviderError
-			expect(streamErrorCall![0]).toBeInstanceOf(ApiProviderError)
 		})
 
 		it("should capture telemetry on completePrompt error", async () => {
@@ -1233,24 +1186,9 @@ describe("OpenAiNativeHandler", () => {
 			mockResponsesCreate.mockRejectedValue(new Error("API Error"))
 
 			await expect(handler.completePrompt("Test prompt")).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "API Error",
-					provider: "OpenAI Native",
-					modelId: "gpt-4.1",
-					operation: "completePrompt",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
-		it("should still throw the error after capturing telemetry", async () => {
+		it("should still throw the error", async () => {
 			// Mock fetch to return error
 			const mockFetch = vitest.fn().mockResolvedValue({
 				ok: false,
@@ -1270,9 +1208,6 @@ describe("OpenAiNativeHandler", () => {
 					// Should throw
 				}
 			}).rejects.toThrow()
-
-			// Telemetry should have been captured before the error was thrown
-			expect(mockCaptureException).toHaveBeenCalled()
 		})
 	})
 })

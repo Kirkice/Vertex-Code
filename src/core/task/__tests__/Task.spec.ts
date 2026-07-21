@@ -1387,7 +1387,7 @@ describe("Cline", () => {
 				]
 
 				// Call submitUserMessage
-				task.submitUserMessage("test message", ["image1.png"])
+				await task.submitUserMessage("test message", ["image1.png"])
 
 				// Verify handleWebviewAskResponse was called directly (not webview)
 				expect(handleResponseSpy).toHaveBeenCalledWith("messageResponse", "test message", ["image1.png"])
@@ -1430,7 +1430,7 @@ describe("Cline", () => {
 
 				// Test with no messages (new task scenario)
 				task.clineMessages = []
-				task.submitUserMessage("new task", ["image1.png"])
+				await task.submitUserMessage("new task", ["image1.png"])
 
 				expect(handleResponseSpy).toHaveBeenCalledWith("messageResponse", "new task", ["image1.png"])
 
@@ -1446,7 +1446,7 @@ describe("Cline", () => {
 						text: "Initial message",
 					},
 				]
-				task.submitUserMessage("follow-up message", ["image2.png"])
+				await task.submitUserMessage("follow-up message", ["image2.png"])
 
 				expect(handleResponseSpy).toHaveBeenCalledWith("messageResponse", "follow-up message", ["image2.png"])
 			})

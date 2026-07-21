@@ -87,6 +87,7 @@ import { ContextProxy } from "../config/ContextProxy"
 import { ProviderSettingsManager } from "../config/ProviderSettingsManager"
 import { CustomModesManager } from "../config/CustomModesManager"
 import { Task } from "../task/Task"
+import { ProductionTaskRuntimeAdapter } from "../task/runtime"
 
 import { webviewMessageHandler } from "./webviewMessageHandler"
 import type { ClineMessage, TodoItem } from "@roo-code/types"
@@ -172,7 +173,6 @@ export class ClineProvider
 		return runDelegationTransition(this.delegationTransitionLocks, parentTaskId, fn)
 	}
 	private readonly pendingEditOperations: PendingEditOperationStore
-
 
 	/**
 	 * Monotonically increasing sequence number for clineMessages state pushes.
@@ -924,7 +924,9 @@ export class ClineProvider
 						fullProfile.vertexGatewayBaseUrl !== expectedGatewayBaseUrl
 					) {
 						allUpToDate = false
-						this.log("[ensureVertexGatewayProfileSeeded] Existing vertex-gateway profile is stale, updating")
+						this.log(
+							"[ensureVertexGatewayProfileSeeded] Existing vertex-gateway profile is stale, updating",
+						)
 						break
 					}
 				} catch {
@@ -1064,8 +1066,14 @@ export class ClineProvider
 		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments, cloudUserInfo, taskSyncEnabled } =
 			await this.getState()
 
+		const taskHost = new ProductionTaskRuntimeAdapter(this)
 		const task = new Task({
 			provider: this,
+			// Explicitly inject one compatibility adapter for every runtime capability.
+			// 为 Task 注入同一个兼容适配器，确保各依赖簇共享一致的 legacy 边界。
+			taskHost,
+			taskDependencies: taskHost,
+			taskRuntimeFeatureFlags: taskHost.getFeatureFlags(),
 			apiConfiguration,
 			enableCheckpoints,
 			checkpointTimeout,
@@ -1428,7 +1436,7 @@ export class ClineProvider
 			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
 		})
 		if (!routingEnabled) {
-			if (task && options?.createModeHandoff !== false) {
+			if (task && typeof task.maybeCreateModeHandoff === "function" && options?.createModeHandoff !== false) {
 				await task.maybeCreateModeHandoff({
 					fromMode,
 					toMode: newMode,
@@ -1484,7 +1492,7 @@ export class ClineProvider
 			}
 		}
 
-		if (task && options?.createModeHandoff !== false) {
+		if (task && typeof task.maybeCreateModeHandoff === "function" && options?.createModeHandoff !== false) {
 			await task.maybeCreateModeHandoff({
 				fromMode,
 				toMode: newMode,
@@ -1695,7 +1703,7 @@ export class ClineProvider
 			await this.persistStickyProviderProfileToCurrentTask(name)
 		}
 
-		if (task && options?.createModeHandoff !== false) {
+		if (task && typeof task.maybeCreateModeHandoff === "function" && options?.createModeHandoff !== false) {
 			await task.maybeCreateModeHandoff({
 				fromMode,
 				toMode: fromMode ?? mode,
@@ -2117,11 +2125,7 @@ export class ClineProvider
 	 */
 	async postStateToWebviewWithoutClineMessages(): Promise<void> {
 		const state = await this.getStateToPostToWebview()
-		const {
-			clineMessages: _omitMessages,
-			taskHistory: _omitHistory,
-			...rest
-		} = state
+		const { clineMessages: _omitMessages, taskHistory: _omitHistory, ...rest } = state
 		this.postMessageToWebview({ type: "state", state: rest })
 	}
 
@@ -2313,16 +2317,16 @@ export class ClineProvider
 			version: this.context.extension?.packageJSON?.version ?? "",
 			desmosScriptUri: this.view?.webview
 				? this.view.webview
-					.asWebviewUri(
-						vscode.Uri.joinPath(
-							this.contextProxy.extensionUri,
-							"webview-ui",
-							"build",
-							"desmos",
-							"calculator.js",
-						),
-					)
-					.toString()
+						.asWebviewUri(
+							vscode.Uri.joinPath(
+								this.contextProxy.extensionUri,
+								"webview-ui",
+								"build",
+								"desmos",
+								"calculator.js",
+							),
+						)
+						?.toString()
 				: undefined,
 			builtinProtocolCapabilities: {
 				desmos: {
@@ -2819,7 +2823,9 @@ export class ClineProvider
 				})
 		} catch (error) {
 			console.error("Failed to fetch marketplace data:", error)
-			this.log(`[Marketplace] fetchMarketplaceData:error ${error instanceof Error ? error.message : String(error)}`)
+			this.log(
+				`[Marketplace] fetchMarketplaceData:error ${error instanceof Error ? error.message : String(error)}`,
+			)
 
 			// Send empty data on error
 			this.postMessageToWebview({
@@ -3022,8 +3028,15 @@ export class ClineProvider
 			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
 		}
 
+		const taskHost = new ProductionTaskRuntimeAdapter(this)
 		const task = new Task({
 			provider: this,
+			// Keep the legacy path explicit at the Provider creation boundary. This makes
+			// staged dependency injection testable without changing the default behavior.
+			// 在 Provider 创建入口显式注入 legacy 端口，便于分阶段测试且不改变默认行为。
+			taskHost,
+			taskDependencies: taskHost,
+			taskRuntimeFeatureFlags: taskHost.getFeatureFlags(),
 			apiConfiguration,
 			enableCheckpoints,
 			checkpointTimeout,

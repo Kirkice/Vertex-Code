@@ -15,7 +15,6 @@ import {
 	ApiProviderError,
 } from "@roo-code/types"
 
-
 import type { ApiHandlerOptions } from "../../shared/api"
 
 import { convertAnthropicMessageToGemini } from "../transform/gemini-format"
@@ -477,7 +476,7 @@ export class GeminiHandler extends BaseProvider implements SingleCompletionHandl
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "createMessage")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "createMessage")
 			if (error instanceof Error) {
 				throw new Error(t("common:errors.gemini.generate_stream", { error: error.message }))
 			}
@@ -611,7 +610,7 @@ export class GeminiHandler extends BaseProvider implements SingleCompletionHandl
 			return text
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
-			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "completePrompt")
+			const apiError = new ApiProviderError(errorMessage, this.providerName, model, "completePrompt")
 			if (error instanceof Error) {
 				throw new Error(t("common:errors.gemini.generate_complete_prompt", { error: error.message }))
 			}

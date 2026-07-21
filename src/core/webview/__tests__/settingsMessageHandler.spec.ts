@@ -37,6 +37,9 @@ const createContext = (message: unknown) => ({
 		providerSettingsManager: {},
 		getMcpHub: vi.fn(() => ({ handleMcpEnabledChange: vi.fn() })),
 	},
+	mcp: {
+		getMcpHub: vi.fn(() => ({ handleMcpEnabledChange: vi.fn() })),
+	},
 	getGlobalState: vi.fn(() => undefined),
 	setSetting: vi.fn(),
 	postWebviewState: vi.fn(),
@@ -63,7 +66,7 @@ describe("handleSettingsMessage", () => {
 	it("updates MCP enabled state and ignores unsupported messages", async () => {
 		const mcpChange = vi.fn()
 		const context = createContext({ type: "updateSettings", updatedSettings: { mcpEnabled: false } })
-		context.provider.getMcpHub = vi.fn(() => ({ handleMcpEnabledChange: mcpChange }))
+		context.mcp.getMcpHub = vi.fn(() => ({ handleMcpEnabledChange: mcpChange }))
 
 		expect(await handleSettingsMessage(context as never)).toBe(true)
 		expect(mcpChange).toHaveBeenCalledWith(false)

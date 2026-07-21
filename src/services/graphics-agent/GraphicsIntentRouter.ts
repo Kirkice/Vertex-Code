@@ -60,9 +60,8 @@ const INTENT_PATTERNS: Array<{
 			/帧.*耗时/i,
 			/frame.*slow/i,
 			/frame.*performance/i,
-			/gpu.*慢/i,
 		],
-		keywords: ["帧慢", "帧性能", "帧耗时", "frame slow", "gpu slow"],
+		keywords: ["帧慢", "帧性能", "帧耗时", "frame slow"],
 	},
 	{
 		intent: "selected_draw_explain",
@@ -134,6 +133,7 @@ const INTENT_PATTERNS: Array<{
 			/阴影.*问题/i,
 			/shadow.*issue/i,
 			/black.*screen/i,
+			/gpu.*slow/i,
 		],
 		keywords: ["黑屏", "阴影问题", "black screen", "shadow issue"],
 	},

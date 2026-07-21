@@ -58,6 +58,7 @@ describe("webviewMessageHandler - Edit Message with Timestamp Fallback", () => {
 			overwriteClineMessages: vi.fn(),
 			overwriteApiConversationHistory: vi.fn(),
 			handleWebviewAskResponse: vi.fn(),
+			submitUserMessage: vi.fn(),
 		}
 		mockCurrentTask.messageManager = new MessageManager(mockCurrentTask)
 
@@ -65,6 +66,7 @@ describe("webviewMessageHandler - Edit Message with Timestamp Fallback", () => {
 		mockClineProvider = {
 			getCurrentTask: vi.fn().mockReturnValue(mockCurrentTask),
 			postMessageToWebview: vi.fn(),
+			postStateToWebview: vi.fn(),
 			contextProxy: {
 				getValue: vi.fn(),
 				setValue: vi.fn(),

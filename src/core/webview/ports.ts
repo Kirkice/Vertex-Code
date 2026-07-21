@@ -30,6 +30,11 @@ export interface TaskHistoryPort {
 	log(message: string): void
 }
 
+/** MCP capability used by handlers. / Handler 使用的 MCP 能力端口。 */
+export interface WebviewMcpPort {
+	getMcpHub(): McpHub | undefined
+}
+
 /**
  * Narrow read-only state port for future Task runtime extraction.
  *
@@ -40,7 +45,7 @@ export interface TaskStatePort {
 	getState(): Promise<{
 		mode?: string
 		currentApiConfigName?: string
-		apiConfiguration?: Record<string, unknown>
+		apiConfiguration?: ProviderSettings
 		mcpEnabled?: boolean
 		customModes?: unknown[]
 		customSupportPrompts?: Record<string, string>
@@ -57,7 +62,7 @@ export interface TaskStatePort {
  * Webview 消息处理器应依赖最小宿主接口，而不是完整的 Provider 实现。
  * 这样可以降低模块耦合，便于后续把大型 handler 继续拆分成独立应用服务。
  */
-export interface WebviewHostPort {
+export interface WebviewHostPort extends WebviewMcpPort {
 	readonly context: vscode.ExtensionContext
 	readonly contextProxy: ContextProxy
 	readonly providerSettingsManager: ProviderSettingsManager
@@ -65,14 +70,13 @@ export interface WebviewHostPort {
 	readonly cwd: string
 
 	getState(): Promise<{
-		apiConfiguration: Record<string, any>
+		apiConfiguration: ProviderSettings
 	}>
 	postMessageToWebview(message: ExtensionMessage): Promise<void> | void
 	postStateToWebview(): Promise<void>
 	log(message: string): void
 	getCurrentTask(): (CheckpointTaskPort & { taskId?: string }) | undefined
 	cancelTask(): Promise<void>
-	getMcpHub(): McpHub | undefined
 	upsertProviderProfile(name: string, settings: ProviderSettings): Promise<string | undefined>
 	activateProviderProfile(args: { name: string } | { id: string }): Promise<void>
 }
@@ -84,6 +88,7 @@ export interface WebviewHostPort {
  */
 export interface WebviewHandlerContext {
 	provider: WebviewHostPort
+	mcp: WebviewMcpPort
 	message: WebviewMessage
 	getCurrentCwd(): string
 	getGlobalState<K extends keyof GlobalState>(key: K): GlobalState[K] | undefined

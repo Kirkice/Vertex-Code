@@ -18,7 +18,7 @@ export function isPathInIgnoredDirectory(filePath: string): boolean {
 		if (!part) continue
 
 		// Handle the ".*" pattern for hidden directories
-		if (DIRS_TO_IGNORE.includes(".*") && part.startsWith(".") && part !== ".") {
+		if (DIRS_TO_IGNORE.includes(".*") && part.startsWith(".") && part !== "." && part !== "..") {
 			return true
 		}
 

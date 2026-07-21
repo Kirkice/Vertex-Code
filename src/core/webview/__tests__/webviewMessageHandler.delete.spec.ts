@@ -72,6 +72,7 @@ describe("webviewMessageHandler delete functionality", () => {
 		provider = {
 			getCurrentTask: vi.fn(() => getCurrentTaskMock),
 			postMessageToWebview: vi.fn(),
+			postStateToWebview: vi.fn(),
 			contextProxy: {
 				getValue: vi.fn(),
 				setValue: vi.fn(async () => {}),

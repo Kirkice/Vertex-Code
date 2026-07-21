@@ -111,6 +111,17 @@ import {
 } from "../../services/mode-handoff"
 import { resolveRoutingEnabled } from "../../services/mode-routing"
 import type { ModeHandoffTrigger } from "@roo-code/types"
+import {
+	LegacyTaskHostAdapter,
+	TaskRuntimeInvocationGuard,
+	type TaskDependencyPorts,
+	type TaskHostPort,
+	type TaskModeSwitchOptions,
+	type TaskProfileSwitchOptions,
+	type TaskRuntimeDisposable,
+	type TaskRuntimeFeatureFlags,
+	type TaskRuntimeTaskBinder,
+} from "./runtime"
 
 const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
 const DEFAULT_USAGE_COLLECTION_TIMEOUT_MS = 5000 // 5 seconds
@@ -119,6 +130,9 @@ const MAX_CONTEXT_WINDOW_RETRIES = 3 // Maximum retries for context window error
 
 export interface TaskOptions extends CreateTaskOptions {
 	provider: ClineProvider
+	taskHost?: TaskHostPort
+	taskDependencies?: TaskDependencyPorts
+	taskRuntimeFeatureFlags?: Partial<TaskRuntimeFeatureFlags>
 	apiConfiguration: ProviderSettings
 	enableCheckpoints?: boolean
 	checkpointTimeout?: number
@@ -243,6 +257,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private taskApiConfigReady: Promise<void>
 
 	providerRef: WeakRef<ClineProvider>
+	private readonly taskHost?: TaskHostPort
+	private readonly taskDependencies: TaskDependencyPorts
+	private readonly taskRuntimeFeatureFlags: Required<TaskRuntimeFeatureFlags>
+	private readonly useTaskHostProjection: boolean
+	private readonly taskRuntimeInvocationGuard = new TaskRuntimeInvocationGuard()
 	private readonly globalStoragePath: string
 	abort: boolean = false
 	currentRequestAbortController?: AbortController
@@ -368,6 +387,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// No streaming parser is required.
 	assistantMessageParser?: undefined
 	private providerProfileChangeListener?: (config: { name: string; provider?: string }) => void
+	private taskProfileChangeSubscription?: TaskRuntimeDisposable
 
 	// Native tool call streaming state (track which index each tool is at)
 	private streamingToolCallIndices: Map<string, number> = new Map()
@@ -399,6 +419,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Orchestrator Mode
 	constructor({
 		provider,
+		taskHost,
+		taskDependencies,
+		taskRuntimeFeatureFlags,
 		apiConfiguration,
 		enableCheckpoints = true,
 		checkpointTimeout = DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -469,6 +492,22 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.consecutiveMistakeLimit = consecutiveMistakeLimit ?? DEFAULT_CONSECUTIVE_MISTAKE_LIMIT
 		this.providerRef = new WeakRef(provider)
+		const legacyTaskHost = new LegacyTaskHostAdapter(provider)
+		this.taskHost = taskHost ?? legacyTaskHost
+		this.taskDependencies = taskDependencies ?? legacyTaskHost
+		;(this.taskDependencies as Partial<TaskRuntimeTaskBinder>).bindTask?.(this)
+		this.taskRuntimeFeatureFlags = {
+			stateProjection: taskRuntimeFeatureFlags?.stateProjection ?? "legacy",
+			profileRouting: taskRuntimeFeatureFlags?.profileRouting ?? "legacy",
+			modeHandoff: taskRuntimeFeatureFlags?.modeHandoff ?? "legacy",
+			historyProjection: taskRuntimeFeatureFlags?.historyProjection ?? "legacy",
+			mcp: taskRuntimeFeatureFlags?.mcp ?? "legacy",
+			skills: taskRuntimeFeatureFlags?.skills ?? "legacy",
+			checkpoint: taskRuntimeFeatureFlags?.checkpoint ?? "legacy",
+			tools: taskRuntimeFeatureFlags?.tools ?? "legacy",
+		}
+		this.useTaskHostProjection =
+			taskHost !== undefined && this.taskRuntimeFeatureFlags.stateProjection !== "legacy"
 		this.globalStoragePath = provider.context.globalStorageUri.fsPath
 		this.diffViewProvider = new DiffViewProvider(this.cwd, this)
 		this.enableCheckpoints = enableCheckpoints
@@ -501,7 +540,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.messageQueueStateChangedHandler = () => {
 			this.emit(RooCodeEventName.TaskUserMessage, this.taskId)
 			this.emit(RooCodeEventName.QueuedMessagesUpdated, this.taskId, this.messageQueueService.messages)
-			this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+			void this.projectStateWithoutTaskHistory()
 		}
 
 		this.messageQueueService.on("stateChanged", this.messageQueueStateChangedHandler)
@@ -578,8 +617,24 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 */
 	private async initializeTaskMode(provider: ClineProvider): Promise<void> {
 		try {
-			const state = await provider.getState()
-			this._taskMode = state?.mode || defaultModeSlug
+			let mode: string | undefined
+			if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
+				try {
+					mode = await this.taskDependencies.getCurrentMode()
+				} catch (error) {
+					this.taskHost?.log(
+						`Task runtime mode read fallback: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			}
+			if (!mode) {
+				const state =
+					this.taskRuntimeFeatureFlags.stateProjection !== "legacy"
+						? await this.taskHost?.getState()
+						: await provider.getState()
+				mode = state?.mode
+			}
+			this._taskMode = mode || defaultModeSlug
 		} catch (error) {
 			// If there's an error getting state, use the default mode
 			this._taskMode = defaultModeSlug
@@ -612,12 +667,24 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 */
 	private async initializeTaskApiConfigName(provider: ClineProvider): Promise<void> {
 		try {
-			const state = await provider.getState()
+			let currentApiConfigName: string | undefined
+			if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
+				try {
+					currentApiConfigName = await this.taskDependencies.getCurrentProfileName()
+				} catch (error) {
+					this.taskHost?.log(
+						`Task runtime profile read fallback: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			}
+			if (currentApiConfigName === undefined) {
+				currentApiConfigName = (await provider.getState()).currentApiConfigName
+			}
 
 			// Avoid clobbering a newer value that may have been set while awaiting provider state
 			// (e.g., user switches provider profile immediately after task creation).
 			if (this._taskApiConfigName === undefined) {
-				this._taskApiConfigName = state?.currentApiConfigName ?? "default"
+				this._taskApiConfigName = currentApiConfigName ?? "default"
 			}
 		} catch (error) {
 			// If there's an error getting state, use the default profile (unless a newer value was set).
@@ -637,6 +704,24 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * @param provider - The ClineProvider instance to listen to
 	 */
 	private setupProviderProfileChangeListener(provider: ClineProvider): void {
+		if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
+			this.taskProfileChangeSubscription = this.taskHost?.onProviderProfileChanged(async () => {
+				try {
+					const apiConfiguration = await this.taskDependencies.getProfileState()
+					if (apiConfiguration) {
+						this.updateApiConfiguration(apiConfiguration)
+					}
+				} catch (error) {
+					this.taskHost?.log(
+						`Failed to update API configuration through Task Runtime: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			})
+			if (this.taskProfileChangeSubscription) {
+				return
+			}
+		}
+
 		// Only set up listener if provider has the on method (may not exist in test mocks)
 		if (typeof provider.on !== "function") {
 			return
@@ -657,6 +742,135 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		provider.on(RooCodeEventName.ProviderProfileChanged, this.providerProfileChangeListener)
+	}
+
+	private async setModeThroughRuntime(
+		provider: ClineProvider,
+		mode: string,
+		options: TaskModeSwitchOptions = {},
+	): Promise<void> {
+		if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
+			try {
+				await this.taskDependencies.setMode(mode, options)
+				return
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime mode switch fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		await provider.setMode(mode, options)
+	}
+
+	private async setProviderProfileThroughRuntime(
+		provider: ClineProvider,
+		name: string,
+		options: TaskProfileSwitchOptions = {},
+	): Promise<void> {
+		if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
+			try {
+				await this.taskDependencies.setProviderProfile(name, options)
+				return
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime profile switch fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		await provider.setProviderProfile(name, options)
+	}
+
+	private async handleModeSwitchThroughRuntime(
+		provider: ClineProvider,
+		mode: string,
+		options: TaskModeSwitchOptions = {},
+	): Promise<void> {
+		if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
+			try {
+				await this.taskDependencies.handleModeSwitch(mode, options)
+				return
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime mode handoff fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		await provider.handleModeSwitch(mode as Parameters<ClineProvider["handleModeSwitch"]>[0], options)
+	}
+
+	private async projectStateWithoutTaskHistory(): Promise<void> {
+		if (this.useTaskHostProjection && this.taskHost) {
+			try {
+				await this.taskHost.postStateWithoutTaskHistory()
+				return
+			} catch (error) {
+				this.taskHost.log(
+					`Task Runtime state projection fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+	}
+
+	private async projectWebviewMessage(message: Parameters<TaskHostPort["postMessage"]>[0]): Promise<void> {
+		if (this.useTaskHostProjection && this.taskHost) {
+			try {
+				await this.taskHost.postMessage(message)
+				return
+			} catch (error) {
+				this.taskHost.log(
+					`Task Runtime message projection fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		await this.providerRef.deref()?.postMessageToWebview(message)
+	}
+
+	private async getStateThroughRuntime(provider: ClineProvider): Promise<any> {
+		if (this.taskRuntimeFeatureFlags.stateProjection !== "legacy" && this.taskHost) {
+			try {
+				return await this.taskHost.getState()
+			} catch (error) {
+				this.taskHost.log(
+					`Task Runtime state read fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		return provider.getState()
+	}
+
+	private getSkillsLookup(provider: ClineProvider): any {
+		const legacyManager = () => provider.getSkillsManager()
+		if (this.taskRuntimeFeatureFlags.skills === "legacy") {
+			return legacyManager()
+		}
+
+		return {
+			getSkillContent: async (name: string, currentMode?: string) => {
+				try {
+					return await this.taskDependencies.getSkillContent(name, currentMode)
+				} catch (error) {
+					this.taskHost?.log(
+						`Task runtime skills lookup fallback: ${error instanceof Error ? error.message : String(error)}`,
+					)
+					return legacyManager()?.getSkillContent(name, currentMode) ?? null
+				}
+			},
+		}
+	}
+
+	private async buildToolsWithRuntime(restrictions: any): Promise<any> {
+		if (this.taskRuntimeFeatureFlags.tools !== "legacy") {
+			try {
+				const tools = await this.taskDependencies.buildTools(restrictions)
+				return { tools: Array.isArray(tools) ? tools : (tools as any)?.tools ?? [] }
+			} catch (error) {
+				this.taskHost?.log(
+					`Task runtime tools build fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
+		return buildNativeToolsArrayWithRestrictions(restrictions)
 	}
 
 	/**
@@ -986,10 +1200,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	private async addToClineMessages(message: ClineMessage) {
 		this.clineMessages.push(message)
-		const provider = this.providerRef.deref()
 		// Avoid resending large, mostly-static fields (notably taskHistory) on every chat message update.
 		// taskHistory is maintained in-memory in the webview and updated via taskHistoryItemUpdated.
-		await provider?.postStateToWebviewWithoutTaskHistory()
+		await this.projectStateWithoutTaskHistory()
 		this.emit(RooCodeEventName.Message, { action: "created", message })
 		await this.saveClineMessages()
 
@@ -1012,7 +1225,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	private async updateClineMessage(message: ClineMessage) {
 		const provider = this.providerRef.deref()
-		await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: message })
+		await this.projectWebviewMessage({ type: "messageUpdated", clineMessage: message })
 		this.emit(RooCodeEventName.Message, { action: "updated", message })
 
 	}
@@ -1049,7 +1262,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// - Final state is emitted when updates stop (trailing: true)
 			this.debouncedEmitTokenUsage(tokenUsage, this.toolUsage)
 
-			await this.providerRef.deref()?.updateTaskHistory(historyItem)
+			if (this.taskRuntimeFeatureFlags.historyProjection !== "legacy") {
+				try {
+					await this.taskDependencies.updateHistoryItem(historyItem)
+				} catch (error) {
+					this.taskHost?.log(
+						`Task runtime history update fallback: ${error instanceof Error ? error.message : String(error)}`,
+					)
+					await this.providerRef.deref()?.updateTaskHistory(historyItem)
+				}
+			} else {
+				await this.providerRef.deref()?.updateTaskHistory(historyItem)
+			}
 			return true
 		} catch (error) {
 			console.error("Failed to save Vertex messages:", error)
@@ -1171,7 +1395,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		// Automatically approve if the ask according to the user's settings.
 		const provider = this.providerRef.deref()
-		const state = provider ? await provider.getState() : undefined
+		const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 		const approval = await checkAutoApproval({ state, ask: type, text, isProtected })
 
 		if (approval.decision === "approve") {
@@ -1208,7 +1432,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						if (message) {
 							this.interactiveAsk = message
 							this.emit(RooCodeEventName.TaskInteractive, this.taskId)
-							provider?.postMessageToWebview({ type: "interactionRequired" })
+							void this.projectWebviewMessage({ type: "interactionRequired" })
 						}
 					}, statusMutationTimeout),
 				)
@@ -1557,15 +1781,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				const fromMode = this._taskMode
 				const fromProfile = this._taskApiConfigName
 				if (mode) {
-					await provider.setMode(mode, { createModeHandoff: false })
+					await this.setModeThroughRuntime(provider, mode, { createModeHandoff: false })
 				}
 	
 				if (providerProfile) {
-					await provider.setProviderProfile(providerProfile, { createModeHandoff: false })
+					await this.setProviderProfileThroughRuntime(provider, providerProfile, { createModeHandoff: false })
 	
 					// Update this task's API configuration to match the new profile
 					// This ensures the parser state is synchronized with the selected model
-					const newState = await provider.getState()
+					const newState = await this.getStateThroughRuntime(provider)
 					if (newState?.apiConfiguration) {
 						this.updateApiConfiguration(newState.apiConfiguration)
 					}
@@ -1574,7 +1798,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// Mode Handoff: 在切换成功后生成结构化交接摘要并写入 clineMessages。
 				// 放在 setMode/setProviderProfile 之后，确保切换已生效，避免"假交接"。
 				// 获取 routing 状态以判断是否为多模型模式
-				const handoffState = await provider.getState()
+				const handoffState = await this.getStateThroughRuntime(provider)
 				const handoffRoutingEnabled = resolveRoutingEnabled({
 					modeLevelLlmRoutingEnabled: handoffState?.modeLevelLlmRoutingEnabled,
 					lockApiConfigAcrossModes: (provider as any).context?.workspaceState?.get("lockApiConfigAcrossModes", false) ?? false,
@@ -1627,18 +1851,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const systemPrompt = await this.getSystemPrompt()
 
 		// Get condensing configuration
-		const state = await this.providerRef.deref()?.getState()
+		const provider = this.providerRef.deref()
+		const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 		const customCondensingPrompt = state?.customSupportPrompts?.CONDENSE
 		const { mode, apiConfiguration } = state ?? {}
 
 		const { contextTokens: prevContextTokens } = this.getTokenUsage()
 
 		// Build tools for condensing metadata (same tools used for normal API calls)
-		const provider = this.providerRef.deref()
 		let allTools: import("openai").default.Chat.ChatCompletionTool[] = []
 		if (provider) {
 			const modelInfo = this.api.getModel().info
-			const toolsResult = await buildNativeToolsArrayWithRestrictions({
+			const toolsResult = await this.buildToolsWithRuntime({
 				provider,
 				cwd: this.cwd,
 				mode,
@@ -1884,12 +2108,22 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				return { enabledToolCount: 0, enabledServerCount: 0 }
 			}
 
-			const { mcpEnabled } = (await provider.getState()) ?? {}
+			let mcpEnabled: boolean | undefined
+			let mcpHub: McpHub | undefined
+			if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
+				mcpEnabled = await this.taskDependencies.isEnabled()
+				if (!(mcpEnabled ?? true)) {
+					return { enabledToolCount: 0, enabledServerCount: 0 }
+				}
+				mcpHub = await this.taskDependencies.getHub()
+			} else {
+				mcpEnabled = (await provider.getState())?.mcpEnabled
+			}
 			if (!(mcpEnabled ?? true)) {
 				return { enabledToolCount: 0, enabledServerCount: 0 }
 			}
 
-			const mcpHub = await McpServerManager.getInstance(provider.context, provider)
+			mcpHub ??= await McpServerManager.getInstance(provider.context, provider)
 			if (!mcpHub) {
 				return { enabledToolCount: 0, enabledServerCount: 0 }
 			}
@@ -1940,7 +2174,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// The todo list is already set in the constructor if initialTodos were provided
 			// No need to add any messages - the todoList property is already set
 
-			await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+			await this.projectStateWithoutTaskHistory()
 
 			await this.say("text", task, images)
 
@@ -2292,6 +2526,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		// Remove provider profile change listener
 		try {
+			this.taskProfileChangeSubscription?.dispose()
+			this.taskProfileChangeSubscription = undefined
+
 			if (this.providerProfileChangeListener) {
 				const provider = this.providerRef.deref()
 				if (provider) {
@@ -2583,7 +2820,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			)
 
 			const provider = this.providerRef.deref()
-			const state = provider ? await provider.getState() : undefined
+			const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 
 			const showRooIgnoredFiles = state?.showRooIgnoredFiles ?? false
 			const includeDiagnosticMessages = state?.includeDiagnosticMessages ?? true
@@ -2598,7 +2835,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				showRooIgnoredFiles,
 				includeDiagnosticMessages,
 				maxDiagnosticMessages,
-				skillsManager: provider?.getSkillsManager(),
+				skillsManager: provider ? this.getSkillsLookup(provider) : undefined,
 				currentMode,
 			})
 
@@ -2608,10 +2845,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			if (slashCommandMode) {
 				const provider = this.providerRef.deref()
 				if (provider) {
-					const state = await provider.getState()
+					const state = await this.getStateThroughRuntime(provider)
 					const targetMode = getModeBySlug(slashCommandMode, state?.customModes)
 					if (targetMode) {
-						await provider.handleModeSwitch(slashCommandMode, {
+						await this.handleModeSwitchThroughRuntime(provider, slashCommandMode, {
 							handoffTrigger: "auto_intent_switch",
 						})
 					}
@@ -2664,7 +2901,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			} satisfies ClineApiReqInfo)
 
 			await this.saveClineMessages()
-			await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+			await this.projectStateWithoutTaskHistory()
 
 			try {
 				let cacheWriteTokens = 0
@@ -3264,7 +3501,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							)
 
 							// Apply exponential backoff similar to first-chunk errors when auto-resubmit is enabled
-							const stateForBackoff = await this.providerRef.deref()?.getState()
+							const stateForBackoff = provider ? await this.getStateThroughRuntime(provider) : undefined
 							if (stateForBackoff?.autoApprovalEnabled) {
 								await this.backoffAndAnnounce(currentItem.retryAttempt ?? 0, error)
 
@@ -3396,7 +3633,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				}
 
 				await this.saveClineMessages()
-				await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+				await this.projectStateWithoutTaskHistory()
 
 				// No legacy text-stream tool parser state to reset.
 
@@ -3645,7 +3882,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// apiConversationHistory at line 1876. Since the assistant failed to respond,
 					// we need to remove that message before retrying to avoid having two consecutive
 					// user messages (which would cause tool_result validation errors).
-					let state = await this.providerRef.deref()?.getState()
+					let state = provider ? await this.getStateThroughRuntime(provider) : undefined
 					if (this.apiConversationHistory.length > 0) {
 						const lastMessage = this.apiConversationHistory[this.apiConversationHistory.length - 1]
 						if (lastMessage.role === "user") {
@@ -3768,7 +4005,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			}
 
 			// Gather execution state for the report
-			const state = await this.providerRef.deref()?.getState()
+			const provider = this.providerRef.deref()
+			const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 			const currentMode = state?.mode ?? "code"
 
 			// Only generate report for execution modes (code, debug, etc.)
@@ -3817,9 +4055,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.say("text", `<execution_report_generated>\n${reportText}\n</execution_report_generated>`)
 
 			// Trigger mode switch back to architect for validation
-			const provider = this.providerRef.deref()
-			if (provider) {
-				await provider.handleModeSwitch("architect", {
+			const providerForModeSwitch = this.providerRef.deref()
+			if (providerForModeSwitch) {
+				await this.handleModeSwitchThroughRuntime(providerForModeSwitch, "architect", {
 					createModeHandoff: true,
 					handoffTrigger: "orchestrator_stage",
 				})
@@ -3872,17 +4110,39 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	private async getSystemPrompt(userMessage?: string): Promise<string> {
-		const { mcpEnabled } = (await this.providerRef.deref()?.getState()) ?? {}
+		const provider = this.providerRef.deref()
+		if (!provider) {
+			throw new Error("Provider reference lost during view transition")
+		}
+
+		const state = await this.getStateThroughRuntime(provider)
+		let mcpEnabled = state?.mcpEnabled
+		if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
+			try {
+				mcpEnabled = await this.taskDependencies.isEnabled()
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime MCP status fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
 		let mcpHub: McpHub | undefined
 		if (mcpEnabled ?? true) {
-			const provider = this.providerRef.deref()
-
-			if (!provider) {
-				throw new Error("Provider reference lost during view transition")
+			if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
+				try {
+					mcpHub = await this.taskDependencies.getHub()
+				} catch (error) {
+					this.taskHost?.log(
+						`Task Runtime MCP hub fallback: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
 			}
 
-			// Wait for MCP hub initialization through McpServerManager
-			mcpHub = await McpServerManager.getInstance(provider.context, provider)
+			// Wait for MCP hub initialization through McpServerManager when the
+			// migrated boundary does not provide one.
+			if (!mcpHub) {
+				mcpHub = await McpServerManager.getInstance(provider.context, provider)
+			}
 
 			if (!mcpHub) {
 				throw new Error("Failed to get MCP hub from server manager")
@@ -3896,8 +4156,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		const rooIgnoreInstructions = this.rooIgnoreController?.getInstructions()
 
-		const state = await this.providerRef.deref()?.getState()
-
 		const {
 			mode,
 			customModes,
@@ -3910,13 +4168,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		} = state ?? {}
 
 		return await (async () => {
-			const provider = this.providerRef.deref()
-
-			if (!provider) {
-				throw new Error("Provider not available")
-			}
-
 			const modelInfo = this.api.getModel().info
+			const skillsManager =
+				this.taskRuntimeFeatureFlags.skills !== "legacy"
+					? (this.taskDependencies as any)
+					: provider.getSkillsManager()
 
 			return SYSTEM_PROMPT(
 				provider.context,
@@ -3943,7 +4199,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				},
 				undefined, // todoList
 				this.api.getModel().id,
-				provider.getSkillsManager(),
+				skillsManager,
 				userMessage,
 			)
 		})()
@@ -3957,7 +4213,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	private async handleContextWindowExceededError(): Promise<void> {
-		const state = await this.providerRef.deref()?.getState()
+		const provider = this.providerRef.deref()
+		const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 		const { profileThresholds = {}, mode, apiConfiguration } = state ?? {}
 
 		const { contextTokens } = this.getTokenUsage()
@@ -3981,13 +4238,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				`Forcing truncation to ${FORCED_CONTEXT_REDUCTION_PERCENT}% of current context.`,
 		)
 		// Send condenseTaskContextStarted to show in-progress indicator
-		await this.providerRef.deref()?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
+		await this.projectWebviewMessage({ type: "condenseTaskContextStarted", text: this.taskId })
 
 		// Build tools for condensing metadata (same tools used for normal API calls)
-		const provider = this.providerRef.deref()
 		let allTools: import("openai").default.Chat.ChatCompletionTool[] = []
 		if (provider) {
-			const toolsResult = await buildNativeToolsArrayWithRestrictions({
+				const toolsResult = await this.buildToolsWithRuntime({
 				provider,
 				cwd: this.cwd,
 				mode,
@@ -4075,9 +4331,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		} finally {
 			// Notify webview that context management is complete (removes in-progress spinner)
 			// IMPORTANT: Must always be sent to dismiss the spinner, even on error
-			await this.providerRef
-				.deref()
-				?.postMessageToWebview({ type: "condenseTaskContextResponse", text: this.taskId })
+			await this.projectWebviewMessage({ type: "condenseTaskContextResponse", text: this.taskId })
 		}
 	}
 
@@ -4088,7 +4342,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * the `api_req_rate_limit_wait` say type (not an error).
 	 */
 	private async maybeWaitForProviderRateLimit(retryAttempt: number): Promise<void> {
-		const state = await this.providerRef.deref()?.getState()
+		const provider = this.providerRef.deref()
+		const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 		const rateLimitSeconds =
 			state?.apiConfiguration?.rateLimitSeconds ?? this.apiConfiguration?.rateLimitSeconds ?? 0
 
@@ -4119,7 +4374,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		retryAttempt: number = 0,
 		options: { skipProviderRateLimit?: boolean } = {},
 	): ApiStream {
-		const state = await this.providerRef.deref()?.getState()
+		const provider = this.providerRef.deref()
+		const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 
 		const {
 			apiConfiguration,
@@ -4190,9 +4446,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// This notification must be sent here (not earlier) because the early check uses stale token count
 			// (before user message is added to history), which could incorrectly skip showing the indicator
 			if (contextManagementWillRun && autoCondenseContext) {
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
+				await this.projectWebviewMessage({ type: "condenseTaskContextStarted", text: this.taskId })
 			}
 
 			// Build tools for condensing metadata (same tools used for normal API calls)
@@ -4201,7 +4455,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			{
 				const provider = this.providerRef.deref()
 				if (provider) {
-					const toolsResult = await buildNativeToolsArrayWithRestrictions({
+					const toolsResult = await this.buildToolsWithRuntime({
 						provider,
 						cwd: this.cwd,
 						mode,
@@ -4312,9 +4566,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// This removes the in-progress spinner and allows the completed result to show
 				// IMPORTANT: Must always be sent to dismiss the spinner, even on error
 				if (contextManagementWillRun && autoCondenseContext) {
-					await this.providerRef
-						.deref()
-						?.postMessageToWebview({ type: "condenseTaskContextResponse", text: this.taskId })
+					await this.projectWebviewMessage({ type: "condenseTaskContextResponse", text: this.taskId })
 				}
 			}
 		}
@@ -4365,7 +4617,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				throw new Error("Provider reference lost during tool building")
 			}
 
-			const toolsResult = await buildNativeToolsArrayWithRestrictions({
+					const toolsResult = await this.buildToolsWithRuntime({
 				provider,
 				cwd: this.cwd,
 				mode,
@@ -4509,7 +4761,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Shared exponential backoff for retries (first-chunk and mid-stream)
 	private async backoffAndAnnounce(retryAttempt: number, error: any): Promise<void> {
 		try {
-			const state = await this.providerRef.deref()?.getState()
+			const provider = this.providerRef.deref()
+			const state = provider ? await this.getStateThroughRuntime(provider) : undefined
 			const baseDelay = state?.requestDelaySeconds || 5
 
 			let exponentialDelay = Math.min(
@@ -4583,6 +4836,20 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Checkpoints
 
 	public async checkpointSave(force: boolean = false, suppressMessage: boolean = false) {
+		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
+			try {
+				return await this.taskRuntimeInvocationGuard.run("checkpoint.save", async () => {
+					if (!this.taskDependencies.enabled()) {
+						return
+					}
+					await this.taskDependencies.save(force, suppressMessage)
+				})
+			} catch (error) {
+				this.taskHost?.log(
+					`Task runtime checkpoint save fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
 		return checkpointSave(this, force, suppressMessage)
 	}
 
@@ -4821,10 +5088,32 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		return cleanConversationHistory
 	}
 	public async checkpointRestore(options: CheckpointRestoreOptions) {
+		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
+			try {
+				return await this.taskRuntimeInvocationGuard.run("checkpoint.restore", () =>
+					this.taskDependencies.restore(options),
+				)
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime checkpoint restore fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
 		return checkpointRestore(this, options)
 	}
 
 	public async checkpointDiff(options: CheckpointDiffOptions) {
+		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
+			try {
+				return await this.taskRuntimeInvocationGuard.run("checkpoint.diff", () =>
+					this.taskDependencies.diff(options),
+				)
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime checkpoint diff fallback: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+		}
 		return checkpointDiff(this, options)
 	}
 

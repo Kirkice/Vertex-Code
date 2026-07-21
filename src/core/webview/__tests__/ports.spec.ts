@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { CheckpointTaskPort, TaskHistoryPort, TaskStatePort, WorktreeHostPort } from "../ports"
+import type { CheckpointTaskPort, TaskHistoryPort, TaskStatePort, WebviewMcpPort, WorktreeHostPort } from "../ports"
 
 describe("webview ports", () => {
 	it("documents the narrow capability contracts without runtime coupling", async () => {
@@ -24,10 +24,12 @@ describe("webview ports", () => {
 			log: () => undefined,
 		}
 		const state: TaskStatePort = { getState: async () => ({}), log: () => undefined }
+		const mcp: WebviewMcpPort = { getMcpHub: () => undefined }
 
 		expect(task).toBeDefined()
 		expect(worktree.cwd).toBe("workspace")
 		expect(history.getCurrentTask()).toBeUndefined()
 		expect(await state.getState()).toEqual({})
+		expect(mcp.getMcpHub()).toBeUndefined()
 	})
 })

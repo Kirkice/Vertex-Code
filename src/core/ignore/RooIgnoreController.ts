@@ -4,6 +4,7 @@ import fs from "fs/promises"
 import fsSync from "fs"
 import ignore, { Ignore } from "ignore"
 import * as vscode from "vscode"
+import { toPosixPath } from "../../utils/path"
 
 export const LOCK_TEXT_SYMBOL = "\u{1F512}"
 
@@ -105,7 +106,7 @@ export class RooIgnoreController {
 			}
 
 			// Convert real path to relative for .rooignore checking
-			const relativePath = path.relative(this.cwd, realPath).toPosix()
+			const relativePath = toPosixPath(path.relative(this.cwd, realPath))
 
 			// Check if the real path is ignored
 			return !this.ignoreInstance.ignores(relativePath)

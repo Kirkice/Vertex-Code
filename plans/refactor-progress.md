@@ -1,6 +1,6 @@
 # Vertex Code 工程化重构进度记录
 
-> 最后更新：2026-07-20
+> 最后更新：2026-07-21
 >
 > 用途：下次继续工作前，先阅读本文档，快速恢复当前重构背景、已完成内容、验证结果和后续执行顺序。
 
@@ -125,7 +125,7 @@
 
 ### 1. 阶段 5：Task Runtime 解耦
 
-阶段 5A、5B 已完成，阶段 5C 已进入“方案确认、尚未改动生产主循环”状态。当前已完成 Worktree/Checkpoint 与 Task History 的边界收窄，但尚未替换 `Task.ts` 的核心 Provider 依赖。
+阶段 5A、5B 已完成，阶段 5C-0 已完成“新端口与旧 Provider 兼容适配器”的第一版实现；阶段 5C-1 已完成状态/日志/Webview 投影的可回退接入；阶段 5C-2 已完成 Profile、Mode、History 端口契约和旧 Provider 适配器。当前尚未替换 `Task.ts` 的核心 Provider 依赖。
 
 `Task.ts` 仍直接或间接依赖：
 
@@ -220,22 +220,22 @@ Task.ts（旧稳定实现，默认路径）
 
 ```ts
 export interface TaskStatePort {
-  getState(): Promise<TaskRuntimeState | undefined>
-  log(message: string): void
+	getState(): Promise<TaskRuntimeState | undefined>
+	log(message: string): void
 }
 
 export interface TaskEventPort {
-  onProviderProfileChanged(listener: () => void | Promise<void>): DisposableLike
+	onProviderProfileChanged(listener: () => void | Promise<void>): DisposableLike
 }
 
 export interface TaskWebviewPort {
-  postMessage(message: ExtensionMessage): Promise<void> | void
-  postStateWithoutTaskHistory(): Promise<void>
+	postMessage(message: ExtensionMessage): Promise<void> | void
+	postStateWithoutTaskHistory(): Promise<void>
 }
 
 export interface TaskHostPort extends TaskStatePort, TaskEventPort, TaskWebviewPort {
-  readonly context: vscode.ExtensionContext
-  readonly cwd: string
+	readonly context: vscode.ExtensionContext
+	readonly cwd: string
 }
 ```
 
@@ -276,6 +276,17 @@ export interface TaskHostPort extends TaskStatePort, TaskEventPort, TaskWebviewP
 
 ### 5.5 阶段 5C-2：Provider Profile、Mode Handoff 和 Task History
 
+本轮已完成 5C-2 的第一段安全接入：
+
+- `TaskRuntimeFeatureFlags` 已按依赖簇拆分为 `profileRouting`、`modeHandoff` 和 `historyProjection`，默认均为 `legacy`；
+- `TaskOptions` 支持可选 `taskDependencies` 和各簇 feature flag，不改变现有 Provider 构造参数；
+- 新 Task 可在显式打开开关时，通过端口读取 Mode/Profile，并通过 History 端口更新历史；
+- 端口读取、事件订阅和 History 写入失败时回退到旧 Provider 路径；
+- 默认生产路径仍使用旧 Profile/Mode/History 副作用；
+- `LegacyTaskHostAdapter` 已补充 Profile、Mode、routing、History 和默认开关契约测试。
+
+剩余门禁：将显式 `taskHost`/依赖端口从 Provider 创建入口注入，并补充 Task 构造级 feature-flag 回滚测试；在此之前不切换插件默认路径。
+
 建议端口：
 
 - `TaskProfilePort`：读取/激活 Profile、更新 Task Profile 名称、读取 Mode routing 状态。
@@ -292,6 +303,8 @@ export interface TaskHostPort extends TaskStatePort, TaskEventPort, TaskWebviewP
 
 ### 5.6 阶段 5C-3：MCP 与 Skills
 
+已开始迁移准备：`TaskDependencyPorts` 已增加 `TaskMcpPort` 与 `TaskSkillsPort` 最小能力，`LegacyTaskHostAdapter` 提供旧 `ClineProvider` 的兼容实现。当前仅建立端口和读取适配，MCP 工具调用、Skills 写操作和提示词主路径仍保持旧实现，避免真实副作用双执行。新增 4 项 MCP/Skills 读取契约测试已通过，TypeScript 检查通过。
+
 建议端口：
 
 - `TaskMcpPort`：读取启用状态、等待 Hub ready、读取工具/资源、执行 MCP 操作。
@@ -305,6 +318,8 @@ export interface TaskHostPort extends TaskStatePort, TaskEventPort, TaskWebviewP
 - MCP/Skills 相关测试必须覆盖禁用、未初始化、超时、服务消失和权限失败。
 
 ### 5.7 阶段 5C-4：Checkpoint、Workspace 和 Tool Runtime
+
+已建立 Checkpoint 与 Tool Runtime 的最小端口契约，并由 Legacy Adapter 提供安全占位实现。占位方法不会触发真实 Checkpoint/MCP/工具副作用；实际调用接入仍待独立 adapter、单次执行保护和回滚测试完成。
 
 这是高风险阶段，放在前述依赖簇稳定之后。
 
@@ -404,7 +419,37 @@ Task Runtime 不采用“一次性替换”策略。当前用户正在使用现�
 
 - 阶段 5A：已完成。
 - 阶段 5B：已完成。
-- 阶段 5C：进行中，仅完成 `TaskStatePort` 契约草案和契约测试，尚未接入 `Task.ts`。
+- 阶段 5C：进行中；已在 Provider 的新建任务和历史恢复入口显式注入同一个 `LegacyTaskHostAdapter`，同时传入 `taskHost` 与 `taskDependencies`。新状态投影仍受 `stateProjection: "legacy"` 默认开关保护，未改变生产行为。
+- 本次新增回归保护：修正状态/Webview 投影 fallback 的递归调用，legacy fallback 现在直接调用 Provider 的原始投影方法；更新 Adapter 的完整 feature flag 契约测试。
+- 本次验证：`LegacyTaskHostAdapter.spec.ts` 与 `Task.mode-handoff.spec.ts` 共 2 个测试文件、6 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。运行环境为 Node `24.11.1`，不是项目声明的 Node `20.20.2`。
+- 已补充 Task 构造级开关与回滚测试：默认 `stateProjection: "legacy"` 时，即使注入 `taskHost` 也仍调用 Provider 原始投影；显式 `stateProjection: "new"` 时使用端口，端口失败后回退到 Provider 并记录日志。
+- 本次新增验证：相关 2 个测试文件共 7 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。测试仍在 Node `24.11.1` 下运行。
+- 已补充 Profile/Mode 依赖簇的构造级测试：显式 `profileRouting: "new"`、`modeHandoff: "new"` 时从端口读取 Profile/Mode；端口读取失败时分别回退到 Provider 状态并记录日志。
+- 本次新增验证：相关 2 个测试文件共 9 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。测试仍在 Node `24.11.1` 下运行。
+- 已补充 History 依赖簇测试：显式 `historyProjection: "new"` 时 History 更新只通过新端口执行一次；新端口失败时回退到 Provider，并记录回退日志。
+- 本次新增验证：相关 2 个测试文件共 11 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。测试仍在 Node `24.11.1` 下运行。
+- 已补充 MCP 依赖簇测试：显式 `mcp: "new"` 时从 MCP 端口读取启用状态和 Hub，并正确统计已连接服务器工具；MCP 禁用时不重复读取 Hub；端口异常时保持非致命空计数行为。
+- 本次新增验证：相关 2 个测试文件共 13 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。测试仍在 Node `24.11.1` 下运行。MCP 异常日志是测试覆盖的预期输出。
+- Skills 端口已接入用户内容处理主路径：新增 `TaskSkillsPort.getSkillContent()`，`skills: "new"` 时 slash-command lookup 使用端口，默认 legacy 时仍使用原 `SkillsManager`。
+- 已补充 Skills 测试：验证 new 端口 lookup、legacy manager lookup，以及 Skills 端口类型契约；未执行任何 Skills 副作用双跑。
+- 本次新增验证：相关 2 个测试文件共 15 个测试通过；`pnpm exec tsc --noEmit`（在 `src` 目录执行）通过；相关文件 Prettier 检查通过。测试仍在 Node `24.11.1` 下运行。MCP 异常日志是测试覆盖的预期输出。
+- Checkpoint 端口已接入 `checkpointSave`、`checkpointRestore` 和 `checkpointDiff`：`checkpoint: "new"` 时单次调用端口，失败后回退旧实现并记录日志；默认 legacy 不变。
+- 已补充 Checkpoint new/失败回退测试；本次相关 2 个测试文件共 16 个测试通过。`pnpm exec tsc --noEmit`（在 `src` 目录执行）与 Prettier 检查通过，测试仍在 Node `24.11.1` 下运行。
+- Tools 端口已接入 Task 的工具构建边界：所有 native tools 构建调用统一经过 `buildToolsWithRuntime()`；`tools: "new"` 时使用 `TaskToolsPort.buildTools()`，失败后回退 legacy builder 并记录日志，默认 legacy 不变。
+- 已补充 Tools new/失败回退测试；本次相关 2 个测试文件共 17 个测试通过。`pnpm exec tsc --noEmit`（在 `src` 目录执行）与相关文件 Prettier 检查通过，测试仍在 Node `24.11.1` 下运行。
+- `stateProjection` 已完成真实接入：消息新增和更新、队列状态投影现在统一经过 `projectStateWithoutTaskHistory()` / `projectWebviewMessage()`；显式 `stateProjection: "new"` 时使用 Task Host，失败回退 Provider，默认 legacy 保持不变。初始化错误日志也通过注入的 Host 记录。
+- 已补充 state projection new 路径测试；本次相关 2 个测试文件共 18 个测试通过。`pnpm exec tsc --noEmit`（在 `src` 目录执行）与相关文件 Prettier 检查通过，测试仍在 Node `24.11.1` 下运行。
+- 修复了 `handleDedicatedModelRequest()` 的无关请求提前读取 Provider state 问题：只有 Ollama/LM Studio 分支需要 `getState()`，Roo/OpenAI/VS Code LM 等分支不再要求旧测试 mock 提供该方法；`webviewMessageHandler.spec.ts` 当前 36 个测试全部通过。
+- 最新全量测试结果：306 个测试文件通过、31 个失败、3 个跳过；5022 个测试通过、137 个失败、34 个跳过；6 个 snapshot 失败。Task Runtime 相关定向测试未见失败。
+- 全量失败已初步分类：Bedrock ARN/跨区域解析、Graphics 路由与 workflow、Checkpoint Windows/Git 超时、Code Index mock/错误文案、System Info 的 `homedir().toPosix` mock、空测试 suite，以及其他旧 Provider/VS Code mock 兼容问题；目前没有证据表明这些由本轮 Task Runtime 端口接入引入。
+- 本轮新增修复后的验收：`pnpm exec tsc --noEmit` 通过；相关文件 Prettier 检查通过；`pnpm bundle` 通过。执行环境仍为 Node `24.11.1`，Node `20.20.2` 和 Extension Host smoke test 尚未完成。
+- 本轮补齐了 Webview/ClineProvider 测试替身的 Task handoff、Webview 状态投影和编辑消息提交能力，并让 Provider 对缺少可选 handoff 能力的旧 Task 替身保持兼容；相关 5 个测试文件共 53 个测试通过。
+- 当前仍未完成：全量既有失败的逐项治理、发布级 Extension Host 验收，以及 API stream 主循环解耦；后者继续保持冻结。当前剩余失败主要集中在既有 Bedrock/Graphics/Checkpoint/Code Index、Provider/VS Code mock、快照和空测试 suite 问题，尚无证据表明由本轮 Task Runtime 端口接入引起。
+- 继续收窄 Webview capability port：`TaskStatePort` 与 `WebviewHostPort.getState()` 的 `apiConfiguration` 已统一收窄为 `ProviderSettings`，移除了该边界上的 `Record<string, unknown>` / `Record<string, any>`。
+- 相关 `ports.spec.ts`、`webviewMessageHandler.spec.ts` 与 Router Models 定向测试共 3 个文件、44 个测试通过；`pnpm exec tsc --noEmit` 与相关文件 Prettier 检查通过。
+- 已建立独立的 `WebviewMcpPort` capability contract，并让 `WebviewHostPort` 通过接口继承保持兼容；补充端口契约测试，尚未改变 MCP handler 的运行时调用路径。
+- MCP capability port 收窄验证完成：`ports.spec.ts`、`settingsMessageHandler.spec.ts`、`webviewMessageHandler.spec.ts` 共 3 个文件、41 个测试通过；`pnpm exec tsc --noEmit` 与端口文件 Prettier 检查通过。当前仍保留 `WebviewHostPort` 的兼容继承，避免一次性改动所有 Handler。
+- 设置 Handler 已开始直接使用 `WebviewHandlerContext.mcp` capability，而不是从通用 `provider` 读取 MCP Hub；入口由 `webviewMessageHandler` 显式注入同一 Provider adapter，旧行为保持兼容。相关 2 个测试文件共 5 个测试通过，类型检查和 Prettier 检查通过。
 
 ### 下一步 C：最后评估 Provider 解耦和 Rust
 
@@ -428,7 +473,7 @@ Task Runtime 不采用“一次性替换”策略。当前用户正在使用现�
 pnpm exec vitest run --reporter=dot
 ```
 
-结果：
+此前基线结果：
 
 - Test Files：300 passed / 36 failed / 3 skipped，共 339 个。
 - Tests：4957 passed / 186 failed / 34 skipped，共 5177 个。
@@ -439,7 +484,21 @@ pnpm exec vitest run --reporter=dot
     - Bedrock 错误处理测试输出大量预期错误日志。
     - 另有快照、Graphics 和既有 Provider 测试失败，需要按测试文件逐项确认。
 
-本轮新增或修改相关测试仍需以定向测试为主要验收依据；全量失败尚未发现由本轮端口收窄直接引起的失败。
+本轮复核结果：
+
+- Test Files：306 passed / 31 failed / 3 skipped，共 340 个。
+- Tests：5022 passed / 137 failed / 34 skipped，共 5193 个。
+- Snapshots：6 个失败；未发现 Task Runtime 定向测试失败。
+- 相关修复后的定向测试：5 个文件、53 个测试全部通过。
+
+## 十、本轮继续收敛记录（2026-07-21）
+
+- 修复 `isPathInIgnoredDirectory` 将路径计算产生的 `..` 误判为隐藏目录的问题；Code Index `DirectoryScanner` 因此不再把所有相对路径过滤为空。
+- 修复 `system-info` 与 `RooProtectedController` 对全局 `String.prototype.toPosix` 的隐式依赖，改为显式使用 `toPosixPath`。
+- 对齐 `ClineProvider.lockApiConfig` 测试与实际的 `createModeHandoff: false` 调用契约。
+- 本轮定向回归：12 个测试文件、123 个测试全部通过，其中包含 Provider/Webview、路径兼容和 Code Index scanner。
+- 验证通过：`pnpm check-types`、相关文件 Prettier 检查、`pnpm bundle`。当前环境为 Node `24.11.1`，项目声明版本为 `20.20.2`，Node 20 与 Extension Host smoke test 仍待执行。
+- 本轮未重新执行全量测试；此前记录的全量结果仍为 306 个测试文件通过、31 个失败、3 个跳过；5022 个测试通过、137 个失败、34 个跳过；6 个 snapshot 失败。
 
 ## 七、重要工程约束
 
@@ -455,3 +514,32 @@ pnpm exec vitest run --reporter=dot
 下次开始时，可以直接使用以下上下文：
 
 > 继续 `plans/refactor-progress.md` 中记录的 Vertex Code 工程化重构。阶段 1-4 Webview Handler 已完成并通过定向测试、类型检查和 bundle；先检查当前工作区和测试状态，再从阶段 5 的依赖簇式 TaskHostPort 解耦开始。不要直接重写 Task 主循环，不要牺牲原功能，所有修改都要补测试并记录验证结果。
+
+## 十一、本轮 Node 20 发布基线与全量治理（2026-07-21）
+
+### 本轮追加更新（2026-07-21）
+
+已完成：
+
+- Task Runtime 的 State/Profile/Mode/History/MCP/Skills/Checkpoint/Tools 路径已接入 ProductionTaskRuntimeAdapter。
+- API stream 中的状态读取、限流/重试配置和上下文压缩 Webview 通知已统一经过 Runtime helper；legacy 路径保持不变，新路径异常自动回退。
+- Checkpoint 增加并发重复调用保护，Skills、Tools、MCP 和 History 均具备失败回退测试。
+- Node 20.20.2 全量验证：341/341 个测试文件通过，5199 个测试中 5165 通过、34 pending、0 failed；snapshot 20/20 匹配。
+- Node 20 类型检查、生产 bundle、VSIX 均通过；最新产物为 `bin/vertex-3.56.0.vsix`，约 41.41 MB。
+
+剩余内容：
+
+- API Handler 创建和 Provider 专有副作用仍保留在 ClineProvider 兼容边界内，尚未完全下沉为独立 Runtime port。
+- MCP 工具实际执行、Native Tool 执行和 API stream 主流程仍依赖 Provider/Task 既有执行链；当前已完成单次路由与失败回退，未删除 legacy 实现。
+- 需要在真实运行时回归覆盖 Provider 切换、Mode handoff、MCP/Skills 服务不可用、Checkpoint 超时和工具执行异常后，再评估移除 LegacyTaskHostAdapter。
+
+当前结论：发布基线和依赖簇迁移已通过；剩余工作集中在 Provider 专有副作用的最终拆分与真实运行时回归，不再是全量测试失败治理或 Node 20 基线问题。
+
+- 使用官方 portable Node `20.20.2` 执行 `pnpm install --frozen-lockfile`，安装通过；`.nvmrc` / `.tool-versions` 与实际运行时一致。
+- Node 20 全量 Vitest 最终结果：`341/341` 个测试文件通过；`5199` 个测试中 `5165` 通过、`34` pending、`0` failed；snapshot `20/20` 匹配，`0` unmatched。
+- 已治理的失败簇包括：Bedrock ARN（GovCloud/China/default prompt router/cross-region）、旧 Provider Telemetry 断言、路径 `toPosix` mock、CustomModes schema 错误处理、Graphics 路由/workflow 注册、Checkpoint Windows/Git 超时、OpenAI embedder 错误文案、空 suite、Task 工具与模式切换 mock、6 个快照更新。
+- Node 20 `pnpm --dir src check-types` 通过；Node 20 `pnpm bundle` 通过；Node 20 `pnpm --dir src vsix` 通过，产物为 `bin/vertex-3.56.0.vsix`。
+- Extension Host smoke 通过：隔离 user-data 启动时 VS Code 正确识别 `--extensionDevelopmentPath`，`VertexOrganization.vertex` 激活成功并记录 `vertex.activationCompleted`；未发现 `bad option`。专用宿主取证完成后已停止，避免遗留后台进程。
+- Task Runtime 新增 `TaskRuntimeInvocationGuard`，保护 Checkpoint 并发重复调用；Skills 端口异常回退 legacy Manager；新增对应 guard、Skills fallback、Checkpoint 并发回归测试。生产入口已改为注入 `ProductionTaskRuntimeAdapter`，MCP/Skills/Checkpoint/Tools/State/Profile/Mode/History 依赖簇默认走新路径；Mode 副作用操作和 MCP/工具实际执行仍保留原 Provider 调用边界。
+- 系统提示构建已接入 Runtime 读取：状态、MCP Hub、Skills metadata 通过端口进入 Prompt，服务异常时回退 legacy；定向 Prompt/Task/ClineProvider 回归 `122/122` 通过。
+- 已完成生产路径回归：Adapter 定向测试、Task 回退测试、ClineProvider 回归、Node 20 全量测试、bundle/VSIX 和 Extension Host smoke 均通过。新 Adapter 未绑定 Task、服务不可用或运行异常时，Task 会记录诊断并回退 legacy 实现；默认开关后续只需在发现真实运行时问题时按依赖簇回滚。

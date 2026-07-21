@@ -6,6 +6,9 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { GraphicsWorkflowOrchestrator } from "../GraphicsWorkflowOrchestrator"
+import { AnalyzeCurrentFrameWorkflow } from "../workflows/analyzeCurrentFrame"
+import { ExplainSelectedDrawWorkflow } from "../workflows/explainSelectedDraw"
+import { FindOwnerInProjectWorkflow } from "../workflows/findOwnerInProject"
 import type { IGraphicsProviderRegistry } from "../../graphics-provider/GraphicsProviderRegistry"
 import type { GraphicsCaptureProvider } from "../../graphics-provider/GraphicsCaptureProvider"
 
@@ -108,6 +111,9 @@ describe("GraphicsWorkflowOrchestrator", () => {
 		mockProvider = createMockProvider()
 		mockRegistry = createMockRegistry(mockProvider)
 		orchestrator = new GraphicsWorkflowOrchestrator(mockRegistry)
+		orchestrator.registerWorkflow(new AnalyzeCurrentFrameWorkflow())
+		orchestrator.registerWorkflow(new ExplainSelectedDrawWorkflow())
+		orchestrator.registerWorkflow(new FindOwnerInProjectWorkflow())
 	})
 
 	describe("execute", () => {

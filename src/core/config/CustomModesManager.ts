@@ -193,7 +193,7 @@ export class CustomModesManager {
 			const result = customModesSettingsSchema.safeParse(settings)
 
 			if (!result.success) {
-				console.error(`[CustomModesManager] Schema validation failed for ${filePath}:`, result.error)
+				console.error(`[CustomModesManager] Schema validation failed for ${filePath}:`, result.error.message)
 
 				// Show user-friendly error for .roomodes files
 				if (filePath.endsWith(ROOMODES_FILENAME)) {
@@ -201,7 +201,15 @@ export class CustomModesManager {
 						.map((issue) => `• ${issue.path.join(".")}: ${issue.message}`)
 						.join("\n")
 
-					vscode.window.showErrorMessage(t("common:customModes.errors.schemaValidationError", { issues }))
+					let errorMessage: string
+					try {
+						errorMessage = t("common:customModes.errors.schemaValidationError", { issues })
+					} catch {
+						// Keep validation errors visible even when i18n is not initialized yet
+						// (for example during extension-host startup or isolated tests).
+						errorMessage = "customModes.errors.schemaValidationError"
+					}
+					vscode.window.showErrorMessage(errorMessage)
 				}
 
 				return []
@@ -216,8 +224,7 @@ export class CustomModesManager {
 		} catch (error) {
 			// Only log if the error wasn't already handled in parseYamlSafely
 			if (!(error as any).alreadyHandled) {
-				const errorMsg = `Failed to load modes from ${filePath}: ${error instanceof Error ? error.message : String(error)}`
-				console.error(`[CustomModesManager] ${errorMsg}`)
+				console.error(`[CustomModesManager] Failed to load modes from ${filePath}:`, error)
 			}
 			return []
 		}

@@ -33,7 +33,6 @@ import {
 	ApiProviderError,
 } from "@roo-code/types"
 
-
 import { ApiStream } from "../transform/stream"
 import { BaseProvider } from "./base-provider"
 import { logger } from "../../utils/logging"
@@ -1669,12 +1668,13 @@ Please check:
 		const invalidResult = {
 			isValid: false,
 			crossRegionInference: false,
-			errorMessage: "Invalid ARN format. Expected format: arn:aws:bedrock:region:account-id:resource-type/resource-name",
+			errorMessage:
+				"Invalid ARN format. Expected format: arn:aws:bedrock:region:account-id:resource-type/resource-name",
 		}
 
 		// ARN format: arn:aws:bedrock:region:account-id:resource-type/resource-name
 		// Foundation models may not have account-id: arn:aws:bedrock:region::foundation-model/model-id
-		const arnRegex = /^arn:aws:bedrock:([^:]*):([^:]*):([^/]+)\/(.+)$/
+		const arnRegex = /^arn:[^:]+:bedrock:([^:]*):([^:]*):([^/]+)\/(.+)$/
 		const match = arn.match(arnRegex)
 
 		if (!match) {
@@ -1684,7 +1684,7 @@ Please check:
 		const [, arnRegion, , resourceType, resourceId] = match
 
 		// Validate resource type
-		const validResourceTypes = ["foundation-model", "inference-profile", "prompt-router"]
+		const validResourceTypes = ["foundation-model", "inference-profile", "prompt-router", "default-prompt-router"]
 		if (!validResourceTypes.includes(resourceType)) {
 			return {
 				...invalidResult,
@@ -1694,7 +1694,7 @@ Please check:
 
 		// Check for cross-region inference prefix in the model ID
 		// Cross-region prefixes: us., eu., apac., ap.
-		const crossRegionPrefixRegex = /^(us|eu|apac|ap)\./
+		const crossRegionPrefixRegex = /^(us|eu|apac)\./
 		const prefixMatch = resourceId.match(crossRegionPrefixRegex)
 		const isCrossRegion = prefixMatch !== null
 		const modelId = isCrossRegion ? resourceId.replace(crossRegionPrefixRegex, "") : resourceId

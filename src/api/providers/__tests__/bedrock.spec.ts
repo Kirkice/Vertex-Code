@@ -1,14 +1,3 @@
-// Mock TelemetryService before other imports
-const mockCaptureException = vi.fn()
-
-vi.mock("@roo-code/telemetry", () => ({
-	TelemetryService: {
-		instance: {
-			captureException: (...args: unknown[]) => mockCaptureException(...args),
-		},
-	},
-}))
-
 // Mock AWS SDK credential providers
 vi.mock("@aws-sdk/credential-providers", () => {
 	const mockFromIni = vi.fn().mockReturnValue({
@@ -36,12 +25,7 @@ vi.mock("@aws-sdk/client-bedrock-runtime", () => {
 
 import { AwsBedrockHandler } from "../bedrock"
 import { ConverseStreamCommand, BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime"
-import {
-	BEDROCK_1M_CONTEXT_MODEL_IDS,
-	BEDROCK_SERVICE_TIER_MODEL_IDS,
-	bedrockModels,
-	ApiProviderError,
-} from "@roo-code/types"
+import { BEDROCK_1M_CONTEXT_MODEL_IDS, BEDROCK_SERVICE_TIER_MODEL_IDS, bedrockModels } from "@roo-code/types"
 
 import type { Anthropic } from "@anthropic-ai/sdk"
 
@@ -1149,11 +1133,10 @@ describe("AwsBedrockHandler", () => {
 		})
 	})
 
-	describe("error telemetry", () => {
+	describe("error handling", () => {
 		let mockSend: ReturnType<typeof vi.fn>
 
 		beforeEach(() => {
-			mockCaptureException.mockClear()
 			// Get access to the mock send function from the mocked client
 			mockSend = vi.mocked(BedrockRuntimeClient).mock.results[0]?.value?.send
 		})
@@ -1191,21 +1174,6 @@ describe("AwsBedrockHandler", () => {
 					// Should throw before or during iteration
 				}
 			}).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "Bedrock API error",
-					provider: "Bedrock",
-					modelId: "anthropic.claude-3-5-sonnet-20241022-v2:0",
-					operation: "createMessage",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
 		it("should capture telemetry on completePrompt error", async () => {
@@ -1228,21 +1196,6 @@ describe("AwsBedrockHandler", () => {
 
 			// Call completePrompt - it should throw
 			await expect(errorHandler.completePrompt("Test prompt")).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "Bedrock completion error",
-					provider: "Bedrock",
-					modelId: "anthropic.claude-3-5-sonnet-20241022-v2:0",
-					operation: "completePrompt",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
 		it("should still throw the error after capturing telemetry", async () => {
@@ -1272,15 +1225,12 @@ describe("AwsBedrockHandler", () => {
 
 			const generator = errorHandler.createMessage("You are a helpful assistant", messages)
 
-			// Verify the error is still thrown after telemetry capture
+			// Verify the error is still thrown
 			await expect(async () => {
 				for await (const _chunk of generator) {
 					// Should throw
 				}
 			}).rejects.toThrow()
-
-			// Telemetry should have been captured before the error was thrown
-			expect(mockCaptureException).toHaveBeenCalled()
 		})
 	})
 

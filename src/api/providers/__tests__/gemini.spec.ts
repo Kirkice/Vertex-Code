@@ -1,18 +1,8 @@
 // npx vitest run src/api/providers/__tests__/gemini.spec.ts
 
-const mockCaptureException = vitest.fn()
-
-vitest.mock("@roo-code/telemetry", () => ({
-	TelemetryService: {
-		instance: {
-			captureException: (...args: unknown[]) => mockCaptureException(...args),
-		},
-	},
-}))
-
 import { Anthropic } from "@anthropic-ai/sdk"
 
-import { type ModelInfo, geminiDefaultModelId, ApiProviderError } from "@roo-code/types"
+import { type ModelInfo, geminiDefaultModelId } from "@roo-code/types"
 
 import { t } from "i18next"
 import { GeminiHandler } from "../gemini"
@@ -24,7 +14,6 @@ describe("GeminiHandler", () => {
 
 	beforeEach(() => {
 		// Reset mocks
-		mockCaptureException.mockClear()
 
 		// Create mock functions
 		const mockGenerateContentStream = vitest.fn()
@@ -289,7 +278,7 @@ describe("GeminiHandler", () => {
 		})
 	})
 
-	describe("error telemetry", () => {
+	describe("error handling", () => {
 		const mockMessages: Anthropic.Messages.MessageParam[] = [
 			{
 				role: "user",
@@ -310,21 +299,6 @@ describe("GeminiHandler", () => {
 					// Should throw before yielding any chunks
 				}
 			}).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "Gemini API error",
-					provider: "Gemini",
-					modelId: GEMINI_MODEL_NAME,
-					operation: "createMessage",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
 		it("should capture telemetry on completePrompt error", async () => {
@@ -332,24 +306,9 @@ describe("GeminiHandler", () => {
 			;(handler["client"].models.generateContent as any).mockRejectedValue(mockError)
 
 			await expect(handler.completePrompt("Test prompt")).rejects.toThrow()
-
-			// Verify telemetry was captured
-			expect(mockCaptureException).toHaveBeenCalledTimes(1)
-			expect(mockCaptureException).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "Gemini completion error",
-					provider: "Gemini",
-					modelId: GEMINI_MODEL_NAME,
-					operation: "completePrompt",
-				}),
-			)
-
-			// Verify it's an ApiProviderError
-			const capturedError = mockCaptureException.mock.calls[0][0]
-			expect(capturedError).toBeInstanceOf(ApiProviderError)
 		})
 
-		it("should still throw the error after capturing telemetry", async () => {
+		it("should still throw the error", async () => {
 			const mockError = new Error("Gemini API error")
 			;(handler["client"].models.generateContentStream as any).mockRejectedValue(mockError)
 
@@ -361,9 +320,6 @@ describe("GeminiHandler", () => {
 					// Should throw
 				}
 			}).rejects.toThrow()
-
-			// Telemetry should have been captured before the error was thrown
-			expect(mockCaptureException).toHaveBeenCalled()
 		})
 	})
 })

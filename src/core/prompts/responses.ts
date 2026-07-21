@@ -3,6 +3,7 @@ import * as path from "path"
 import * as diff from "diff"
 import { RooIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/RooIgnoreController"
 import { RooProtectedController } from "../protect/RooProtectedController"
+import { toPosixPath } from "../../utils/path"
 
 export const formatResponse = {
 	toolDenied: () =>
@@ -125,7 +126,7 @@ Otherwise, if you have not completed the task and do not need additional informa
 		const sorted = files
 			.map((file) => {
 				// convert absolute path to relative path
-				const relativePath = path.relative(absolutePath, file).toPosix()
+				const relativePath = toPosixPath(path.relative(absolutePath, file))
 				return file.endsWith("/") ? relativePath + "/" : relativePath
 			})
 			// Sort so files are listed under their respective directories to make it clear what files are children of what directories. Since we build file list top down, even if file list is truncated it will show directories that cline can then explore further.

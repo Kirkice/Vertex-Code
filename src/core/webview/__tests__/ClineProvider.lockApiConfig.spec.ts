@@ -223,7 +223,6 @@ describe("ClineProvider - Lock API Config Across Modes", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 
-
 		const globalState: Record<string, unknown> = {
 			mode: "code",
 			currentApiConfigName: "default-profile",
@@ -359,7 +358,10 @@ describe("ClineProvider - Lock API Config Across Modes", () => {
 			await provider.handleModeSwitch("architect")
 
 			expect(getModeConfigIdSpy).toHaveBeenCalledWith("architect")
-			expect(activateProviderProfileSpy).toHaveBeenCalledWith({ name: "architect-profile" })
+			expect(activateProviderProfileSpy).toHaveBeenCalledWith(
+				{ name: "architect-profile" },
+				{ createModeHandoff: false },
+			)
 		})
 	})
 })

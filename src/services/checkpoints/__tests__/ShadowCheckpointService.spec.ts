@@ -13,7 +13,13 @@ import * as fileSearch from "../../../services/search/file-search"
 import { RepoPerTaskCheckpointService } from "../RepoPerTaskCheckpointService"
 import { BLOCKED_ENV_KEYS } from "../ShadowCheckpointService"
 
+// Git operations can exceed Vitest's 5s default when the full suite is under
+// load, especially on Windows. Keep the test deterministic without changing
+// production timeouts.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
+
 const tmpDir = path.join(os.tmpdir(), "CheckpointService")
+let checkpointTestCounter = 0
 
 // simple-git ≥3.36 blocks env vars it considers code-execution vectors.
 // Strip them for the duration of this test suite so tests pass for developers
@@ -83,8 +89,9 @@ describe.each([[RepoPerTaskCheckpointService, "RepoPerTaskCheckpointService"]])(
 		let service: RepoPerTaskCheckpointService
 
 		beforeEach(async () => {
-			const shadowDir = path.join(tmpDir, `${prefix}-${Date.now()}`)
-			const workspaceDir = path.join(tmpDir, `workspace-${Date.now()}`)
+			const runId = `${Date.now()}-${process.pid}-${checkpointTestCounter++}`
+			const shadowDir = path.join(tmpDir, `${prefix}-${runId}`)
+			const workspaceDir = path.join(tmpDir, `workspace-${runId}`)
 			const repo = await initWorkspaceRepo({ workspaceDir })
 
 			workspaceGit = repo.git

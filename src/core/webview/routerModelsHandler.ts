@@ -159,10 +159,10 @@ export async function handleRouterModelsRequest(context: WebviewHandlerContext):
  */
 export async function handleDedicatedModelRequest(context: WebviewHandlerContext): Promise<boolean> {
 	const { provider, message } = context
-	const { apiConfiguration } = await provider.getState()
 
 	switch (message.type) {
 		case "requestOllamaModels": {
+			const { apiConfiguration } = await provider.getState()
 			try {
 				const options = {
 					provider: "ollama" as const,
@@ -180,6 +180,7 @@ export async function handleDedicatedModelRequest(context: WebviewHandlerContext
 			return true
 		}
 		case "requestLmStudioModels": {
+			const { apiConfiguration } = await provider.getState()
 			try {
 				const requestedBaseUrl = message.values?.baseUrl
 				const lmStudioModels =
