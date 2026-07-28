@@ -609,7 +609,7 @@ describe("newTaskTool", () => {
 })
 
 describe("newTaskTool delegation flow", () => {
-	it("delegates to provider and does not call legacy startSubtask", async () => {
+	it("delegates through the Task Runtime subtask boundary", async () => {
 		// Arrange: stub provider delegation
 		const providerSpy = {
 			getState: vi.fn().mockResolvedValue({
@@ -621,7 +621,7 @@ describe("newTaskTool delegation flow", () => {
 		} as any
 
 		// Use a fresh local cline instance to avoid cross-test interference
-		const localStartSubtask = vi.fn()
+		const localStartSubtask = vi.fn().mockResolvedValue({ taskId: "child-1" })
 		const localEmit = vi.fn()
 		const localCline = {
 			ask: vi.fn(),
@@ -658,16 +658,9 @@ describe("newTaskTool delegation flow", () => {
 			pushToolResult: mockPushToolResult,
 		})
 
-		// Assert: provider method called with correct params
-		expect(providerSpy.delegateParentAndOpenChild).toHaveBeenCalledWith({
-			parentTaskId: "mock-parent-task-id",
-			message: "Do something",
-			initialTodos: [],
-			mode: "code",
-		})
-
-		// Assert: legacy path not used
-		expect(localStartSubtask).not.toHaveBeenCalled()
+		// Assert: the Task Runtime boundary owns the delegation side effect.
+		expect(localStartSubtask).toHaveBeenCalledWith("Do something", [], "code")
+		expect(providerSpy.delegateParentAndOpenChild).not.toHaveBeenCalled()
 
 		// Assert: no pause/unpause events emitted in delegation path
 		const pauseEvents = (localEmit as any).mock.calls.filter(

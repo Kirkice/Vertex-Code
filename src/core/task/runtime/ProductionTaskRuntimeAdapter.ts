@@ -1,5 +1,13 @@
 import type OpenAI from "openai"
-import { RooCodeEventName, type ExtensionMessage, type HistoryItem, type ProviderSettings } from "@roo-code/types"
+import {
+	RooCodeEventName,
+	type ExtensionMessage,
+	type HistoryItem,
+	type ProviderSettings,
+	type TodoItem,
+} from "@roo-code/types"
+import { buildApiHandler, type ApiHandler } from "../../../api"
+import { McpServerManager } from "../../../services/mcp/McpServerManager"
 
 import type { ClineProvider } from "../../webview/ClineProvider"
 import { buildNativeToolsArrayWithRestrictions } from "../build-tools"
@@ -12,6 +20,7 @@ import type {
 	TaskRuntimeFeatureFlags,
 	TaskRuntimeState,
 } from "./ports"
+import { executeNativeTool, type NativeToolExecutionRequest } from "./nativeToolExecutor"
 
 type RuntimeTask = {
 	taskId: string
@@ -73,6 +82,17 @@ export class ProductionTaskRuntimeAdapter implements TaskHostPort, TaskDependenc
 		return (await this.provider.getState()).apiConfiguration
 	}
 
+	createApiHandler(configuration: ProviderSettings): ApiHandler {
+		return buildApiHandler(configuration)
+	}
+
+	createMessage(
+		handler: Parameters<TaskDependencyPorts["createMessage"]>[0],
+		...args: Parameters<TaskDependencyPorts["createMessage"]> extends [unknown, ...infer Rest] ? Rest : never
+	) {
+		return handler.createMessage(...(args as Parameters<typeof handler.createMessage>))
+	}
+
 	async getCurrentMode(): Promise<string | undefined> {
 		return (await this.provider.getState()).mode
 	}
@@ -102,11 +122,27 @@ export class ProductionTaskRuntimeAdapter implements TaskHostPort, TaskDependenc
 	}
 
 	async getHub() {
-		return this.provider.getMcpHub()
+		return this.provider.getMcpHub() ?? (await McpServerManager.getInstance(this.provider.context, this.provider))
 	}
 
 	async isEnabled(): Promise<boolean> {
 		return (await this.provider.getState()).mcpEnabled ?? false
+	}
+
+	async callTool(serverName: string, toolName: string, arguments_?: Record<string, unknown>): Promise<unknown> {
+		const hub = await this.getHub()
+		if (!hub) {
+			throw new Error("MCP hub is unavailable")
+		}
+		return hub.callTool(serverName, toolName, arguments_)
+	}
+
+	async readResource(serverName: string, uri: string): Promise<unknown> {
+		const hub = await this.getHub()
+		if (!hub) {
+			throw new Error("MCP hub is unavailable")
+		}
+		return hub.readResource(serverName, uri)
 	}
 
 	getSkillsForMode(mode: string) {
@@ -146,12 +182,20 @@ export class ProductionTaskRuntimeAdapter implements TaskHostPort, TaskDependenc
 		return result.tools
 	}
 
+	async executeNativeTool(request: NativeToolExecutionRequest): Promise<void> {
+		return executeNativeTool(request)
+	}
+
 	getHistoryItem(): HistoryItem | undefined {
 		return undefined
 	}
 
 	async updateHistoryItem(item: HistoryItem): Promise<void> {
 		await this.provider.updateTaskHistory(item)
+	}
+
+	async createSubtask(params: { parentTaskId: string; message: string; initialTodos: TodoItem[]; mode: string }) {
+		return this.provider.delegateParentAndOpenChild(params)
 	}
 
 	async getState(): Promise<TaskRuntimeState | undefined> {
@@ -172,11 +216,14 @@ export class ProductionTaskRuntimeAdapter implements TaskHostPort, TaskDependenc
 
 	onProviderProfileChanged(listener: () => void | Promise<void>): TaskRuntimeDisposable {
 		const eventName = RooCodeEventName.ProviderProfileChanged
+		if (typeof this.provider.on !== "function") {
+			return { dispose: () => undefined }
+		}
 		this.provider.on(eventName, listener)
 
 		return {
 			dispose: () => {
-				this.provider.off(eventName, listener)
+				this.provider.off?.(eventName, listener)
 			},
 		}
 	}

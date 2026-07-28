@@ -20,10 +20,46 @@ import { formatToolInvocation } from "../tools/helpers/toolResultFormatting"
 import { detectGraphicsIntent } from "../../services/graphics-agent/GraphicsIntentRouter"
 import { GRAPHICS_MODE_SLUG } from "../../services/graphics-agent/GraphicsModeDefinition"
 
-import { type TaskLike, type TaskMetadata, type TaskEvents, type ProviderSettings, type TokenUsage, type ToolUsage, type ToolName, type ContextCondense, type ContextTruncation, type ClineMessage, type ClineSay, type ClineAsk, type ToolProgressStatus, type HistoryItem, type CreateTaskOptions, type ModelInfo, type ClineApiReqCancelReason, type ClineApiReqInfo, RooCodeEventName, TaskStatus, TodoItem, getApiProtocol, getModelId, isRetiredProvider, isIdleAsk, isInteractiveAsk, isResumableAsk, QueuedMessage, DEFAULT_CONSECUTIVE_MISTAKE_LIMIT, DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, MAX_CHECKPOINT_TIMEOUT_SECONDS, MIN_CHECKPOINT_TIMEOUT_SECONDS, ConsecutiveMistakeError, MAX_MCP_TOOLS_THRESHOLD, countEnabledMcpTools } from "@roo-code/types"
+import {
+	type TaskLike,
+	type TaskMetadata,
+	type TaskEvents,
+	type ProviderSettings,
+	type TokenUsage,
+	type ToolUsage,
+	type ToolName,
+	type ContextCondense,
+	type ContextTruncation,
+	type ClineMessage,
+	type ClineSay,
+	type ClineAsk,
+	type ToolProgressStatus,
+	type HistoryItem,
+	type CreateTaskOptions,
+	type ModelInfo,
+	type ClineApiReqCancelReason,
+	type ClineApiReqInfo,
+	RooCodeEventName,
+	TaskStatus,
+	TodoItem,
+	getApiProtocol,
+	getModelId,
+	isRetiredProvider,
+	isIdleAsk,
+	isInteractiveAsk,
+	isResumableAsk,
+	QueuedMessage,
+	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
+	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
+	MAX_CHECKPOINT_TIMEOUT_SECONDS,
+	MIN_CHECKPOINT_TIMEOUT_SECONDS,
+	ConsecutiveMistakeError,
+	MAX_MCP_TOOLS_THRESHOLD,
+	countEnabledMcpTools,
+} from "@roo-code/types"
 // api
 import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler } from "../../api"
-import { ApiStream, GroundingSource } from "../../api/transform/stream"
+import { ApiStream, type ApiStreamToolCallChunk, type ApiStreamToolCallPartialChunk } from "../../api/transform/stream"
 import { maybeRemoveImageBlocks } from "../../api/transform/image-cleaning"
 
 // shared
@@ -112,8 +148,14 @@ import {
 import { resolveRoutingEnabled } from "../../services/mode-routing"
 import type { ModeHandoffTrigger } from "@roo-code/types"
 import {
-	LegacyTaskHostAdapter,
+	ProductionTaskRuntimeAdapter,
+	ApiStreamContentState,
+	dispatchApiStreamChunk,
+	getApiStreamRetryAction,
 	TaskRuntimeInvocationGuard,
+	createAbortableStreamIterator,
+	executeNativeTool,
+	type NativeToolExecutionRequest,
 	type TaskDependencyPorts,
 	type TaskHostPort,
 	type TaskModeSwitchOptions,
@@ -386,7 +428,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private _started = false
 	// No streaming parser is required.
 	assistantMessageParser?: undefined
-	private providerProfileChangeListener?: (config: { name: string; provider?: string }) => void
 	private taskProfileChangeSubscription?: TaskRuntimeDisposable
 
 	// Native tool call streaming state (track which index each tool is at)
@@ -486,16 +527,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			console.error("Failed to initialize RooIgnoreController:", error)
 		})
 
-		this.apiConfiguration = apiConfiguration
-		this.api = buildApiHandler(this.apiConfiguration)
-		this.autoApprovalHandler = new AutoApprovalHandler()
-
-		this.consecutiveMistakeLimit = consecutiveMistakeLimit ?? DEFAULT_CONSECUTIVE_MISTAKE_LIMIT
 		this.providerRef = new WeakRef(provider)
-		const legacyTaskHost = new LegacyTaskHostAdapter(provider)
-		this.taskHost = taskHost ?? legacyTaskHost
-		this.taskDependencies = taskDependencies ?? legacyTaskHost
-		;(this.taskDependencies as Partial<TaskRuntimeTaskBinder>).bindTask?.(this)
+		// Production tasks always use the production Runtime adapter. The legacy
+		// adapter remains an explicit compatibility surface for older callers and
+		// focused adapter tests, but is no longer selected implicitly by Task.
+		const defaultTaskRuntime = new ProductionTaskRuntimeAdapter(provider)
+		this.taskHost = taskHost ?? defaultTaskRuntime
+		this.taskDependencies = taskDependencies ?? defaultTaskRuntime
 		this.taskRuntimeFeatureFlags = {
 			stateProjection: taskRuntimeFeatureFlags?.stateProjection ?? "legacy",
 			profileRouting: taskRuntimeFeatureFlags?.profileRouting ?? "legacy",
@@ -506,8 +544,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			checkpoint: taskRuntimeFeatureFlags?.checkpoint ?? "legacy",
 			tools: taskRuntimeFeatureFlags?.tools ?? "legacy",
 		}
-		this.useTaskHostProjection =
-			taskHost !== undefined && this.taskRuntimeFeatureFlags.stateProjection !== "legacy"
+		;(this.taskDependencies as Partial<TaskRuntimeTaskBinder>).bindTask?.(this)
+
+		this.apiConfiguration = apiConfiguration
+		this.api = this.createApiHandlerThroughRuntime(this.apiConfiguration)
+		this.autoApprovalHandler = new AutoApprovalHandler()
+
+		this.consecutiveMistakeLimit = consecutiveMistakeLimit ?? DEFAULT_CONSECUTIVE_MISTAKE_LIMIT
+		this.useTaskHostProjection = taskHost !== undefined && this.taskRuntimeFeatureFlags.stateProjection !== "legacy"
 		this.globalStoragePath = provider.context.globalStorageUri.fsPath
 		this.diffViewProvider = new DiffViewProvider(this.cwd, this)
 		this.enableCheckpoints = enableCheckpoints
@@ -529,8 +573,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// For new tasks, don't set the mode/apiConfigName yet - wait for async initialization.
 			this._taskMode = undefined
 			this._taskApiConfigName = undefined
-			this.taskModeReady = this.initializeTaskMode(provider)
-			this.taskApiConfigReady = this.initializeTaskApiConfigName(provider)
+			this.taskModeReady = this.initializeTaskMode()
+			this.taskApiConfigReady = this.initializeTaskApiConfigName()
 		}
 
 		this.assistantMessageParser = undefined
@@ -546,7 +590,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.messageQueueService.on("stateChanged", this.messageQueueStateChangedHandler)
 
 		// Listen for provider profile changes to update parser state
-		this.setupProviderProfileChangeListener(provider)
+		this.setupProviderProfileChangeListener()
 
 		// Set up diff strategy
 		this.diffStrategy = new MultiSearchReplaceDiffStrategy()
@@ -595,91 +639,58 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	/**
-	 * Initialize the task mode from the provider state.
+	 * Initialize the task mode from the Task Runtime.
 	 * This method handles async initialization with proper error handling.
 	 *
 	 * ## Flow
-	 * 1. Attempts to fetch the current mode from provider state
+	 * 1. Attempts to fetch the current mode from the Task Runtime
 	 * 2. Sets `_taskMode` to the fetched mode or `defaultModeSlug` if unavailable
-	 * 3. Handles errors gracefully by falling back to default mode
+	 * 3. Handles errors gracefully by falling back to the default mode
 	 * 4. Logs any initialization errors for debugging
 	 *
 	 * ## Error handling
-	 * - Network failures when fetching provider state
-	 * - Provider not yet initialized
+	 * - Runtime state unavailable
 	 * - Invalid state structure
 	 *
 	 * All errors result in fallback to `defaultModeSlug` to ensure task can proceed.
 	 *
 	 * @private
-	 * @param provider - The ClineProvider instance to fetch state from
 	 * @returns Promise that resolves when initialization is complete
 	 */
-	private async initializeTaskMode(provider: ClineProvider): Promise<void> {
+	private async initializeTaskMode(): Promise<void> {
 		try {
-			let mode: string | undefined
-			if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
-				try {
-					mode = await this.taskDependencies.getCurrentMode()
-				} catch (error) {
-					this.taskHost?.log(
-						`Task runtime mode read fallback: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}
-			if (!mode) {
-				const state =
-					this.taskRuntimeFeatureFlags.stateProjection !== "legacy"
-						? await this.taskHost?.getState()
-						: await provider.getState()
-				mode = state?.mode
-			}
+			const mode = await this.taskDependencies.getCurrentMode()
 			this._taskMode = mode || defaultModeSlug
 		} catch (error) {
-			// If there's an error getting state, use the default mode
 			this._taskMode = defaultModeSlug
-			// Use the provider's log method for better error visibility
-			const errorMessage = `Failed to initialize task mode: ${error instanceof Error ? error.message : String(error)}`
-			provider.log(errorMessage)
+			this.taskHost?.log(
+				`Task Runtime mode read failed; using default mode: ${error instanceof Error ? error.message : String(error)}`,
+			)
 		}
 	}
 
 	/**
-	 * Initialize the task API config name from the provider state.
+	 * Initialize the task API config name from the Task Runtime.
 	 * This method handles async initialization with proper error handling.
 	 *
 	 * ## Flow
-	 * 1. Attempts to fetch the current API config name from provider state
+	 * 1. Attempts to fetch the current API config name from the Task Runtime
 	 * 2. Sets `_taskApiConfigName` to the fetched name or "default" if unavailable
 	 * 3. Handles errors gracefully by falling back to "default"
 	 * 4. Logs any initialization errors for debugging
 	 *
 	 * ## Error handling
-	 * - Network failures when fetching provider state
-	 * - Provider not yet initialized
+	 * - Runtime state unavailable
 	 * - Invalid state structure
 	 *
 	 * All errors result in fallback to "default" to ensure task can proceed.
 	 *
 	 * @private
-	 * @param provider - The ClineProvider instance to fetch state from
 	 * @returns Promise that resolves when initialization is complete
 	 */
-	private async initializeTaskApiConfigName(provider: ClineProvider): Promise<void> {
+	private async initializeTaskApiConfigName(): Promise<void> {
 		try {
-			let currentApiConfigName: string | undefined
-			if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
-				try {
-					currentApiConfigName = await this.taskDependencies.getCurrentProfileName()
-				} catch (error) {
-					this.taskHost?.log(
-						`Task runtime profile read fallback: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}
-			if (currentApiConfigName === undefined) {
-				currentApiConfigName = (await provider.getState()).currentApiConfigName
-			}
+			const currentApiConfigName = await this.taskDependencies.getCurrentProfileName()
 
 			// Avoid clobbering a newer value that may have been set while awaiting provider state
 			// (e.g., user switches provider profile immediately after task creation).
@@ -687,13 +698,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				this._taskApiConfigName = currentApiConfigName ?? "default"
 			}
 		} catch (error) {
-			// If there's an error getting state, use the default profile (unless a newer value was set).
+			// If the Runtime is unavailable, use the default profile (unless a newer value was set).
+			this.taskHost?.log(
+				`Task Runtime profile read failed; using default profile: ${error instanceof Error ? error.message : String(error)}`,
+			)
 			if (this._taskApiConfigName === undefined) {
 				this._taskApiConfigName = "default"
 			}
-			// Use the provider's log method for better error visibility
-			const errorMessage = `Failed to initialize task API config name: ${error instanceof Error ? error.message : String(error)}`
-			provider.log(errorMessage)
 		}
 	}
 
@@ -701,101 +712,60 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * Sets up a listener for provider profile changes.
 	 *
 	 * @private
-	 * @param provider - The ClineProvider instance to listen to
 	 */
-	private setupProviderProfileChangeListener(provider: ClineProvider): void {
-		if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
-			this.taskProfileChangeSubscription = this.taskHost?.onProviderProfileChanged(async () => {
-				try {
-					const apiConfiguration = await this.taskDependencies.getProfileState()
-					if (apiConfiguration) {
-						this.updateApiConfiguration(apiConfiguration)
-					}
-				} catch (error) {
-					this.taskHost?.log(
-						`Failed to update API configuration through Task Runtime: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			})
-			if (this.taskProfileChangeSubscription) {
-				return
-			}
-		}
-
-		// Only set up listener if provider has the on method (may not exist in test mocks)
-		if (typeof provider.on !== "function") {
+	private setupProviderProfileChangeListener(): void {
+		if (!this.taskHost?.onProviderProfileChanged) {
 			return
 		}
 
-		this.providerProfileChangeListener = async () => {
+		this.taskProfileChangeSubscription = this.taskHost.onProviderProfileChanged(async () => {
 			try {
-				const newState = await provider.getState()
-				if (newState?.apiConfiguration) {
-					this.updateApiConfiguration(newState.apiConfiguration)
+				const apiConfiguration = await this.taskDependencies.getProfileState()
+				if (apiConfiguration) {
+					this.updateApiConfiguration(apiConfiguration)
 				}
 			} catch (error) {
-				console.error(
-					`[Task#${this.taskId}.${this.instanceId}] Failed to update API configuration on profile change:`,
-					error,
+				this.taskHost?.log(
+					`Failed to update API configuration through Task Runtime: ${error instanceof Error ? error.message : String(error)}`,
 				)
 			}
-		}
-
-		provider.on(RooCodeEventName.ProviderProfileChanged, this.providerProfileChangeListener)
+		})
 	}
 
-	private async setModeThroughRuntime(
-		provider: ClineProvider,
-		mode: string,
-		options: TaskModeSwitchOptions = {},
-	): Promise<void> {
-		if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
-			try {
-				await this.taskDependencies.setMode(mode, options)
-				return
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime mode switch fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+	private async setModeThroughRuntime(mode: string, options: TaskModeSwitchOptions = {}): Promise<void> {
+		try {
+			await this.taskDependencies.setMode(mode, options)
+		} catch (error) {
+			this.taskHost?.log(
+				`Task Runtime mode switch failed: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
 		}
-		await provider.setMode(mode, options)
 	}
 
 	private async setProviderProfileThroughRuntime(
-		provider: ClineProvider,
 		name: string,
 		options: TaskProfileSwitchOptions = {},
 	): Promise<void> {
-		if (this.taskRuntimeFeatureFlags.profileRouting !== "legacy") {
-			try {
-				await this.taskDependencies.setProviderProfile(name, options)
-				return
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime profile switch fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+		try {
+			await this.taskDependencies.setProviderProfile(name, options)
+		} catch (error) {
+			this.taskHost?.log(
+				`Task Runtime profile switch failed: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
 		}
-		await provider.setProviderProfile(name, options)
 	}
 
-	private async handleModeSwitchThroughRuntime(
-		provider: ClineProvider,
-		mode: string,
-		options: TaskModeSwitchOptions = {},
-	): Promise<void> {
-		if (this.taskRuntimeFeatureFlags.modeHandoff !== "legacy") {
-			try {
-				await this.taskDependencies.handleModeSwitch(mode, options)
-				return
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime mode handoff fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+	private async handleModeSwitchThroughRuntime(mode: string, options: TaskModeSwitchOptions = {}): Promise<void> {
+		try {
+			await this.taskDependencies.handleModeSwitch(mode, options)
+		} catch (error) {
+			this.taskHost?.log(
+				`Task Runtime mode handoff failed: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
 		}
-		await provider.handleModeSwitch(mode as Parameters<ClineProvider["handleModeSwitch"]>[0], options)
 	}
 
 	private async projectStateWithoutTaskHistory(): Promise<void> {
@@ -805,8 +775,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				return
 			} catch (error) {
 				this.taskHost.log(
-					`Task Runtime state projection fallback: ${error instanceof Error ? error.message : String(error)}`,
+					`Task Runtime state projection failed: ${error instanceof Error ? error.message : String(error)}`,
 				)
+				throw error
 			}
 		}
 		await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
@@ -819,24 +790,29 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				return
 			} catch (error) {
 				this.taskHost.log(
-					`Task Runtime message projection fallback: ${error instanceof Error ? error.message : String(error)}`,
+					`Task Runtime message projection failed: ${error instanceof Error ? error.message : String(error)}`,
 				)
+				throw error
 			}
 		}
 		await this.providerRef.deref()?.postMessageToWebview(message)
 	}
 
-	private async getStateThroughRuntime(provider: ClineProvider): Promise<any> {
+	public async getStateThroughRuntime(_provider?: ClineProvider): Promise<any> {
 		if (this.taskRuntimeFeatureFlags.stateProjection !== "legacy" && this.taskHost) {
 			try {
 				return await this.taskHost.getState()
 			} catch (error) {
 				this.taskHost.log(
-					`Task Runtime state read fallback: ${error instanceof Error ? error.message : String(error)}`,
+					`Task Runtime state read failed: ${error instanceof Error ? error.message : String(error)}`,
 				)
+				throw error
 			}
 		}
-		return provider.getState()
+		if (this.taskRuntimeFeatureFlags.stateProjection !== "legacy") {
+			throw new Error("Task Runtime state port is unavailable")
+		}
+		return this.providerRef.deref()?.getState()
 	}
 
 	private getSkillsLookup(provider: ClineProvider): any {
@@ -846,31 +822,83 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		return {
-			getSkillContent: async (name: string, currentMode?: string) => {
-				try {
-					return await this.taskDependencies.getSkillContent(name, currentMode)
-				} catch (error) {
-					this.taskHost?.log(
-						`Task runtime skills lookup fallback: ${error instanceof Error ? error.message : String(error)}`,
-					)
-					return legacyManager()?.getSkillContent(name, currentMode) ?? null
-				}
-			},
+			getSkillContent: (name: string, currentMode?: string) =>
+				this.taskDependencies.getSkillContent(name, currentMode),
 		}
+	}
+
+	/**
+	 * Resolve the MCP hub through the injected runtime boundary.
+	 * 通过 Runtime 端口解析 MCP Hub，供工具校验和 Prompt 构建复用。
+	 */
+	public async getMcpHubThroughRuntime(): Promise<McpHub | undefined> {
+		const provider = this.providerRef.deref()
+		if (!provider) {
+			return undefined
+		}
+
+		if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
+			return this.taskDependencies.getHub()
+		}
+
+		return provider.getMcpHub() ?? (await McpServerManager.getInstance(provider.context, provider))
+	}
+
+	/** Execute an MCP tool through the runtime adapter with legacy fallback. */
+	public async callMcpToolThroughRuntime(
+		serverName: string,
+		toolName: string,
+		arguments_?: Record<string, unknown>,
+	): Promise<unknown> {
+		if (this.taskRuntimeFeatureFlags.mcp !== "legacy" && typeof this.taskDependencies.callTool === "function") {
+			// Side-effecting calls must not be retried through legacy after an error;
+			// the caller owns user-visible failure handling and retry decisions.
+			return this.taskDependencies.callTool(serverName, toolName, arguments_)
+		}
+
+		const hub = await this.getMcpHubThroughRuntime()
+		if (!hub) {
+			throw new Error("MCP hub is unavailable")
+		}
+		return hub.callTool(serverName, toolName, arguments_)
+	}
+
+	/** Read an MCP resource through the runtime adapter with legacy fallback. */
+	public async readMcpResourceThroughRuntime(serverName: string, uri: string): Promise<unknown> {
+		if (this.taskRuntimeFeatureFlags.mcp !== "legacy" && typeof this.taskDependencies.readResource === "function") {
+			// Resource reads can fail after reaching the server; do not duplicate the
+			// request by falling back to the legacy hub on arbitrary execution errors.
+			return this.taskDependencies.readResource(serverName, uri)
+		}
+
+		const hub = await this.getMcpHubThroughRuntime()
+		if (!hub) {
+			throw new Error("MCP hub is unavailable")
+		}
+		return hub.readResource(serverName, uri)
 	}
 
 	private async buildToolsWithRuntime(restrictions: any): Promise<any> {
 		if (this.taskRuntimeFeatureFlags.tools !== "legacy") {
-			try {
-				const tools = await this.taskDependencies.buildTools(restrictions)
-				return { tools: Array.isArray(tools) ? tools : (tools as any)?.tools ?? [] }
-			} catch (error) {
-				this.taskHost?.log(
-					`Task runtime tools build fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+			const tools = await this.taskDependencies.buildTools(restrictions)
+			return { tools: Array.isArray(tools) ? tools : ((tools as any)?.tools ?? []) }
 		}
 		return buildNativeToolsArrayWithRestrictions(restrictions)
+	}
+
+	/**
+	 * Execute native tools through the selected runtime adapter.
+	 * Native Tool 执行通过 Runtime 端口路由；有副作用的执行异常不重复回退。
+	 */
+	public async executeNativeToolThroughRuntime(request: NativeToolExecutionRequest): Promise<void> {
+		if (
+			this.taskRuntimeFeatureFlags.tools !== "legacy" &&
+			typeof this.taskDependencies.executeNativeTool === "function"
+		) {
+			return this.taskDependencies.executeNativeTool(request)
+		}
+
+		return executeNativeTool(request)
 	}
 
 	/**
@@ -1205,7 +1233,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		await this.projectStateWithoutTaskHistory()
 		this.emit(RooCodeEventName.Message, { action: "created", message })
 		await this.saveClineMessages()
-
 	}
 
 	public async overwriteClineMessages(newMessages: ClineMessage[]) {
@@ -1227,7 +1254,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const provider = this.providerRef.deref()
 		await this.projectWebviewMessage({ type: "messageUpdated", clineMessage: message })
 		this.emit(RooCodeEventName.Message, { action: "updated", message })
-
 	}
 
 	private async saveClineMessages(): Promise<boolean> {
@@ -1262,17 +1288,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// - Final state is emitted when updates stop (trailing: true)
 			this.debouncedEmitTokenUsage(tokenUsage, this.toolUsage)
 
-			if (this.taskRuntimeFeatureFlags.historyProjection !== "legacy") {
-				try {
-					await this.taskDependencies.updateHistoryItem(historyItem)
-				} catch (error) {
-					this.taskHost?.log(
-						`Task runtime history update fallback: ${error instanceof Error ? error.message : String(error)}`,
-					)
-					await this.providerRef.deref()?.updateTaskHistory(historyItem)
-				}
-			} else {
-				await this.providerRef.deref()?.updateTaskHistory(historyItem)
+			try {
+				await this.taskDependencies.updateHistoryItem(historyItem)
+			} catch (error) {
+				this.taskHost?.log(
+					`Task Runtime history update failed: ${error instanceof Error ? error.message : String(error)}`,
+				)
+				throw error
 			}
 			return true
 		} catch (error) {
@@ -1612,7 +1634,20 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	public updateApiConfiguration(newApiConfiguration: ProviderSettings): void {
 		// Update the configuration and rebuild the API handler
 		this.apiConfiguration = newApiConfiguration
-		this.api = buildApiHandler(this.apiConfiguration)
+		this.api = this.createApiHandlerThroughRuntime(this.apiConfiguration)
+	}
+
+	/**
+	 * Build the provider client through the injected runtime boundary.
+	 * 通过注入的 Runtime 端口创建 Provider client。
+	 */
+	private createApiHandlerThroughRuntime(configuration: ProviderSettings): ApiHandler {
+		if (typeof this.taskDependencies.createApiHandler !== "function") {
+			// Keep partial test/CLI hosts compatible while they migrate to TaskApiPort.
+			return buildApiHandler(configuration)
+		}
+
+		return this.taskDependencies.createApiHandler(configuration)
 	}
 
 	private parseToolMessage(message: ClineMessage): Record<string, unknown> | undefined {
@@ -1652,7 +1687,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				return
 			}
 
-			if ((key === "path" || key === "filePath") && typeof nestedValue === "string" && nestedValue.trim().length > 0) {
+			if (
+				(key === "path" || key === "filePath") &&
+				typeof nestedValue === "string" &&
+				nestedValue.trim().length > 0
+			) {
 				files.add(nestedValue)
 				continue
 			}
@@ -1781,12 +1820,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				const fromMode = this._taskMode
 				const fromProfile = this._taskApiConfigName
 				if (mode) {
-					await this.setModeThroughRuntime(provider, mode, { createModeHandoff: false })
+					await this.setModeThroughRuntime(mode, { createModeHandoff: false })
 				}
-	
+
 				if (providerProfile) {
-					await this.setProviderProfileThroughRuntime(provider, providerProfile, { createModeHandoff: false })
-	
+					await this.setProviderProfileThroughRuntime(providerProfile, { createModeHandoff: false })
+
 					// Update this task's API configuration to match the new profile
 					// This ensures the parser state is synchronized with the selected model
 					const newState = await this.getStateThroughRuntime(provider)
@@ -1794,24 +1833,29 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						this.updateApiConfiguration(newState.apiConfiguration)
 					}
 				}
-	
+
 				// Mode Handoff: 在切换成功后生成结构化交接摘要并写入 clineMessages。
 				// 放在 setMode/setProviderProfile 之后，确保切换已生效，避免"假交接"。
 				// 获取 routing 状态以判断是否为多模型模式
 				const handoffState = await this.getStateThroughRuntime(provider)
 				const handoffRoutingEnabled = resolveRoutingEnabled({
 					modeLevelLlmRoutingEnabled: handoffState?.modeLevelLlmRoutingEnabled,
-					lockApiConfigAcrossModes: (provider as any).context?.workspaceState?.get("lockApiConfigAcrossModes", false) ?? false,
+					lockApiConfigAcrossModes:
+						(provider as any).context?.workspaceState?.get("lockApiConfigAcrossModes", false) ?? false,
 				})
 				await this.maybeCreateModeHandoff({
 					fromMode,
 					toMode: mode ?? this._taskMode,
 					fromProfile,
 					toProfile: providerProfile ?? this._taskApiConfigName,
-					trigger: autoDetectedGraphicsMode ? "auto_intent_switch" : (mode && mode !== fromMode ? "user_mode_switch" : "profile_only_switch"),
+					trigger: autoDetectedGraphicsMode
+						? "auto_intent_switch"
+						: mode && mode !== fromMode
+							? "user_mode_switch"
+							: "profile_only_switch",
 					routingEnabled: handoffRoutingEnabled,
 				})
-	
+
 				this.emit(RooCodeEventName.TaskUserMessage, this.taskId)
 
 				// Handle the message directly instead of routing through the webview.
@@ -2008,8 +2052,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						modelId: currentModelId,
 						// Mode-Level LLM Routing 褰掑洜瀛楁锛氳褰曟湰娆¤姹傜殑 Mode 鍜?Profile
 						modeAtRequest: type === "api_req_started" ? this._taskMode : undefined,
-						providerProfileAtRequest:
-							type === "api_req_started" ? this._taskApiConfigName : undefined,
+						providerProfileAtRequest: type === "api_req_started" ? this._taskApiConfigName : undefined,
 					})
 				}
 			} else {
@@ -2528,14 +2571,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		try {
 			this.taskProfileChangeSubscription?.dispose()
 			this.taskProfileChangeSubscription = undefined
-
-			if (this.providerProfileChangeListener) {
-				const provider = this.providerRef.deref()
-				if (provider) {
-					provider.off(RooCodeEventName.ProviderProfileChanged, this.providerProfileChangeListener)
-				}
-				this.providerProfileChangeListener = undefined
-			}
 		} catch (error) {
 			console.error("Error removing provider profile change listener:", error)
 		}
@@ -2607,19 +2642,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Spawn / Wait / Complete
 
 	public async startSubtask(message: string, initialTodos: TodoItem[], mode: string) {
-		const provider = this.providerRef.deref()
-
-		if (!provider) {
-			throw new Error("Provider not available")
-		}
-
-		const child = await (provider as any).delegateParentAndOpenChild({
+		return this.taskDependencies.createSubtask({
 			parentTaskId: this.taskId,
 			message,
 			initialTodos,
 			mode,
 		})
-		return child
 	}
 
 	/**
@@ -2732,6 +2760,117 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 	}
 
+	private handleToolCallPartialChunk(chunk: ApiStreamToolCallPartialChunk): void {
+		const events = NativeToolCallParser.processRawChunk({
+			index: chunk.index,
+			id: chunk.id,
+			name: chunk.name,
+			arguments: chunk.arguments,
+		})
+
+		for (const event of events) {
+			if (event.type === "tool_call_start") {
+				if (this.streamingToolCallIndices.has(event.id)) {
+					console.warn(
+						`[Task#${this.taskId}] Ignoring duplicate tool_call_start for ID: ${event.id} (tool: ${event.name})`,
+					)
+					continue
+				}
+
+				NativeToolCallParser.startStreamingToolCall(event.id, event.name as ToolName)
+
+				const lastBlock = this.assistantMessageContent[this.assistantMessageContent.length - 1]
+				if (lastBlock?.type === "text" && lastBlock.partial) {
+					lastBlock.partial = false
+				}
+
+				const toolUseIndex = this.assistantMessageContent.length
+				this.streamingToolCallIndices.set(event.id, toolUseIndex)
+
+				const partialToolUse: ToolUse = {
+					type: "tool_use",
+					name: event.name as ToolName,
+					params: {},
+					partial: true,
+				}
+				;(partialToolUse as any).id = event.id
+
+				this.assistantMessageContent.push(partialToolUse)
+				this.userMessageContentReady = false
+				void presentAssistantMessage(this)
+			} else if (event.type === "tool_call_delta") {
+				const partialToolUse = NativeToolCallParser.processStreamingChunk(event.id, event.delta)
+
+				if (partialToolUse) {
+					const toolUseIndex = this.streamingToolCallIndices.get(event.id)
+					if (toolUseIndex !== undefined) {
+						;(partialToolUse as any).id = event.id
+						this.assistantMessageContent[toolUseIndex] = partialToolUse
+						void presentAssistantMessage(this)
+					}
+				}
+			} else if (event.type === "tool_call_end") {
+				const finalToolUse = NativeToolCallParser.finalizeStreamingToolCall(event.id)
+				const toolUseIndex = this.streamingToolCallIndices.get(event.id)
+
+				if (finalToolUse) {
+					;(finalToolUse as any).id = event.id
+
+					if (toolUseIndex !== undefined) {
+						this.assistantMessageContent[toolUseIndex] = finalToolUse
+					}
+
+					this.streamingToolCallIndices.delete(event.id)
+					this.userMessageContentReady = false
+					void presentAssistantMessage(this)
+				} else if (toolUseIndex !== undefined) {
+					const existingToolUse = this.assistantMessageContent[toolUseIndex]
+					if (existingToolUse && existingToolUse.type === "tool_use") {
+						existingToolUse.partial = false
+						;(existingToolUse as any).id = event.id
+					}
+
+					this.streamingToolCallIndices.delete(event.id)
+					this.userMessageContentReady = false
+					void presentAssistantMessage(this)
+				}
+			}
+		}
+	}
+
+	private handleToolCallChunk(chunk: ApiStreamToolCallChunk): void {
+		const toolUse = NativeToolCallParser.parseToolCall({
+			id: chunk.id,
+			name: chunk.name as ToolName,
+			arguments: chunk.arguments,
+		})
+
+		if (!toolUse) {
+			console.error(`Failed to parse tool call for task ${this.taskId}:`, chunk)
+			return
+		}
+
+		toolUse.id = chunk.id
+		this.assistantMessageContent.push(toolUse)
+		this.userMessageContentReady = false
+		void presentAssistantMessage(this)
+	}
+
+	private handleTextStreamChunk(assistantMessage: string): void {
+		const lastBlock = this.assistantMessageContent[this.assistantMessageContent.length - 1]
+		if (lastBlock?.type === "text" && lastBlock.partial) {
+			lastBlock.content = assistantMessage
+		} else {
+			this.assistantMessageContent.push({
+				type: "text",
+				content: assistantMessage,
+				partial: true,
+			})
+			this.userMessageContentReady = false
+		}
+		void presentAssistantMessage(this)
+	}
+
 	public async recursivelyMakeClineRequests(
 		userContent: Anthropic.Messages.ContentBlockParam[],
 		includeFileDetails: boolean = false,
@@ -2751,7 +2890,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			if (this.abort) {
-				throw new Error(`[VertexCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`)
+				throw new Error(
+					`[VertexCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
+				)
 			}
 
 			if (this.consecutiveMistakeLimit > 0 && this.consecutiveMistakeCount >= this.consecutiveMistakeLimit) {
@@ -2848,7 +2989,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					const state = await this.getStateThroughRuntime(provider)
 					const targetMode = getModeBySlug(slashCommandMode, state?.customModes)
 					if (targetMode) {
-						await this.handleModeSwitchThroughRuntime(provider, slashCommandMode, {
+						await this.handleModeSwitchThroughRuntime(slashCommandMode, {
 							handoffTrigger: "auto_intent_switch",
 						})
 					}
@@ -3019,36 +3160,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// allow the user to retry the request (most likely due to rate
 				// limit error, which gets thrown on the first chunk).
 				const stream = this.attemptApiRequest(currentItem.retryAttempt ?? 0, { skipProviderRateLimit: true })
-				let assistantMessage = ""
-				let reasoningMessage = ""
-				let pendingGroundingSources: GroundingSource[] = []
+				const streamContent = new ApiStreamContentState()
 				this.isStreaming = true
 
 				try {
-					const iterator = stream[Symbol.asyncIterator]()
-
-					// Helper to race iterator.next() with abort signal
-					const nextChunkWithAbort = async () => {
-						const nextPromise = iterator.next()
-
-						// If we have an abort controller, race it with the next chunk
-						if (this.currentRequestAbortController) {
-							const abortPromise = new Promise<never>((_, reject) => {
-								const signal = this.currentRequestAbortController!.signal
-								if (signal.aborted) {
-									reject(new Error("Request cancelled by user"))
-								} else {
-									signal.addEventListener("abort", () => {
-										reject(new Error("Request cancelled by user"))
-									})
-								}
-							})
-							return await Promise.race([nextPromise, abortPromise])
-						}
-
-						// No abort controller, just return the next chunk normally
-						return await nextPromise
-					}
+					const { iterator, next: nextChunkWithAbort } = createAbortableStreamIterator(
+						stream,
+						() => this.currentRequestAbortController?.signal,
+					)
 
 					let item = await nextChunkWithAbort()
 					while (!item.done) {
@@ -3060,211 +3179,21 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							continue
 						}
 
-						switch (chunk.type) {
-							case "reasoning": {
-								reasoningMessage += chunk.text
-								// Only apply formatting if the message contains sentence-ending punctuation followed by **
-								let formattedReasoning = reasoningMessage
-								if (reasoningMessage.includes("**")) {
-									// Add line breaks before **Title** patterns that appear after sentence endings
-									// This targets section headers like "...end of sentence.**Title Here**"
-									// Handles periods, exclamation marks, and question marks
-									formattedReasoning = reasoningMessage.replace(
-										/([.!?])\*\*([^*\n]+)\*\*/g,
-										"$1\n\n**$2**",
-									)
-								}
-								await this.say("reasoning", formattedReasoning, undefined, true)
-								break
-							}
-							case "usage":
-								inputTokens += chunk.inputTokens
-								outputTokens += chunk.outputTokens
-								cacheWriteTokens += chunk.cacheWriteTokens ?? 0
-								cacheReadTokens += chunk.cacheReadTokens ?? 0
-								totalCost = chunk.totalCost
-								break
-							case "grounding":
-								// Handle grounding sources separately from regular content
-								// to prevent state persistence issues - store them separately
-								if (chunk.sources && chunk.sources.length > 0) {
-									pendingGroundingSources.push(...chunk.sources)
-								}
-								break
-							case "tool_call_partial": {
-								// Process raw tool call chunk through NativeToolCallParser
-								// which handles tracking, buffering, and emits events
-								const events = NativeToolCallParser.processRawChunk({
-									index: chunk.index,
-									id: chunk.id,
-									name: chunk.name,
-									arguments: chunk.arguments,
-								})
-
-								for (const event of events) {
-									if (event.type === "tool_call_start") {
-										// Guard against duplicate tool_call_start events for the same tool ID.
-										// This can occur due to stream retry, reconnection, or API quirks.
-										// Without this check, duplicate tool_use blocks with the same ID would
-										// be added to assistantMessageContent, causing API 400 errors:
-										// "tool_use ids must be unique"
-										if (this.streamingToolCallIndices.has(event.id)) {
-											console.warn(
-												`[Task#${this.taskId}] Ignoring duplicate tool_call_start for ID: ${event.id} (tool: ${event.name})`,
-											)
-											continue
-										}
-
-										// Initialize streaming in NativeToolCallParser
-										NativeToolCallParser.startStreamingToolCall(event.id, event.name as ToolName)
-
-										// Before adding a new tool, finalize any preceding text block
-										// This prevents the text block from blocking tool presentation
-										const lastBlock =
-											this.assistantMessageContent[this.assistantMessageContent.length - 1]
-										if (lastBlock?.type === "text" && lastBlock.partial) {
-											lastBlock.partial = false
-										}
-
-										// Track the index where this tool will be stored
-										const toolUseIndex = this.assistantMessageContent.length
-										this.streamingToolCallIndices.set(event.id, toolUseIndex)
-
-										// Create initial partial tool use
-										const partialToolUse: ToolUse = {
-											type: "tool_use",
-											name: event.name as ToolName,
-											params: {},
-											partial: true,
-										}
-
-										// Store the ID for native protocol
-										;(partialToolUse as any).id = event.id
-
-										// Add to content and present
-										this.assistantMessageContent.push(partialToolUse)
-										this.userMessageContentReady = false
-										presentAssistantMessage(this)
-									} else if (event.type === "tool_call_delta") {
-										// Process chunk using streaming JSON parser
-										const partialToolUse = NativeToolCallParser.processStreamingChunk(
-											event.id,
-											event.delta,
-										)
-
-										if (partialToolUse) {
-											// Get the index for this tool call
-											const toolUseIndex = this.streamingToolCallIndices.get(event.id)
-											if (toolUseIndex !== undefined) {
-												// Store the ID for native protocol
-												;(partialToolUse as any).id = event.id
-
-												// Update the existing tool use with new partial data
-												this.assistantMessageContent[toolUseIndex] = partialToolUse
-
-												// Present updated tool use
-												presentAssistantMessage(this)
-											}
-										}
-									} else if (event.type === "tool_call_end") {
-										// Finalize the streaming tool call
-										const finalToolUse = NativeToolCallParser.finalizeStreamingToolCall(event.id)
-
-										// Get the index for this tool call
-										const toolUseIndex = this.streamingToolCallIndices.get(event.id)
-
-										if (finalToolUse) {
-											// Store the tool call ID
-											;(finalToolUse as any).id = event.id
-
-											// Get the index and replace partial with final
-											if (toolUseIndex !== undefined) {
-												this.assistantMessageContent[toolUseIndex] = finalToolUse
-											}
-
-											// Clean up tracking
-											this.streamingToolCallIndices.delete(event.id)
-
-											// Mark that we have new content to process
-											this.userMessageContentReady = false
-
-											// Present the finalized tool call
-											presentAssistantMessage(this)
-										} else if (toolUseIndex !== undefined) {
-											// finalizeStreamingToolCall returned null (malformed JSON or missing args)
-											// Mark the tool as non-partial so it's presented as complete, but execution
-											// will be short-circuited in presentAssistantMessage with a structured tool_result.
-											const existingToolUse = this.assistantMessageContent[toolUseIndex]
-											if (existingToolUse && existingToolUse.type === "tool_use") {
-												existingToolUse.partial = false
-												// Ensure it has the ID for native protocol
-												;(existingToolUse as any).id = event.id
-											}
-
-											// Clean up tracking
-											this.streamingToolCallIndices.delete(event.id)
-
-											// Mark that we have new content to process
-											this.userMessageContentReady = false
-
-											// Present the tool call - validation will handle missing params
-											presentAssistantMessage(this)
-										}
-									}
-								}
-								break
-							}
-
-							case "tool_call": {
-								// Legacy: Handle complete tool calls (for backward compatibility)
-								// Convert native tool call to ToolUse format
-								const toolUse = NativeToolCallParser.parseToolCall({
-									id: chunk.id,
-									name: chunk.name as ToolName,
-									arguments: chunk.arguments,
-								})
-
-								if (!toolUse) {
-									console.error(`Failed to parse tool call for task ${this.taskId}:`, chunk)
-									break
-								}
-
-								// Store the tool call ID on the ToolUse object for later reference
-								// This is needed to create tool_result blocks that reference the correct tool_use_id
-								toolUse.id = chunk.id
-
-								// Add the tool use to assistant message content
-								this.assistantMessageContent.push(toolUse)
-
-								// Mark that we have new content to process
-								this.userMessageContentReady = false
-
-								// Present the tool call to user - presentAssistantMessage will execute
-								// tools sequentially and accumulate all results in userMessageContent
-								presentAssistantMessage(this)
-								break
-							}
-							case "text": {
-								assistantMessage += chunk.text
-
-								// Native tool calling: text chunks are plain text.
-								// Create or update a text content block directly
-								const lastBlock = this.assistantMessageContent[this.assistantMessageContent.length - 1]
-								if (lastBlock?.type === "text" && lastBlock.partial) {
-									lastBlock.content = assistantMessage
-								} else {
-									this.assistantMessageContent.push({
-										type: "text",
-										content: assistantMessage,
-										partial: true,
-									})
-									this.userMessageContentReady = false
-								}
-								presentAssistantMessage(this)
-								break
-							}
-						}
-
+						await dispatchApiStreamChunk(chunk, {
+							state: streamContent,
+							onReasoning: (formattedReasoning) =>
+								this.say("reasoning", formattedReasoning, undefined, true),
+							onUsage: (usageChunk) => {
+								inputTokens += usageChunk.inputTokens
+								outputTokens += usageChunk.outputTokens
+								cacheWriteTokens += usageChunk.cacheWriteTokens ?? 0
+								cacheReadTokens += usageChunk.cacheReadTokens ?? 0
+								totalCost = usageChunk.totalCost
+							},
+							onToolCallPartial: (toolChunk) => this.handleToolCallPartialChunk(toolChunk),
+							onToolCall: (toolChunk) => this.handleToolCallChunk(toolChunk),
+							onText: (assistantMessage) => this.handleTextStreamChunk(assistantMessage),
+						})
 						if (this.abort) {
 							console.log(`aborting stream, this.abandoned = ${this.abandoned}`)
 
@@ -3282,7 +3211,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						if (this.didRejectTool) {
 							// `userContent` has a tool rejection, so interrupt the
 							// assistant's response to present the user's feedback.
-							assistantMessage += "\n\n[Response interrupted by user feedback]"
+							streamContent.appendText("\n\n[Response interrupted by user feedback]")
 							// Instead of setting this preemptively, we allow the
 							// present iterator to finish and set
 							// userMessageContentReady when its ready.
@@ -3291,8 +3220,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						}
 
 						if (this.didAlreadyUseTool) {
-							assistantMessage +=
-								"\n\n[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]"
+							streamContent.appendText(
+								"\n\n[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]",
+							)
 							break
 						}
 					}
@@ -3380,7 +3310,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 												tokens.cacheWrite,
 												tokens.cacheRead,
 											)
-
 							}
 						}
 
@@ -3620,7 +3549,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// Complete the reasoning message if it exists
 				// We can't use say() here because the reasoning message may not be the last message
 				// (other messages like text blocks or tool uses may have been added after it during streaming)
-				if (reasoningMessage) {
+				if (streamContent.reasoningMessage) {
 					const lastReasoningIndex = findLastIndex(
 						this.clineMessages,
 						(m) => m.type === "say" && m.say === "reasoning",
@@ -3643,7 +3572,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// BEFORE their corresponding tool_use blocks, causing API errors.
 
 				// Check if we have any content to process (text or tool uses)
-				const hasTextContent = assistantMessage.length > 0
+				const hasTextContent = streamContent.assistantMessage.length > 0
 
 				const hasToolUses = this.assistantMessageContent.some(
 					(block) => block.type === "tool_use" || block.type === "mcp_tool_use",
@@ -3653,8 +3582,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// Reset counter when we get a successful response with content
 					this.consecutiveNoAssistantMessagesCount = 0
 					// Display grounding sources to the user if they exist
-					if (pendingGroundingSources.length > 0) {
-						const citationLinks = pendingGroundingSources.map((source, i) => `[${i + 1}](${source.url})`)
+					if (streamContent.pendingGroundingSources.length > 0) {
+						const citationLinks = streamContent.pendingGroundingSources.map(
+							(source, i) => `[${i + 1}](${source.url})`,
+						)
 						const sourcesText = `${t("common:gemini.sources")} ${citationLinks.join(", ")}`
 
 						await this.say("text", sourcesText, undefined, false, undefined, undefined, {
@@ -3666,10 +3597,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					const assistantContent: Array<Anthropic.TextBlockParam | Anthropic.ToolUseBlockParam> = []
 
 					// Add text content if present
-					if (assistantMessage) {
+					if (streamContent.assistantMessage) {
 						assistantContent.push({
 							type: "text" as const,
-							text: assistantMessage,
+							text: streamContent.assistantMessage,
 						})
 					}
 
@@ -3780,10 +3711,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// so that tool_result blocks appear AFTER their corresponding tool_use blocks.
 					await this.addToApiConversationHistory(
 						{ role: "assistant", content: assistantContent },
-						reasoningMessage || undefined,
+						streamContent.reasoningMessage || undefined,
 					)
 					this.assistantMessageSavedToHistory = true
-
 				}
 
 				// Present any partial blocks that were just completed.
@@ -3983,10 +3913,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	/**
-		* After task loop completes, check if there's a pending handoff with
-		* acceptance criteria and auto_return validation mode. If so, generate
-		* an execution report and inject it as context for the return to Architect.
-		*/
+	 * After task loop completes, check if there's a pending handoff with
+	 * acceptance criteria and auto_return validation mode. If so, generate
+	 * an execution report and inject it as context for the return to Architect.
+	 */
 	private async maybeGenerateExecutionReportAndAutoReturn(): Promise<void> {
 		try {
 			const handoff = getLatestPendingHandoff(this.clineMessages)
@@ -4055,9 +3985,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.say("text", `<execution_report_generated>\n${reportText}\n</execution_report_generated>`)
 
 			// Trigger mode switch back to architect for validation
-			const providerForModeSwitch = this.providerRef.deref()
-			if (providerForModeSwitch) {
-				await this.handleModeSwitchThroughRuntime(providerForModeSwitch, "architect", {
+			if (this.taskHost) {
+				await this.handleModeSwitchThroughRuntime("architect", {
 					createModeHandoff: true,
 					handoffTrigger: "orchestrator_stage",
 				})
@@ -4088,7 +4017,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	private getLatestUserMessageForPrompt(): string | undefined {
 		if (this.userMessageContent.length > 0) {
-			const pendingMessage = this.extractUserMessageText(this.userMessageContent as Anthropic.Messages.ContentBlockParam[])
+			const pendingMessage = this.extractUserMessageText(
+				this.userMessageContent as Anthropic.Messages.ContentBlockParam[],
+			)
 			if (pendingMessage) {
 				return pendingMessage
 			}
@@ -4110,38 +4041,28 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	private async getSystemPrompt(userMessage?: string): Promise<string> {
-		const provider = this.providerRef.deref()
-		if (!provider) {
-			throw new Error("Provider reference lost during view transition")
+		const taskHost = this.taskHost
+		if (!taskHost) {
+			throw new Error("Task Runtime host is unavailable during prompt construction")
 		}
 
-		const state = await this.getStateThroughRuntime(provider)
+		const state = await this.getStateThroughRuntime()
 		let mcpEnabled = state?.mcpEnabled
-		if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
-			try {
-				mcpEnabled = await this.taskDependencies.isEnabled()
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime MCP status fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+		try {
+			mcpEnabled = await this.taskDependencies.isEnabled()
+		} catch (error) {
+			taskHost.log(
+				`Task Runtime MCP status unavailable: ${error instanceof Error ? error.message : String(error)}`,
+			)
 		}
 		let mcpHub: McpHub | undefined
 		if (mcpEnabled ?? true) {
-			if (this.taskRuntimeFeatureFlags.mcp !== "legacy") {
-				try {
-					mcpHub = await this.taskDependencies.getHub()
-				} catch (error) {
-					this.taskHost?.log(
-						`Task Runtime MCP hub fallback: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}
-
-			// Wait for MCP hub initialization through McpServerManager when the
-			// migrated boundary does not provide one.
-			if (!mcpHub) {
-				mcpHub = await McpServerManager.getInstance(provider.context, provider)
+			try {
+				mcpHub = await this.taskDependencies.getHub()
+			} catch (error) {
+				taskHost.log(
+					`Task Runtime MCP hub unavailable: ${error instanceof Error ? error.message : String(error)}`,
+				)
 			}
 
 			if (!mcpHub) {
@@ -4169,13 +4090,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		return await (async () => {
 			const modelInfo = this.api.getModel().info
-			const skillsManager =
-				this.taskRuntimeFeatureFlags.skills !== "legacy"
-					? (this.taskDependencies as any)
-					: provider.getSkillsManager()
+			const skillsManager = {
+				getSkillsForMode: (currentMode: string) => this.taskDependencies.getSkillsForMode(currentMode),
+			}
 
 			return SYSTEM_PROMPT(
-				provider.context,
+				taskHost.context,
 				this.cwd,
 				false,
 				mcpHub,
@@ -4199,7 +4119,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				},
 				undefined, // todoList
 				this.api.getModel().id,
-				skillsManager,
+				skillsManager as any,
 				userMessage,
 			)
 		})()
@@ -4243,7 +4163,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Build tools for condensing metadata (same tools used for normal API calls)
 		let allTools: import("openai").default.Chat.ChatCompletionTool[] = []
 		if (provider) {
-				const toolsResult = await this.buildToolsWithRuntime({
+			const toolsResult = await this.buildToolsWithRuntime({
 				provider,
 				cwd: this.cwd,
 				mode,
@@ -4617,7 +4537,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				throw new Error("Provider reference lost during tool building")
 			}
 
-					const toolsResult = await this.buildToolsWithRuntime({
+			const toolsResult = await this.buildToolsWithRuntime({
 				provider,
 				cwd: this.cwd,
 				mode,
@@ -4658,7 +4578,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.skipPrevResponseIdOnce = false
 
 		// The provider accepts reasoning items alongside standard messages; cast to the expected parameter type.
-		const stream = this.api.createMessage(
+		const stream = this.taskDependencies.createMessage(
+			this.api,
 			systemPrompt,
 			cleanConversationHistory as unknown as Anthropic.Messages.MessageParam[],
 			metadata,
@@ -4694,9 +4615,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.isWaitingForFirstChunk = false
 			this.currentRequestAbortController = undefined
 			const isContextWindowExceededError = checkContextWindowExceededError(error)
+			const retryAction = getApiStreamRetryAction({
+				contextWindowExceeded: isContextWindowExceededError,
+				retryAttempt,
+				maxContextWindowRetries: MAX_CONTEXT_WINDOW_RETRIES,
+				autoApprovalEnabled,
+			})
 
 			// If it's a context window error and we haven't exceeded max retries for this error type
-			if (isContextWindowExceededError && retryAttempt < MAX_CONTEXT_WINDOW_RETRIES) {
+			if (retryAction === "context_window") {
 				console.warn(
 					`[Task#${this.taskId}] Context window exceeded for model ${this.api.getModel().id}. ` +
 						`Retry attempt ${retryAttempt + 1}/${MAX_CONTEXT_WINDOW_RETRIES}. ` +
@@ -4709,7 +4636,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			}
 
 			// note that this api_req_failed ask is unique in that we only present this option if the api hasn't streamed any content yet (ie it fails on the first chunk due), as it would allow them to hit a retry button. However if the api failed mid-stream, it could be in any arbitrary state where some tools may have executed, so that error is handled differently and requires cancelling the task entirely.
-			if (autoApprovalEnabled) {
+			if (retryAction === "automatic") {
 				// Apply shared exponential backoff and countdown UX
 				await this.backoffAndAnnounce(retryAttempt, error)
 
@@ -4837,18 +4764,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	public async checkpointSave(force: boolean = false, suppressMessage: boolean = false) {
 		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
-			try {
-				return await this.taskRuntimeInvocationGuard.run("checkpoint.save", async () => {
-					if (!this.taskDependencies.enabled()) {
-						return
-					}
-					await this.taskDependencies.save(force, suppressMessage)
-				})
-			} catch (error) {
-				this.taskHost?.log(
-					`Task runtime checkpoint save fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+			return this.taskRuntimeInvocationGuard.run("checkpoint.save", async () => {
+				if (!this.taskDependencies.enabled()) {
+					return
+				}
+				await this.taskDependencies.save(force, suppressMessage)
+			})
 		}
 		return checkpointSave(this, force, suppressMessage)
 	}
@@ -5035,8 +4956,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					cleanConversationHistory.push({
 						role: "assistant",
 						content: assistantContent,
-						...(shouldPreserveForApi &&
-						(preservedReasoningContent || (first as any).text)
+						...(shouldPreserveForApi && (preservedReasoningContent || (first as any).text)
 							? { reasoning_content: preservedReasoningContent || (first as any).text }
 							: {}),
 					} satisfies Anthropic.Messages.MessageParam)
@@ -5089,30 +5009,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 	public async checkpointRestore(options: CheckpointRestoreOptions) {
 		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
-			try {
-				return await this.taskRuntimeInvocationGuard.run("checkpoint.restore", () =>
-					this.taskDependencies.restore(options),
-				)
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime checkpoint restore fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+			return this.taskRuntimeInvocationGuard.run("checkpoint.restore", () =>
+				this.taskDependencies.restore(options),
+			)
 		}
 		return checkpointRestore(this, options)
 	}
 
 	public async checkpointDiff(options: CheckpointDiffOptions) {
 		if (this.taskRuntimeFeatureFlags.checkpoint !== "legacy") {
-			try {
-				return await this.taskRuntimeInvocationGuard.run("checkpoint.diff", () =>
-					this.taskDependencies.diff(options),
-				)
-			} catch (error) {
-				this.taskHost?.log(
-					`Task Runtime checkpoint diff fallback: ${error instanceof Error ? error.message : String(error)}`,
-				)
-			}
+			return this.taskRuntimeInvocationGuard.run("checkpoint.diff", () => this.taskDependencies.diff(options))
 		}
 		return checkpointDiff(this, options)
 	}
@@ -5222,28 +5128,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// ============================================================================
 
 	/**
-	 * Get the ClineProvider instance (used by OrchestratorEngine)
-	 */
-	public getProvider(): ClineProvider {
-		const provider = this.providerRef.deref()
-		if (!provider) {
-			throw new Error("Provider reference lost")
-		}
-		return provider
-	}
-
-	/**
-	 * Get current provider settings (fallback for orchestrator profile resolution)
+	 * Get current provider settings for orchestrator profile resolution.
 	 */
 	public getCurrentProviderSettings(): ProviderSettings {
 		return this.apiConfiguration
 	}
 
 	/**
-	 * Log a message through the provider (used by OrchestratorEngine)
+	 * Log a message through the Task Runtime host (used by OrchestratorEngine)
 	 */
 	public log(message: string): void {
-		this.providerRef.deref()?.log(message)
+		this.taskHost?.log(message)
 	}
 
 	/**

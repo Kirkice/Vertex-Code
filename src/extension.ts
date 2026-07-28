@@ -45,6 +45,7 @@ import {
 import { initializeI18n } from "./i18n"
 import { initializeModelCacheRefresh } from "./api/providers/fetchers/modelCache"
 import { initVertexAuth } from "./services/vertex-auth"
+import { runExtensionHostSideEffectSmoke } from "./extensionHostSideEffectSmoke"
 
 /**
  * Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -155,6 +156,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	// even if follow-up startup work is slow or flaky.
 	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
 	outputChannel.appendLine("[Activation] ClineProvider:constructed")
+
+	if (process.env.VERTEX_EXTENSION_HOST_SMOKE === "1") {
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				"vertex.internal.extensionHostSideEffects",
+				runExtensionHostSideEffectSmoke,
+			),
+		)
+		outputChannel.appendLine("[Activation] Extension Host side-effect smoke command registered")
+	}
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {

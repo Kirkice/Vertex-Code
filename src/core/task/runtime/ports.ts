@@ -1,12 +1,16 @@
 import type * as vscode from "vscode"
 import type OpenAI from "openai"
+import type { ApiHandler } from "../../../api"
+import type { NativeToolExecutionRequest } from "./nativeToolExecutor"
 import type {
 	ExtensionMessage,
 	HistoryItem,
 	ModeHandoffTrigger,
 	ProviderSettings,
 	RooCodeSettings,
+	TodoItem,
 } from "@roo-code/types"
+import type { Task } from "../Task"
 import type { McpHub } from "../../../services/mcp/McpHub"
 import type { SkillContent, SkillMetadata } from "../../../shared/skills"
 
@@ -94,6 +98,15 @@ export interface TaskProfilePort {
 	getProfileState(): Promise<ProviderSettings | undefined>
 }
 
+/** API client construction boundary owned by the runtime adapter. */
+export interface TaskApiPort {
+	createApiHandler(configuration: ProviderSettings): ApiHandler
+	createMessage(
+		handler: ApiHandler,
+		...args: Parameters<ApiHandler["createMessage"]>
+	): ReturnType<ApiHandler["createMessage"]>
+}
+
 /** Mode and routing operations; side effects remain legacy by default. */
 export interface TaskModePort {
 	getCurrentMode(): Promise<string | undefined>
@@ -118,6 +131,8 @@ export interface TaskProfileSwitchOptions extends TaskModeSwitchOptions {
 export interface TaskMcpPort {
 	getHub(): Promise<McpHub | undefined>
 	isEnabled(): Promise<boolean>
+	callTool(serverName: string, toolName: string, arguments_?: Record<string, unknown>): Promise<unknown>
+	readResource(serverName: string, uri: string): Promise<unknown>
 }
 
 /** Minimal Skills capability consumed by prompt construction. */
@@ -137,6 +152,7 @@ export interface TaskCheckpointPort {
 /** Native tool construction boundary; execution stays outside shadow mode. */
 export interface TaskToolsPort {
 	buildTools(restrictions?: unknown): Promise<OpenAI.Chat.ChatCompletionTool[]> | OpenAI.Chat.ChatCompletionTool[]
+	executeNativeTool(request: NativeToolExecutionRequest): Promise<void>
 }
 
 /** Task history read/write boundary for the next migration slice. */
@@ -145,10 +161,22 @@ export interface TaskRuntimeHistoryPort {
 	updateHistoryItem(item: HistoryItem): Promise<void>
 }
 
+/** Parent-to-child delegation boundary for the subtask tool. */
+export interface TaskSubtaskPort {
+	createSubtask(params: {
+		parentTaskId: string
+		message: string
+		initialTodos: TodoItem[]
+		mode: string
+	}): Promise<Task>
+}
+
 export interface TaskDependencyPorts
 	extends TaskProfilePort,
+		TaskApiPort,
 		TaskModePort,
 		TaskRuntimeHistoryPort,
+		TaskSubtaskPort,
 		TaskMcpPort,
 		TaskSkillsPort,
 		TaskCheckpointPort,

@@ -450,6 +450,8 @@ Task Runtime 不采用“一次性替换”策略。当前用户正在使用现�
 - 已建立独立的 `WebviewMcpPort` capability contract，并让 `WebviewHostPort` 通过接口继承保持兼容；补充端口契约测试，尚未改变 MCP handler 的运行时调用路径。
 - MCP capability port 收窄验证完成：`ports.spec.ts`、`settingsMessageHandler.spec.ts`、`webviewMessageHandler.spec.ts` 共 3 个文件、41 个测试通过；`pnpm exec tsc --noEmit` 与端口文件 Prettier 检查通过。当前仍保留 `WebviewHostPort` 的兼容继承，避免一次性改动所有 Handler。
 - 设置 Handler 已开始直接使用 `WebviewHandlerContext.mcp` capability，而不是从通用 `provider` 读取 MCP Hub；入口由 `webviewMessageHandler` 显式注入同一 Provider adapter，旧行为保持兼容。相关 2 个测试文件共 5 个测试通过，类型检查和 Prettier 检查通过。
+- 按“先补强 Handler 边界测试”的下一步继续推进：为 Settings Handler 增加 terminal profile 变更/不变更分支测试，验证仅 profile 实际变化时调用 `TerminalRegistry.closeIdleTerminals()`。
+- 本次新增验证：`settingsMessageHandler.spec.ts` 共 6 个测试通过；`pnpm exec tsc --noEmit` 和该文件 Prettier 检查通过。未触碰 Task API stream 主循环，旧 Provider 路径保持不变。
 
 ### 下一步 C：最后评估 Provider 解耦和 Rust
 
@@ -543,3 +545,148 @@ pnpm exec vitest run --reporter=dot
 - Task Runtime 新增 `TaskRuntimeInvocationGuard`，保护 Checkpoint 并发重复调用；Skills 端口异常回退 legacy Manager；新增对应 guard、Skills fallback、Checkpoint 并发回归测试。生产入口已改为注入 `ProductionTaskRuntimeAdapter`，MCP/Skills/Checkpoint/Tools/State/Profile/Mode/History 依赖簇默认走新路径；Mode 副作用操作和 MCP/工具实际执行仍保留原 Provider 调用边界。
 - 系统提示构建已接入 Runtime 读取：状态、MCP Hub、Skills metadata 通过端口进入 Prompt，服务异常时回退 legacy；定向 Prompt/Task/ClineProvider 回归 `122/122` 通过。
 - 已完成生产路径回归：Adapter 定向测试、Task 回退测试、ClineProvider 回归、Node 20 全量测试、bundle/VSIX 和 Extension Host smoke 均通过。新 Adapter 未绑定 Task、服务不可用或运行异常时，Task 会记录诊断并回退 legacy 实现；默认开关后续只需在发现真实运行时问题时按依赖簇回滚。
+
+### 本轮追加更新（2026-07-28）
+
+已完成：
+
+- 新增 `TaskApiPort`，Task 初始 API Handler 创建和 Provider 配置切换后的 Handler 重建均通过注入的 Runtime Adapter；Production 与 Legacy Adapter 均提供实现，Task 保留创建失败回退。
+- API stream 实际 `createMessage` 发起也已纳入 `TaskApiPort`，Handler 创建、重建和请求发起共享同一 Runtime 边界。
+- assistant-message 工具调度入口的 Task 状态读取已复用 Runtime state projection；Provider reference 不可用时安全返回，不再强制直接读取 Provider。
+- Native Tool 分发 switch 已下沉到 `runtime/nativeToolExecutor.ts`，Production/Legacy Adapter 通过 `TaskToolsPort.executeNativeTool` 路由；assistant-message 仅准备请求上下文和回调。
+- 新增 MCP `callTool` / `readResource` Runtime 端口，MCP 工具执行、资源读取以及流式 assistant-message 的 MCP Hub 解析优先走 Runtime Adapter。
+- 对有副作用的 MCP 执行明确禁止异常后再次走 legacy，避免服务已收到请求后发生重复执行；执行异常交由现有工具错误处理和用户重试流程处理。
+- 新增 API Handler 路由、MCP Adapter 调用和 MCP 失败不重复执行回归测试。
+
+本轮验证：
+
+- Runtime、MCP、assistant-message 定向回归：5 个测试文件、37 个测试全部通过。
+- Runtime Adapter 与 Legacy Adapter 回归：2 个测试文件、10 个测试全部通过。
+- Provider/Mode 运行时回归：5 个测试文件、60 个测试全部通过，覆盖 API Handler rebuild、sticky profile、sticky mode、锁定配置和 Task mode-handoff。
+- Native Tool、assistant-message、工具目录和 Runtime 回归：33 个测试文件、563 个测试通过、5 个跳过。
+- `pnpm --dir src check-types` 通过；当前执行环境为 Node `24.11.1`，仅产生项目要求 Node `20.20.2` 的 engine warning。
+- `git diff --check` 未发现新增空白错误。
+- 当前 Node `24.11.1` 全量 Vitest：`339` 个测试文件通过、`3` 个跳过、`0` 个失败；`5171` 个测试通过、`34` 个跳过。
+- 当前 Node `24.11.1` `pnpm bundle` 通过；本结果用于本轮改动回归，Node `20.20.2` 发布基线仍以既有专门验证记录为准。
+
+当前进行中：
+
+- API stream 主循环仍在 `Task.ts` 中，当前已完成 API Handler 创建边界，但尚未拆分请求编排、重试和流式状态机。
+
+剩余门禁：
+
+- Native Tool 执行端口已完成；仍需在真实 Extension Host 中验证文件写入、命令执行、MCP、Checkpoint 和子任务等副作用链路。
+- 完成 Provider 切换、Mode handoff、MCP/Skills 不可用、Checkpoint 超时和工具异常的真实 Extension Host 回归。
+- 真实回归通过后再评估移除 `LegacyTaskHostAdapter` 及 legacy 分支，最后重跑 Node 20 全量测试、类型检查、bundle、VSIX 和 smoke test。
+### 本轮追加更新（2026-07-28，最终验证）
+
+- Native Tool Runtime Adapter 改造后的 Node `24.11.1` 全量 Vitest 已通过：`339` 个测试文件通过、`3` 个跳过、`0` 个失败；`5172` 个测试通过、`34` 个跳过。
+- 本轮 Native Tool、MCP、assistant-message 与 Runtime 定向回归保持通过；`pnpm --dir src check-types`、`pnpm bundle` 与 `git diff --check` 均通过。
+- 当前尚未完成的门禁仍是：API stream 主循环拆分、真实 Extension Host 对文件/命令/MCP/Checkpoint/子任务副作用的回归，以及 Node `20.20.2` 下对本轮改动重新执行安装、全量测试、类型检查和 bundle/VSIX。
+- 在上述真实运行时回归和 Node 20 发布基线复核完成前，不删除 `LegacyTaskHostAdapter`，也不宣称重构全部完成。
+### 本轮追加更新（2026-07-28，API stream 拆分第一步）
+
+- 将 API stream 的取消感知 iterator 抽出到 `runtime/apiStreamCoordinator.ts`，保留底层 iterator 供尾部 usage drain 使用，并补充已取消请求与顺序测试。
+- 将流式响应内容状态抽出到 `runtime/apiStreamContentState.ts`，集中管理 assistant 文本、reasoning 格式化和 grounding sources；`Task.ts` 主循环仅负责事件编排。
+- 相关回归：9 个测试文件、90 个测试通过；`pnpm --dir src check-types` 与 Prettier 检查通过。
+- API stream 主循环的 chunk 分发和重试状态机已拆分；真实 Extension Host 回归仍待完成，本轮全量测试、类型检查和 bundle 已通过。
+- 全量验证已完成：`341` 个测试文件通过、`3` 个跳过、`0` 个失败；`5177` 个测试通过、`34` 个跳过。`pnpm --dir src check-types`、`pnpm bundle` 和 `git diff --check` 均通过（本轮环境为 Node `24.11.1`，仅有 Node `20.20.2` engine warning）。
+### 本轮追加更新（2026-07-28，API stream 拆分完成）
+
+- `apiStreamCoordinator.ts` 负责可取消 iterator 和底层 stream 读取；`apiStreamContentState.ts` 负责文本、reasoning、grounding 状态。
+- `apiStreamChunkDispatcher.ts` 已接管 reasoning、usage、grounding、text、partial tool call 和 complete tool call 的 chunk 分类分发；Task 仅保留工具副作用 handler。
+- `apiStreamRetryPolicy.ts` 已接管首包失败的 context-window、自动重试和用户确认重试决策；重试副作用仍由 Task 执行，避免改变现有交互。
+- 新增 dispatcher/retry contract tests；相关回归 59 个文件、797 个测试通过，新增 5 个 Runtime 测试通过。
+- 最新 Node `24.11.1` 全量 Vitest：`343` 个测试文件通过、`3` 个跳过、`0` 个失败；`5182` 个测试通过、`34` 个跳过。类型检查、Prettier、bundle 和 `git diff --check` 均通过。
+- API stream 已完成“主循环负责编排、Runtime 模块负责读取/状态/分发/策略”的拆分；剩余验收不再是单元逻辑拆分，而是真实 Extension Host 回归与 Node `20.20.2` 发布基线复验。
+
+### 本轮追加更新（2026-07-28，真实 Extension Host 副作用回归完成）
+
+- 新增 `src/extensionHostSideEffectSmoke.ts`，仅在 `VERTEX_EXTENSION_HOST_SMOKE=1` 时注册内部回归命令，不改变普通生产启动路径。
+- 新增 `scripts/run-extension-host-side-effects.mjs` 和 `scripts/extension-host-side-effects.test.js`：使用隔离 user-data、临时 Git workspace 和归档版 VS Code，在真实 Extension Host 中执行生产 `Task`/Runtime 路径。
+- 新增本地 stdio MCP fixture `scripts/extension-host-mcp-server.cjs`，覆盖真实 MCP server 连接、工具发现和工具调用。
+- 已实际通过：`write_to_file` 文件写入、`execute_command` 命令执行、MCP `echo` 工具调用、Checkpoint shadow git 初始化与保存、父任务到子任务的委派及清理。
+- 可重复命令：`pnpm test:extension-host:side-effects`。本轮结果：VS Code Extension Host exit code `0`，回归报告包含 `checkpoint.initialized=true`、`subtask.created=true`，无业务失败。
+- 启动器会清理 `ELECTRON_RUN_AS_NODE=1`，避免当前开发 shell 把 Code.exe 误当 Node 进程而产生 `bad option`；归档包现已可用于真实宿主测试。
+- 本轮 `pnpm --dir src check-types`、`pnpm bundle`、真实 Extension Host 回归均通过；Node `20.20.2` 发布基线仍需在对应 Node 环境重新执行。
+- 剩余门禁：Node 20 下重新安装依赖/全量测试/类型检查/bundle/VSIX；随后再评估 `LegacyTaskHostAdapter` 的移除，当前不能宣称整个重构完成。
+
+### 本轮追加更新（2026-07-28，Node 20.20.2 发布基线复验完成）
+
+- 使用官方便携版 Node `20.20.2` 驱动 pnpm `10.8.1`，未修改系统 Node；`pnpm install --frozen-lockfile` 成功，10 个 workspace 项目依赖一致。
+- Node 20 全量 Vitest：`343` 个测试文件通过、`3` 个跳过、`0` 个失败；`5182` 个测试通过、`34` 个跳过。
+- Node 20 `pnpm --dir src check-types` 通过。
+- Node 20 `pnpm bundle` 通过。
+- Node 20 `pnpm --dir src vsix` 通过，产物为 `bin/vertex-3.56.0.vsix`，约 `41.42 MB`。
+- 当前已完成真实 Extension Host 副作用回归和 Node 20 发布基线复验；剩余工作转为 LegacyTaskHostAdapter/Provider 专有副作用的最终解耦评估，以及在确认无兼容风险后再移除 legacy 路径。
+
+### 本轮追加更新（2026-07-28，子任务 Runtime 依赖簇迁移）
+
+- 新增 `TaskSubtaskPort`，由 `ProductionTaskRuntimeAdapter` 和 `LegacyTaskHostAdapter` 分别承接父任务到子任务的委派。
+- `Task.startSubtask()` 不再直接读取 `providerRef` 或调用 `ClineProvider.delegateParentAndOpenChild()`。
+- `NewTaskTool` 改为调用 `task.startSubtask()`，子任务副作用不再绕过 Task Runtime。
+- 定向回归：8 个测试文件、41 个测试通过；类型检查和 bundle 通过。
+- Extension Host smoke 已重新通过，文件写入、命令执行、MCP、Checkpoint 以及经 Runtime 委派的子任务全部通过。
+- 当前仍保留 Provider 直接依赖的部分主要是 legacy fallback、系统 Prompt 组装、Provider 生命周期/持久化兼容和 Orchestrator 专用能力；这些需要继续按簇迁移，暂不删除 `LegacyTaskHostAdapter`。
+
+### 本轮追加更新（2026-07-28，系统 Prompt 服务依赖簇迁移）
+
+- `Task.getSystemPrompt()` 改为通过 `TaskHostPort` 获取 Extension Context，通过 `TaskDependencyPorts` 获取 MCP 状态、MCP Hub 和 Skills 查询，不再直接读取 `providerRef`、`provider.context` 或 `provider.getSkillsManager()`。
+- `ProductionTaskRuntimeAdapter` 和 `LegacyTaskHostAdapter` 统一负责 MCP Hub 的既有实例读取及 `McpServerManager` 初始化回退，保留原有兼容行为。
+- 定向回归：5 个测试文件、42 个测试通过；`pnpm --dir src check-types`、`pnpm bundle` 和真实 Extension Host smoke 全部通过。
+- Node `20.20.2` 复验：343 个测试文件通过、3 个跳过；5183 个测试通过、34 个跳过；类型检查、bundle、VSIX 全部通过，产物仍为 `bin/vertex-3.56.0.vsix`（41.42 MB）。
+- 剩余 Provider 直接依赖已收敛到 legacy fallback、Provider 生命周期/持久化兼容、初始化监听和 Orchestrator 专用能力；Prompt 服务解析这一簇已完成，暂不删除 `LegacyTaskHostAdapter`。
+
+### 本轮追加更新（2026-07-28，历史持久化依赖簇迁移）
+
+- `Task.saveClineMessages()` 统一通过 `TaskRuntimeHistoryPort.updateHistoryItem()` 写入任务历史；legacy adapter 仍在端口内部承接原 Provider 实现。
+- 新 Runtime 路径发生写入异常时保留 Provider 回退；legacy 路径不再在 Task 内重复执行同一个 Provider 写入，避免副作用重复调用。
+- 定向回归：`Task.mode-handoff.spec.ts` 与 `Task.persistence.spec.ts` 共 24 个测试通过，覆盖端口写入、失败回退、重试和消息持久化。
+- Node `20.20.2` 最终复验：343 个测试文件通过、3 个跳过；5183 个测试通过、34 个跳过；类型检查、bundle、VSIX 全部通过，VSIX 为 `bin/vertex-3.56.0.vsix`（41.42 MB）。
+- 当前剩余 Provider 直接依赖主要是初始化/生命周期监听、Provider 专属 Orchestrator 能力以及必要的 legacy fallback；历史持久化主路径已完成 Runtime 化，仍暂不删除 `LegacyTaskHostAdapter`。
+
+### 本轮追加更新（2026-07-28，子任务迁移后的 Node 20 基线复验）
+
+- Node `20.20.2` 下重新执行全量 Vitest：`343` 个测试文件通过、`3` 个跳过、`0` 个失败；`5183` 个测试通过、`34` 个跳过。
+- Node 20 `pnpm --dir src check-types` 通过。
+- Node 20 `pnpm bundle` 通过。
+- Node 20 `pnpm --dir src vsix` 通过，产物为 `bin/vertex-3.56.0.vsix`，大小 `41.42 MB`。
+- 子任务 Runtime 迁移后的真实 Extension Host smoke 仍通过，已覆盖文件写入、命令执行、MCP、Checkpoint 和 Runtime 委派的子任务副作用。
+- 当前剩余工作仍集中在 Task 的其他 Provider 专有依赖簇：legacy fallback、系统 Prompt 组装、Provider 生命周期/持久化兼容和 Orchestrator 专用能力；完成这些迁移并通过回归后，才评估移除 `LegacyTaskHostAdapter`。
+
+### 状态校正（2026-07-28，Prompt 与历史簇已在后续轮次完成）
+
+- 上述“当前进行中/剩余”记录属于子任务迁移完成时的阶段快照；之后系统 Prompt 服务解析簇和历史持久化簇均已完成并通过 Node 20 复验。
+- 当前准确的剩余范围为：Provider 初始化/生命周期监听、Orchestrator 专属能力，以及必要的 legacy fallback 清理与最终兼容风险评估。
+
+### 本轮追加更新（2026-07-28，Provider 初始化与生命周期监听解耦完成）
+
+- Task 的 Mode/Profile 初始化统一先通过 `TaskModePort`、`TaskProfilePort` 读取；Runtime 失败时保留原 Provider 状态回退和诊断日志。
+- Provider Profile 变化统一通过 `TaskEventPort.onProviderProfileChanged()` 订阅，`Task.dispose()` 统一释放 Runtime subscription，不再在 Task 内直接调用 Provider `on/off`。
+- Legacy/Production Adapter 对缺少 `provider.on/off` 的测试或过渡宿主安全跳过订阅，避免生命周期初始化阻断任务创建。
+- 新增生命周期回归：确认 Runtime Mode/Profile 初始化、Profile 更新、订阅和 dispose 均通过端口完成；定向回归 5 个测试文件、33 个测试通过。
+- Node `20.20.2` 最终验证：343 个测试文件通过、3 个跳过；5184 个测试通过、34 个跳过；类型检查、bundle、VSIX 和 Extension Host smoke 全部通过，VSIX 为 `bin/vertex-3.56.0.vsix`（41.42 MB）。
+- 当前剩余范围收敛为 Orchestrator 专属能力、必要的 legacy fallback 清理，以及最终移除 `LegacyTaskHostAdapter` 前的兼容风险评估。
+### 本轮追加更新（2026-07-28，Orchestrator 专属能力迁移与 LegacyTaskHostAdapter 清理完成）
+
+- Orchestrator 的模式切换、Profile 切换、自动回切和 handoff 路由统一先通过 Task Runtime 端口；Provider 仅作为异常时的兼容回退。
+- Task 默认不再隐式实例化 legacy adapter，生产路径统一使用 `ProductionTaskRuntimeAdapter`。
+- 已删除 `src/core/task/runtime/LegacyTaskHostAdapter.ts` 及其专属测试，并移除 Runtime index 导出；源码检索已确认无剩余 `LegacyTaskHostAdapter` 引用。
+- 真实 Extension Host smoke 已通过：文件写入、命令执行、MCP stdio 工具调用、Checkpoint 初始化/保存、父子任务委派均成功，Extension Host exit code 为 `0`。
+- Node `20.20.2` 最终复验已通过：全量 Vitest `342` 个测试文件通过、`3` 个跳过；`5179` 个测试通过、`34` 个跳过；类型检查、bundle、VSIX 均通过，VSIX 为 `bin/vertex-3.56.0.vsix`（约 `41.42 MB`）。
+- `Task.getProvider()` 暂保留为外部 OrchestratorEngine 兼容 API；仓库内无调用，但外部调用方未知。当前仍存在少量 Provider 直接回退调用，仅在 Runtime 异常时触发。
+- 因此，`LegacyTaskHostAdapter` 已完成移除；重构是否达到“零 Provider 兼容边界”，还取决于确认 `Task.getProvider()` 和异常回退的外部兼容性后再做最后删除。
+### 本轮追加更新（2026-07-28，移除 Task.getProvider 与 Runtime 异常 Provider fallback）
+
+- 全仓库源码与构建输入检索确认没有 `Task.getProvider()` 调用；该公开兼容方法已从 `Task` 移除，Orchestrator 相关逻辑改为使用 Runtime 端口和 `getCurrentProviderSettings()`。
+- Runtime 异常不再回退并重复调用 Provider：模式/Profile handoff、状态初始化/读取、Webview 投影、Skills、MCP Hub、History、API handler、Tools、Checkpoint 均改为记录诊断后直接失败或使用安全默认值。
+- 有副作用的 Runtime 操作不会在异常后重试另一条 Provider/legacy 路径，避免重复写入、重复命令、重复 MCP 调用和重复 Checkpoint。
+- 新增回归测试，验证模式/Profile 操作、History、Skills、Checkpoint、Tools 和 Webview 投影失败时不会调用 Provider 重试；定向回归 4 个测试文件、29 个测试通过。
+- Node `20.20.2` 全量复验：342 个测试文件通过、3 个跳过；5180 个测试通过、34 个跳过；类型检查、bundle、VSIX 均通过，VSIX 为 `bin/vertex-3.56.0.vsix`（约 `41.42 MB`）。
+- 真实 Extension Host smoke 再次通过：文件写入、命令执行、MCP stdio、Checkpoint、父子任务委派均成功，Extension Host exit code 为 `0`。
+- `TaskRuntimeFeatureFlags` 中显式选择的 `legacy` 分支仍作为受控兼容/回滚路径保留；它们不会因 Runtime 异常自动触发。当前已清理的是异常 fallback 和 `Task.getProvider()` 兼容暴露。
+### 本轮追加更新（2026-07-28，测试临时文件清理）
+
+- 已删除 Extension Host 测试生成的 `.vscode-test/` 目录，释放约 `898 MB` 的 VS Code 归档与测试缓存。
+- 已删除空的 `.tmp-smoke/` 目录和旧的 `cline-provider-test.log` 测试日志。
+- `temp/debug.md` 未确认属于临时测试产物，已保留；后续执行 Extension Host smoke 时，VS Code 测试归档会按需重新下载。

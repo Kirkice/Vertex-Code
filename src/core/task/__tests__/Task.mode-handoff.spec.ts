@@ -4,6 +4,7 @@ import type { ProviderSettings } from "@roo-code/types"
 
 import { Task } from "../Task"
 import { handoffToMessage } from "../../../services/mode-handoff"
+import { defaultModeSlug } from "../../../shared/modes"
 
 const {
 	mockSaveApiMessages,
@@ -160,6 +161,51 @@ describe("Task mode handoff", () => {
 		}
 	})
 
+	it("routes initialization and profile lifecycle through Runtime ports", async () => {
+		let profileListener: (() => void | Promise<void>) | undefined
+		const disposeProfileListener = vi.fn()
+		const taskHost = {
+			context: mockProvider.context,
+			cwd: "/tmp/workspace",
+			log: vi.fn(),
+			onProviderProfileChanged: vi.fn((listener: () => void | Promise<void>) => {
+				profileListener = listener
+				return { dispose: disposeProfileListener }
+			}),
+		} as any
+		const updatedApiConfiguration = { ...apiConfiguration, apiModelId: "profile-model" }
+		const taskDependencies = {
+			getCurrentMode: vi.fn().mockResolvedValue("architect"),
+			getCurrentProfileName: vi.fn().mockResolvedValue("profile-runtime"),
+			getProfileState: vi.fn().mockResolvedValue(updatedApiConfiguration),
+		} as any
+
+		const task = new Task({
+			provider: mockProvider as any,
+			taskHost,
+			taskDependencies,
+			taskRuntimeFeatureFlags: { modeHandoff: "new", profileRouting: "new" },
+			apiConfiguration,
+			task: "Runtime lifecycle",
+			startTask: false,
+		})
+
+		await (task as any).taskModeReady
+		await (task as any).taskApiConfigReady
+		await profileListener?.()
+
+		expect(task.taskMode).toBe("architect")
+		expect((task as any)._taskApiConfigName).toBe("profile-runtime")
+		expect(taskDependencies.getCurrentMode).toHaveBeenCalledOnce()
+		expect(taskDependencies.getCurrentProfileName).toHaveBeenCalledOnce()
+		expect(taskDependencies.getProfileState).toHaveBeenCalledOnce()
+		expect(task.apiConfiguration).toEqual(updatedApiConfiguration)
+		expect(taskHost.onProviderProfileChanged).toHaveBeenCalledOnce()
+
+		task.dispose()
+		expect(disposeProfileListener).toHaveBeenCalledOnce()
+	})
+
 	it("creates a structured handoff on submitUserMessage mode/profile switch", async () => {
 		const task = new Task({
 			provider: mockProvider as any,
@@ -217,6 +263,35 @@ describe("Task mode handoff", () => {
 			trigger: "user_mode_switch",
 		})
 		expect(handoffMessage?.modeHandoff?.touchedFiles).toEqual(["src/foo.ts", "src/bar.ts"])
+	})
+
+	it("does not retry Provider mode operations when Runtime fails", async () => {
+		const taskDependencies = {
+			setMode: vi.fn().mockRejectedValue(new Error("mode switch unavailable")),
+			setProviderProfile: vi.fn().mockRejectedValue(new Error("profile switch unavailable")),
+			handleModeSwitch: vi.fn().mockRejectedValue(new Error("handoff unavailable")),
+		} as any
+		const task = new Task({
+			provider: mockProvider as any,
+			taskDependencies,
+			taskRuntimeFeatureFlags: { modeHandoff: "new", profileRouting: "new" },
+			apiConfiguration,
+			task: "Runtime failure boundary",
+			startTask: false,
+		})
+		mockProvider.setMode = vi.fn()
+		mockProvider.setProviderProfile = vi.fn()
+		mockProvider.handleModeSwitch = vi.fn()
+
+		await expect((task as any).setModeThroughRuntime("architect")).rejects.toThrow("mode switch unavailable")
+		await expect((task as any).setProviderProfileThroughRuntime("profile-b")).rejects.toThrow(
+			"profile switch unavailable",
+		)
+		await expect((task as any).handleModeSwitchThroughRuntime("architect")).rejects.toThrow("handoff unavailable")
+
+		expect(mockProvider.setMode).not.toHaveBeenCalled()
+		expect(mockProvider.setProviderProfile).not.toHaveBeenCalled()
+		expect(mockProvider.handleModeSwitch).not.toHaveBeenCalled()
 	})
 
 	it("injects the latest pending handoff into the next request and marks it consumed", async () => {
@@ -299,11 +374,13 @@ describe("Task mode handoff", () => {
 
 		taskHost.postStateWithoutTaskHistory.mockRejectedValueOnce(new Error("webview disposed"))
 		taskHost.postMessage.mockRejectedValueOnce(new Error("webview disposed"))
-		await (newTask as any).projectStateWithoutTaskHistory()
-		await (newTask as any).projectWebviewMessage({ type: "state", state: {} })
+		await expect((newTask as any).projectStateWithoutTaskHistory()).rejects.toThrow("webview disposed")
+		await expect((newTask as any).projectWebviewMessage({ type: "state", state: {} })).rejects.toThrow(
+			"webview disposed",
+		)
 
-		expect(mockProvider.postStateToWebviewWithoutTaskHistory).toHaveBeenCalledTimes(2)
-		expect(mockProvider.postMessageToWebview).toHaveBeenCalledTimes(2)
+		expect(mockProvider.postStateToWebviewWithoutTaskHistory).toHaveBeenCalledOnce()
+		expect(mockProvider.postMessageToWebview).toHaveBeenCalledOnce()
 		expect(taskHost.log).toHaveBeenCalledTimes(2)
 	})
 
@@ -340,7 +417,7 @@ describe("Task mode handoff", () => {
 		expect(mockProvider.getState).not.toHaveBeenCalled()
 	})
 
-	it("falls back to Provider state when Profile or Mode ports fail", async () => {
+	it("uses safe defaults when Profile or Mode ports fail", async () => {
 		const taskDependencies = {
 			getCurrentMode: vi.fn().mockRejectedValue(new Error("mode port unavailable")),
 			getCurrentProfileName: vi.fn().mockRejectedValue(new Error("profile port unavailable")),
@@ -365,10 +442,10 @@ describe("Task mode handoff", () => {
 		await (task as any).taskModeReady
 		await (task as any).taskApiConfigReady
 
-		expect(task.taskMode).toBe("code")
-		expect((task as any)._taskApiConfigName).toBe("profile-a")
+		expect(task.taskMode).toBe(defaultModeSlug)
+		expect((task as any)._taskApiConfigName).toBe("default")
 		expect(taskHost.log).toHaveBeenCalledTimes(2)
-		expect(mockProvider.getState).toHaveBeenCalled()
+		expect(mockProvider.getState).not.toHaveBeenCalled()
 	})
 
 	it("routes History updates through the selected port exactly once", async () => {
@@ -406,7 +483,7 @@ describe("Task mode handoff", () => {
 		expect(mockProvider.updateTaskHistory).not.toHaveBeenCalled()
 	})
 
-	it("falls back to Provider History persistence when the new port fails", async () => {
+	it("does not retry History persistence through Provider when the new port fails", async () => {
 		const updateHistoryItem = vi.fn().mockRejectedValue(new Error("history port unavailable"))
 		const taskHost = {
 			context: mockProvider.context,
@@ -426,10 +503,10 @@ describe("Task mode handoff", () => {
 
 		const result = await (task as any).saveClineMessages()
 
-		expect(result).toBe(true)
+		expect(result).toBe(false)
 		expect(updateHistoryItem).toHaveBeenCalledOnce()
-		expect(mockProvider.updateTaskHistory).toHaveBeenCalledOnce()
-		expect(taskHost.log).toHaveBeenCalledWith(expect.stringContaining("Task runtime history update fallback"))
+		expect(mockProvider.updateTaskHistory).not.toHaveBeenCalled()
+		expect(taskHost.log).toHaveBeenCalledWith(expect.stringContaining("Task Runtime history update failed"))
 	})
 
 	it("reads MCP state through the new port and preserves disabled behavior", async () => {
@@ -504,7 +581,7 @@ describe("Task mode handoff", () => {
 		expect(mockProvider.getSkillsManager).not.toHaveBeenCalled()
 	})
 
-	it("falls back to the legacy Skills Manager when the Skills port fails", async () => {
+	it("does not retry Skills lookup through the legacy Manager when the port fails", async () => {
 		const legacyManager = { getSkillContent: vi.fn().mockResolvedValue({ name: "legacy" }) }
 		mockProvider.getSkillsManager.mockReturnValue(legacyManager)
 		const taskHost = { log: vi.fn() } as any
@@ -520,11 +597,11 @@ describe("Task mode handoff", () => {
 			startTask: false,
 		})
 
-		const result = await (task as any).getSkillsLookup(mockProvider).getSkillContent("review", "code")
-
-		expect(result).toEqual({ name: "legacy" })
-		expect(legacyManager.getSkillContent).toHaveBeenCalledWith("review", "code")
-		expect(taskHost.log).toHaveBeenCalledWith(expect.stringContaining("Task runtime skills lookup fallback"))
+		await expect((task as any).getSkillsLookup(mockProvider).getSkillContent("review", "code")).rejects.toThrow(
+			"skills port unavailable",
+		)
+		expect(legacyManager.getSkillContent).not.toHaveBeenCalled()
+		expect(taskHost.log).not.toHaveBeenCalledWith(expect.stringContaining("fallback"))
 	})
 
 	it("falls back to the legacy Skills Manager when Skills port is disabled", async () => {
@@ -543,7 +620,7 @@ describe("Task mode handoff", () => {
 		expect(legacyManager.getSkillContent).toHaveBeenCalledWith("legacy", "code")
 	})
 
-	it("routes checkpoint operations through the new port and falls back on failure", async () => {
+	it("routes checkpoint operations through the new port without retrying on failure", async () => {
 		const save = vi.fn().mockResolvedValue(undefined)
 		const restore = vi.fn().mockResolvedValue(undefined)
 		const diff = vi.fn().mockResolvedValue(undefined)
@@ -570,11 +647,11 @@ describe("Task mode handoff", () => {
 		expect(save).toHaveBeenCalledTimes(2)
 
 		save.mockRejectedValueOnce(new Error("checkpoint unavailable"))
-		await task.checkpointSave()
-		expect(taskHost.log).toHaveBeenCalledWith(expect.stringContaining("Task runtime checkpoint save fallback"))
+		await expect(task.checkpointSave()).rejects.toThrow("checkpoint unavailable")
+		expect(taskHost.log).not.toHaveBeenCalledWith(expect.stringContaining("fallback"))
 	})
 
-	it("routes tool construction through the new port and falls back on failure", async () => {
+	it("routes tool construction through the new port without retrying on failure", async () => {
 		mockProvider.getMcpHub = vi.fn().mockReturnValue(undefined)
 		const tools = [{ type: "function", function: { name: "read_file", parameters: {} } }] as any
 		const buildTools = vi.fn().mockResolvedValue(tools)
@@ -594,12 +671,13 @@ describe("Task mode handoff", () => {
 		expect(buildTools).toHaveBeenCalledOnce()
 
 		buildTools.mockRejectedValueOnce(new Error("tool builder unavailable"))
-		const fallbackResult = await (task as any).buildToolsWithRuntime({
-			provider: mockProvider,
-			cwd: "/tmp/workspace",
-		})
-		expect(fallbackResult).toHaveProperty("tools")
-		expect(taskHost.log).toHaveBeenCalledWith(expect.stringContaining("Task runtime tools build fallback"))
+		await expect(
+			(task as any).buildToolsWithRuntime({
+				provider: mockProvider,
+				cwd: "/tmp/workspace",
+			}),
+		).rejects.toThrow("tool builder unavailable")
+		expect(taskHost.log).not.toHaveBeenCalledWith(expect.stringContaining("fallback"))
 	})
 
 	it("uses the State/Webview ports for message projection when stateProjection is new", async () => {

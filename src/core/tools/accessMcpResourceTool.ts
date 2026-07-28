@@ -11,6 +11,10 @@ interface AccessMcpResourceParams {
 	uri: string
 }
 
+interface McpResourceResult {
+	contents?: Array<{ text?: string; mimeType?: string; blob?: string }>
+}
+
 export class AccessMcpResourceTool extends BaseTool<"access_mcp_resource"> {
 	readonly name = "access_mcp_resource" as const
 
@@ -50,23 +54,22 @@ export class AccessMcpResourceTool extends BaseTool<"access_mcp_resource"> {
 
 			// Now execute the tool
 			await task.say("mcp_server_request_started")
-			const resourceResult = await task.providerRef.deref()?.getMcpHub()?.readResource(server_name, uri)
-
+			const resourceResult = (
+				typeof task.readMcpResourceThroughRuntime === "function"
+					? await task.readMcpResourceThroughRuntime(server_name, uri)
+					: await task.providerRef.deref()?.getMcpHub()?.readResource(server_name, uri)
+			) as McpResourceResult | undefined
+			const contents = resourceResult?.contents ?? []
 			const resourceResultPretty =
-				resourceResult?.contents
-					.map((item) => {
-						if (item.text) {
-							return item.text
-						}
-						return ""
-					})
+				contents
+					.map((item) => item.text ?? "")
 					.filter(Boolean)
 					.join("\n\n") || "(Empty response)"
 
 			// Handle images (image must contain mimetype and blob)
 			let images: string[] = []
 
-			resourceResult?.contents.forEach((item) => {
+			contents.forEach((item) => {
 				if (item.mimeType?.startsWith("image") && item.blob) {
 					if (item.blob.startsWith("data:")) {
 						images.push(item.blob)

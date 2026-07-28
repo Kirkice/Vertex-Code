@@ -89,4 +89,29 @@ describe("handleSettingsMessage", () => {
 		)
 		expect(update).toHaveBeenCalledWith("deniedCommands", ["rm"], vscode.ConfigurationTarget.Global)
 	})
+
+	it("closes idle terminals when the terminal profile changes", async () => {
+		const { Terminal } = await import("../../../integrations/terminal/Terminal")
+		const { TerminalRegistry } = await import("../../../integrations/terminal/TerminalRegistry")
+		vi.mocked(Terminal.getTerminalProfile).mockReturnValueOnce("default").mockReturnValueOnce("bash")
+
+		await handleSettingsMessage(
+			createContext({ type: "updateSettings", updatedSettings: { terminalProfile: "bash" } }) as never,
+		)
+
+		expect(Terminal.setTerminalProfile).toHaveBeenCalledWith("bash")
+		expect(TerminalRegistry.closeIdleTerminals).toHaveBeenCalledOnce()
+	})
+
+	it("does not close idle terminals when the terminal profile is unchanged", async () => {
+		const { Terminal } = await import("../../../integrations/terminal/Terminal")
+		const { TerminalRegistry } = await import("../../../integrations/terminal/TerminalRegistry")
+		vi.mocked(Terminal.getTerminalProfile).mockReturnValue("default")
+
+		await handleSettingsMessage(
+			createContext({ type: "updateSettings", updatedSettings: { terminalProfile: "default" } }) as never,
+		)
+
+		expect(TerminalRegistry.closeIdleTerminals).not.toHaveBeenCalled()
+	})
 })

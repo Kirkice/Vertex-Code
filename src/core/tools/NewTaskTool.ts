@@ -109,13 +109,8 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 				return
 			}
 
-			// Delegate parent and open child as sole active task
-			const child = await (provider as any).delegateParentAndOpenChild({
-				parentTaskId: task.taskId,
-				message: unescapedMessage,
-				initialTodos: todoItems,
-				mode,
-			})
+			// Delegate parent and open child through the Task Runtime boundary.
+			const child = await task.startSubtask(unescapedMessage, todoItems, mode)
 
 			// Reflect delegation in tool result (no pause/unpause, no wait)
 			pushToolResult(`Delegated to child task ${child.taskId}`)

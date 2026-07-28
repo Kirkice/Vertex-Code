@@ -145,8 +145,7 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 	): Promise<{ isValid: boolean; availableTools?: string[]; resolvedToolName?: string }> {
 		try {
 			// Get the MCP hub to access server information
-			const provider = task.providerRef.deref()
-			const mcpHub = provider?.getMcpHub()
+			const mcpHub = await this.getMcpHub(task)
 
 			if (!mcpHub) {
 				// If we can't get the MCP hub, we can't validate, so proceed with caution
@@ -308,7 +307,7 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 			toolName,
 		})
 
-		const toolResult = await task.providerRef.deref()?.getMcpHub()?.callTool(serverName, toolName, parsedArguments)
+		const toolResult = await this.callMcpTool(task, serverName, toolName, parsedArguments)
 
 		let toolResultPretty = "(No response)"
 		let images: string[] = []
@@ -347,6 +346,25 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 
 		await task.say("mcp_server_response", toolResultPretty, images)
 		pushToolResult(formatResponse.toolResult(toolResultPretty, images))
+	}
+
+	private async getMcpHub(task: Task) {
+		if (typeof task.getMcpHubThroughRuntime === "function") {
+			return task.getMcpHubThroughRuntime()
+		}
+		return task.providerRef.deref()?.getMcpHub()
+	}
+
+	private async callMcpTool(
+		task: Task,
+		serverName: string,
+		toolName: string,
+		arguments_?: Record<string, unknown>,
+	): Promise<any> {
+		if (typeof task.callMcpToolThroughRuntime === "function") {
+			return task.callMcpToolThroughRuntime(serverName, toolName, arguments_)
+		}
+		return task.providerRef.deref()?.getMcpHub()?.callTool(serverName, toolName, arguments_)
 	}
 }
 

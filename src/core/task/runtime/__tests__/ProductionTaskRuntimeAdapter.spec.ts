@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from "vitest"
 
-const { mockCheckpointSave, mockCheckpointRestore, mockCheckpointDiff, mockBuildTools } = vi.hoisted(() => ({
-	mockCheckpointSave: vi.fn().mockResolvedValue(undefined),
-	mockCheckpointRestore: vi.fn().mockResolvedValue(undefined),
-	mockCheckpointDiff: vi.fn().mockResolvedValue(undefined),
-	mockBuildTools: vi.fn().mockResolvedValue({
-		tools: [{ type: "function", function: { name: "read_file", parameters: {} } }],
-	}),
-}))
+const { mockCheckpointSave, mockCheckpointRestore, mockCheckpointDiff, mockBuildTools, mockBuildApiHandler } =
+	vi.hoisted(() => ({
+		mockCheckpointSave: vi.fn().mockResolvedValue(undefined),
+		mockCheckpointRestore: vi.fn().mockResolvedValue(undefined),
+		mockCheckpointDiff: vi.fn().mockResolvedValue(undefined),
+		mockBuildApiHandler: vi
+			.fn()
+			.mockReturnValue({ createMessage: vi.fn(), getModel: vi.fn(), countTokens: vi.fn() }),
+		mockBuildTools: vi.fn().mockResolvedValue({
+			tools: [{ type: "function", function: { name: "read_file", parameters: {} } }],
+		}),
+	}))
 
 vi.mock("../../../checkpoints", () => ({
 	checkpointSave: mockCheckpointSave,
@@ -17,6 +21,10 @@ vi.mock("../../../checkpoints", () => ({
 
 vi.mock("../../build-tools", () => ({
 	buildNativeToolsArrayWithRestrictions: mockBuildTools,
+}))
+
+vi.mock("../../../../api", () => ({
+	buildApiHandler: mockBuildApiHandler,
 }))
 
 import { ProductionTaskRuntimeAdapter } from "../ProductionTaskRuntimeAdapter"
@@ -38,7 +46,11 @@ describe("ProductionTaskRuntimeAdapter", () => {
 	})
 
 	it("routes MCP, Skills and native Tools through owned service boundaries", async () => {
-		const hub = { getServers: vi.fn().mockReturnValue([]) }
+		const hub = {
+			getServers: vi.fn().mockReturnValue([]),
+			callTool: vi.fn().mockResolvedValue({ content: [{ type: "text", text: "ok" }] }),
+			readResource: vi.fn().mockResolvedValue({ contents: [{ text: "resource" }] }),
+		}
 		const skillManager = {
 			getSkillsForMode: vi.fn().mockReturnValue([{ name: "review" }]),
 			getSkillContent: vi.fn().mockResolvedValue({ name: "review", source: "project" }),
@@ -56,10 +68,57 @@ describe("ProductionTaskRuntimeAdapter", () => {
 		expect(await adapter.isEnabled()).toBe(true)
 		expect(await adapter.getSkillsForMode("code")).toEqual([{ name: "review" }])
 		expect(await adapter.getSkillContent("review", "code")).toMatchObject({ name: "review" })
+		await expect(adapter.callTool("server", "tool", { value: 1 })).resolves.toEqual({
+			content: [{ type: "text", text: "ok" }],
+		})
+		await expect(adapter.readResource("server", "file:///tmp/a")).resolves.toEqual({
+			contents: [{ text: "resource" }],
+		})
+		expect(hub.callTool).toHaveBeenCalledWith("server", "tool", { value: 1 })
+		expect(hub.readResource).toHaveBeenCalledWith("server", "file:///tmp/a")
 		await expect(adapter.buildTools({ provider, cwd: "/tmp/workspace" })).resolves.toEqual([
 			{ type: "function", function: { name: "read_file", parameters: {} } },
 		])
 		expect(mockBuildTools).toHaveBeenCalledOnce()
+	})
+
+	it("creates API handlers through the runtime boundary", () => {
+		const adapter = new ProductionTaskRuntimeAdapter({} as any)
+		const configuration = { apiProvider: "fake-ai" } as any
+
+		expect(adapter.createApiHandler(configuration)).toBe(mockBuildApiHandler.mock.results.at(-1)?.value)
+		expect(mockBuildApiHandler).toHaveBeenCalledWith(configuration)
+	})
+
+	it("routes subtask delegation through the runtime boundary", async () => {
+		const child = { taskId: "child-1" } as any
+		const delegateParentAndOpenChild = vi.fn().mockResolvedValue(child)
+		const adapter = new ProductionTaskRuntimeAdapter({ delegateParentAndOpenChild } as any)
+		const params = {
+			parentTaskId: "parent-1",
+			message: "child task",
+			initialTodos: [],
+			mode: "code",
+		}
+
+		await expect(adapter.createSubtask(params)).resolves.toBe(child)
+		expect(delegateParentAndOpenChild).toHaveBeenCalledWith(params)
+	})
+
+	it("starts API streams through the same runtime boundary", async () => {
+		const createMessage = vi.fn().mockReturnValue(
+			(async function* () {
+				yield { type: "text", text: "ok" }
+			})(),
+		)
+		const adapter = new ProductionTaskRuntimeAdapter({} as any)
+		const handler = { createMessage } as any
+
+		const stream = adapter.createMessage(handler, "system", [{ role: "user", content: "hello" }], {
+			taskId: "task-1",
+		})
+		await expect(stream.next()).resolves.toEqual({ value: { type: "text", text: "ok" }, done: false })
+		expect(createMessage).toHaveBeenCalledWith("system", [{ role: "user", content: "hello" }], { taskId: "task-1" })
 	})
 
 	it("binds one Task and routes checkpoint operations exactly once", async () => {
