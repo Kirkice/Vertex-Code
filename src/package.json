@@ -49,7 +49,7 @@
 		"onLanguage",
 		"onStartupFinished"
 	],
-"main": "./dist/extension.js",
+	"main": "./dist/extension.js",
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
@@ -163,6 +163,21 @@
 			{
 				"command": "vertex.toggleAutoApprove",
 				"title": "%command.toggleAutoApprove.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "vertex.ragRebuild",
+				"title": "Rebuild RAG index",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "vertex.ragClear",
+				"title": "Clear RAG index",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "vertex.ragStatus",
+				"title": "Show RAG status",
 				"category": "%configuration.title%"
 			}
 		],
@@ -391,6 +406,11 @@
 					"minimum": 1,
 					"maximum": 200,
 					"description": "%settings.codeIndex.embeddingBatchSize.description%"
+				},
+				"vertex.rag.enabled": {
+					"type": "boolean",
+					"default": false,
+					"description": "%settings.rag.enabled.description%"
 				},
 				"vertex.debug": {
 					"type": "boolean",

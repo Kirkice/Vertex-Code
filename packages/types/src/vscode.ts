@@ -46,6 +46,9 @@ export const commandIds = [
 	"acceptInput",
 	"focusPanel",
 	"toggleAutoApprove",
+	"ragRebuild",
+	"ragClear",
+	"ragStatus",
 ] as const
 
 export type CommandId = (typeof commandIds)[number]

@@ -194,6 +194,15 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			outputChannel.appendLine(`[toggleAutoApprove] postMessageToWebview failed: ${error}`)
 		}
 	},
+	ragRebuild: async () => {
+		const manager = CodeIndexManager.getInstance(context)
+		await manager?.rebuildRag()
+	},
+	ragClear: async () => {
+		const manager = CodeIndexManager.getInstance(context)
+		await manager?.clearRagData()
+	},
+	ragStatus: () => CodeIndexManager.getInstance(context)?.getRagStatus(),
 })
 
 export const openClineInNewTab = async ({ context, outputChannel }: Omit<RegisterCommandOptions, "provider">) => {

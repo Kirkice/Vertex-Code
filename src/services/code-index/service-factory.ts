@@ -30,6 +30,7 @@ import { BATCH_SEGMENT_THRESHOLD } from "./constants"
  * Factory class responsible for creating and configuring code indexing service dependencies.
  */
 export class CodeIndexServiceFactory {
+	private _ragDependencies?: { embedder: IEmbedder; vectorStore: IVectorStore }
 	constructor(
 		private readonly configManager: CodeIndexConfigManager,
 		private readonly workspacePath: string,
@@ -244,6 +245,7 @@ export class CodeIndexServiceFactory {
 
 		const embedder = this.createEmbedder()
 		const vectorStore = this.createVectorStore()
+		this._ragDependencies = { embedder, vectorStore }
 		const parser = codeParser
 		const scanner = this.createDirectoryScanner(embedder, vectorStore, parser, ignoreInstance)
 		const fileWatcher = this.createFileWatcher(
@@ -262,5 +264,9 @@ export class CodeIndexServiceFactory {
 			scanner,
 			fileWatcher,
 		}
+	}
+
+	public getRagDependencies(): { embedder: IEmbedder; vectorStore: IVectorStore } | undefined {
+		return this._ragDependencies
 	}
 }

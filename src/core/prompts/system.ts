@@ -26,6 +26,7 @@ import {
 } from "./sections"
 import { GRAPHICS_MODE_PROMPT, buildGraphicsModePrompt } from "./sections/graphics-agent"
 import { buildKnowledgeContextBlock } from "../../services/knowledge"
+import { buildRagContextBlock } from "../../services/rag"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -108,6 +109,20 @@ async function generatePrompt(
 	let knowledgeSection = ""
 	if (userMessage && mode !== "graphics") {
 		knowledgeSection = buildKnowledgeContextBlock(userMessage, mode as string) || ""
+		// Dynamic workspace RAG is optional. Static knowledge remains the fallback.
+		try {
+			const ragEnabled = vscode.workspace.getConfiguration("vertex").get<boolean>("rag.enabled", false)
+			const ragService = ragEnabled ? codeIndexManager?.getRagService() : undefined
+			if (ragService) {
+				const ragResult = await buildRagContextBlock(ragService, userMessage, { topK: 5, maxTokens: 3000 })
+				if (ragResult.block) {
+					knowledgeSection = [knowledgeSection, ragResult.block].filter(Boolean).join("\n\n")
+				}
+			}
+		} catch (error) {
+			// Retrieval must never prevent the agent from building its prompt.
+			console.warn("[RAG] Workspace retrieval skipped:", error)
+		}
 		if (knowledgeSection) {
 			knowledgeSection = `\n${knowledgeSection}\n`
 		}

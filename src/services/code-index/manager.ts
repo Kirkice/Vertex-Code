@@ -15,6 +15,9 @@ import path from "path"
 import { t } from "../../i18n"
 
 import { TelemetryEventName } from "@roo-code/types"
+import { RagService } from "../rag/ragService"
+import { discoverRagDocuments } from "../rag/documentSources"
+import { IngestionPipeline } from "../rag/ingestionPipeline"
 
 export class CodeIndexManager {
 	// --- Singleton Implementation ---
@@ -27,6 +30,10 @@ export class CodeIndexManager {
 	private _orchestrator: CodeIndexOrchestrator | undefined
 	private _searchService: CodeIndexSearchService | undefined
 	private _cacheManager: CacheManager | undefined
+	private _ragService: RagService | undefined
+	private _ragIngestionPromise: Promise<void> | undefined
+	private _ragAbortController: AbortController | undefined
+	private _ragRefreshTimer: NodeJS.Timeout | undefined
 
 	// Flag to prevent race conditions during error recovery
 	private _isRecoveringFromError = false
@@ -209,6 +216,9 @@ export class CodeIndexManager {
 
 		if (shouldStartOrRestartIndexing) {
 			this._orchestrator?.startIndexing()
+			if (vscode.workspace.getConfiguration("vertex").get<boolean>("rag.enabled", false)) {
+				this.startRagIngestion()
+			}
 		}
 
 		return { requiresRestart }
@@ -244,6 +254,7 @@ export class CodeIndexManager {
 	 * Stops any in-progress indexing operation and the file watcher.
 	 */
 	public stopIndexing(): void {
+		this.stopRagIngestion()
 		if (this._orchestrator) {
 			this._orchestrator.stopIndexing()
 		}
@@ -342,6 +353,116 @@ export class CodeIndexManager {
 		return this._searchService!.searchIndex(query, directoryPrefix)
 	}
 
+	/** Returns initialized dependencies for optional lightweight RAG integration. */
+	public getRagDependencies() {
+		if (!this._serviceFactory || !this._searchService) return undefined
+		return this._serviceFactory.getRagDependencies()
+	}
+
+	/** Lazily exposes the RAG query facade over the initialized code index. */
+	public getRagService(): RagService | undefined {
+		if (this._ragService) return this._ragService
+		const dependencies = this.getRagDependencies()
+		if (!dependencies) return undefined
+		this._ragService = new RagService(dependencies.embedder, dependencies.vectorStore)
+		return this._ragService
+	}
+
+	/** Starts optional Markdown/text ingestion without blocking code-index startup. */
+	public startRagIngestion(): void {
+		if (this._ragIngestionPromise || !this.isFeatureEnabled || !this.isWorkspaceEnabled) return
+		const dependencies = this.getRagDependencies()
+		if (!dependencies) return
+		this._ragAbortController = new AbortController()
+		this._ragIngestionPromise = this.runRagIngestion(
+			dependencies.embedder,
+			dependencies.vectorStore,
+			this._ragAbortController.signal,
+		).finally(() => {
+			this._ragIngestionPromise = undefined
+			this._ragAbortController = undefined
+		})
+	}
+
+	public stopRagIngestion(): void {
+		if (this._ragRefreshTimer) {
+			clearTimeout(this._ragRefreshTimer)
+			this._ragRefreshTimer = undefined
+		}
+		this._ragAbortController?.abort()
+	}
+
+	public refreshRagIngestion(): void {
+		if (!vscode.workspace.getConfiguration("vertex").get<boolean>("rag.enabled", false)) return
+		if (this._ragRefreshTimer) clearTimeout(this._ragRefreshTimer)
+		this._ragRefreshTimer = setTimeout(() => {
+			this._ragRefreshTimer = undefined
+			this.startRagIngestion()
+		}, 750)
+	}
+
+	public getRagStatus(): { enabled: boolean; running: boolean; workspacePath: string } {
+		return {
+			enabled: vscode.workspace.getConfiguration("vertex").get<boolean>("rag.enabled", false),
+			running: this._ragIngestionPromise !== undefined,
+			workspacePath: this.workspacePath,
+		}
+	}
+
+	public async clearRagData(): Promise<void> {
+		this.stopRagIngestion()
+		const ragDirectory = path.join(this.workspacePath, ".roo", "rag")
+		try {
+			const manifestFiles = (await fs.readdir(ragDirectory)).filter((file) => file.endsWith("-manifest.json"))
+			const dependencies = this.getRagDependencies()
+			for (const manifestFile of manifestFiles) {
+				const manifest = JSON.parse(await fs.readFile(path.join(ragDirectory, manifestFile), "utf8")) as {
+					files?: Record<string, unknown>
+				}
+				for (const filePath of Object.keys(manifest.files ?? {})) {
+					await dependencies?.vectorStore.deletePointsByFilePath(filePath)
+				}
+			}
+			await fs.rm(ragDirectory, { recursive: true, force: true })
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
+		}
+	}
+
+	public async rebuildRag(): Promise<void> {
+		await this.clearRagData()
+		this.startRagIngestion()
+	}
+
+	private async runRagIngestion(
+		embedder: import("./interfaces").IEmbedder,
+		vectorStore: import("./interfaces").IVectorStore,
+		signal: AbortSignal,
+	): Promise<void> {
+		try {
+			const ignoreController = new RooIgnoreController(this.workspacePath)
+			await ignoreController.initialize()
+			const documents = await discoverRagDocuments(this.workspacePath, ignoreController)
+			const grouped = new Map<string, string[]>()
+			for (const document of documents)
+				grouped.set(document.sourceType, [...(grouped.get(document.sourceType) ?? []), document.path])
+			const pipeline = new IngestionPipeline(embedder, vectorStore)
+			for (const [sourceType, files] of grouped) {
+				if (signal.aborted) return
+				await pipeline.ingest({
+					rootPath: this.workspacePath,
+					files,
+					sourceType: sourceType as "markdown" | "text" | "knowledge",
+					manifestPath: path.join(this.workspacePath, ".roo", "rag", `${sourceType}-manifest.json`),
+					maxFileSize: 512 * 1024,
+					signal,
+				})
+			}
+		} catch (error) {
+			console.warn("[RAG] Background document ingestion skipped:", error)
+		}
+	}
+
 	/**
 	 * Private helper method to recreate services with current configuration.
 	 * Used by both initialize() and handleSettingsChange().
@@ -354,6 +475,7 @@ export class CodeIndexManager {
 		// Clear existing services to ensure clean state
 		this._orchestrator = undefined
 		this._searchService = undefined
+		this._ragService = undefined
 
 		// (Re)Initialize service factory
 		this._serviceFactory = new CodeIndexServiceFactory(

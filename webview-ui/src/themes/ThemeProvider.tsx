@@ -26,6 +26,19 @@ const STYLE_TAG_ID = "vertex-theme-styles"
 // ─── CSS class name for active theme ────────────────────────────────────────
 const THEME_CLASS = "vertex-theme-active"
 
+function setDocumentCanvasBackground(themeId: ThemeId): void {
+	const background = themeId === "none" ? "" : themes[themeId]?.colors?.background || ""
+	const root = document.getElementById("root")
+
+	// A transparent webview canvas can retain the previous frame until an input
+	// event causes a repaint. Update the actual document surfaces on transitions.
+	document.documentElement.style.backgroundColor = background
+	document.body.style.backgroundColor = background
+	if (root) {
+		root.style.backgroundColor = background
+	}
+}
+
 // ─── Generate CSS for a theme ───────────────────────────────────────────────
 
 /**
@@ -94,6 +107,7 @@ function applyTheme(themeId: ThemeId): void {
 	document.documentElement.classList.remove(THEME_CLASS)
 
 	if (themeId === "none") {
+		setDocumentCanvasBackground("none")
 		// Done — no style tag, no class, completely clean
 		try {
 			const htmlStyles = getComputedStyle(document.documentElement)
@@ -120,6 +134,7 @@ function applyTheme(themeId: ThemeId): void {
 
 		// Add class to <html> to activate the CSS rules
 		document.documentElement.classList.add(THEME_CLASS)
+		setDocumentCanvasBackground(themeId)
 
 		try {
 			const htmlStyles = getComputedStyle(document.documentElement)

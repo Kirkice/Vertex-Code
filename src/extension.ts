@@ -342,6 +342,7 @@ export async function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated.
 export async function deactivate() {
 	outputChannel.appendLine(`${Package.name} extension deactivated`)
+	CodeIndexManager.disposeAll()
 
 	await McpServerManager.cleanup(extensionContext)
 	TerminalRegistry.cleanup()

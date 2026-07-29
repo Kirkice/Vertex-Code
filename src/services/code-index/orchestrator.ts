@@ -24,6 +24,7 @@ export class CodeIndexOrchestrator {
 		private readonly vectorStore: IVectorStore,
 		private readonly scanner: DirectoryScanner,
 		private readonly fileWatcher: IFileWatcher,
+		private readonly onFilesChanged?: (filePaths: string[]) => void,
 	) {}
 
 	/**
@@ -64,6 +65,8 @@ export class CodeIndexOrchestrator {
 					}
 				}),
 				this.fileWatcher.onDidFinishBatchProcessing((summary: BatchProcessingSummary) => {
+					this.onFilesChanged?.(summary.processedFiles.map((file) => file.path))
+					this.onFilesChanged?.(summary.processedFiles.map((file) => file.path))
 					if (summary.batchError) {
 						console.error(`[CodeIndexOrchestrator] Batch processing failed:`, summary.batchError)
 					} else {
