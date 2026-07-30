@@ -1,3 +1,6 @@
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises"
+import os from "node:os"
+import path from "node:path"
 import type { GraphicsFeatureBrief, GraphicsFeaturePlan, WebviewMessage } from "@roo-code/types"
 
 import type { ClineProvider } from "../ClineProvider"
@@ -16,6 +19,31 @@ const createBrief = (title = "Stylized outline"): GraphicsFeatureBrief => ({
 	updatedAt: "2026-07-30T00:00:00.000Z",
 })
 
+/** Uses the smallest valid plan shape needed to exercise workspace edit normalization. */
+const createPlan = (): GraphicsFeaturePlan => ({
+	version: 1,
+	revision: 1,
+	source: "generated",
+	updatedAt: "2026-07-30T00:00:00.000Z",
+	title: "Test plan",
+	briefSummary: "Test summary",
+	openQuestions: [],
+	projectContext: [],
+	decision: { recommendedLevel: "shader", rationale: [], alternatives: [] },
+	pipelineDesign: { summary: "", details: [] },
+	shaderDesign: { summary: "", details: [] },
+	clientDesign: { summary: "", details: [] },
+	assetContract: { requirements: [], validationRules: [] },
+	performanceBudget: { summary: "", details: [] },
+	compatibility: [],
+	risks: [],
+	tasks: [],
+	acceptancePlan: [],
+	generatedAt: "2026-07-30T00:00:00.000Z",
+})
+
+const GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY = "graphicsFeaturePlan"
+
 describe("handleGraphicsMessage Feature Brief persistence", () => {
 	const workspaceState = {
 		get: vi.fn(),
@@ -29,6 +57,13 @@ describe("handleGraphicsMessage Feature Brief persistence", () => {
 		postMessageToWebview,
 		log,
 	} as unknown as ClineProvider
+	const createWorkspaceProvider = (workspacePath: string) =>
+		({
+			context: { workspaceState },
+			cwd: workspacePath,
+			postMessageToWebview,
+			log,
+		}) as unknown as ClineProvider
 
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -80,6 +115,27 @@ describe("handleGraphicsMessage Feature Brief persistence", () => {
 		expect(handled).toBe(true)
 		expect(workspaceState.update).toHaveBeenCalledWith("graphicsFeatureBrief", graphicsFeatureBrief)
 		expect(postMessageToWebview).toHaveBeenCalledWith({ type: "graphicsFeatureBrief", graphicsFeatureBrief })
+	})
+
+	it("loads a project Feature Brief before checking the workspaceState cache", async () => {
+		const workspacePath = await mkdtemp(path.join(os.tmpdir(), "vertex-graphics-handler-"))
+		try {
+			const graphicsFeatureBrief = createBrief("Shared outline")
+			const storeDirectory = path.join(workspacePath, ".roo", "graphics")
+			await mkdir(storeDirectory, { recursive: true })
+			await writeFile(
+				path.join(storeDirectory, "feature-brief.json"),
+				JSON.stringify(graphicsFeatureBrief),
+				"utf8",
+			)
+
+			await handleGraphicsMessage(createWorkspaceProvider(workspacePath), { type: "requestGraphicsFeatureBrief" })
+
+			expect(postMessageToWebview).toHaveBeenCalledWith({ type: "graphicsFeatureBrief", graphicsFeatureBrief })
+			expect(workspaceState.get).not.toHaveBeenCalledWith("graphicsFeatureBrief")
+		} finally {
+			await rm(workspacePath, { recursive: true, force: true })
+		}
 	})
 
 	it("rejects a missing Feature Brief without updating workspace state", async () => {
@@ -251,6 +307,416 @@ describe("handleGraphicsMessage Feature Brief persistence", () => {
 			type: "graphicsFeaturePlanEdited",
 			graphicsFeaturePlan: expect.objectContaining({ revision: 2 }),
 		})
+	})
+
+	it("persists a manual plan title and summary edit", async () => {
+		const plan = {
+			version: 1,
+			revision: 1,
+			source: "generated",
+			title: "Original title",
+			briefSummary: "Original summary",
+			tasks: [],
+		} as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlan",
+			graphicsFeaturePlanTitle: "Edited title",
+			graphicsFeaturePlanBriefSummary: "Edited summary",
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 2,
+				source: "manual",
+				title: "Edited title",
+				briefSummary: "Edited summary",
+			}),
+		)
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "graphicsFeaturePlanEdited",
+				graphicsFeaturePlan: expect.objectContaining({ revision: 2 }),
+			}),
+		)
+	})
+
+	it("persists a manual pipeline plan section edit and normalizes details", async () => {
+		const plan = {
+			version: 1,
+			revision: 1,
+			source: "generated",
+			pipelineDesign: { summary: "Original pipeline", details: ["Original detail"] },
+			shaderDesign: { summary: "Shader", details: [] },
+			clientDesign: { summary: "Client", details: [] },
+			tasks: [],
+		} as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "pipelineDesign",
+			graphicsFeaturePlanSectionSummary: " Edited pipeline design ",
+			graphicsFeaturePlanSectionDetails: [" After opaques ", "", "Before post-processing"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 2,
+				source: "manual",
+				pipelineDesign: {
+					summary: "Edited pipeline design",
+					details: ["After opaques", "Before post-processing"],
+				},
+			}),
+		)
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "graphicsFeaturePlanEdited",
+				graphicsFeaturePlan: expect.objectContaining({ revision: 2 }),
+			}),
+		)
+	})
+
+	it("persists asset contract and performance budget edits", async () => {
+		const plan = {
+			version: 1,
+			revision: 1,
+			source: "generated",
+			assetContract: { requirements: ["Original requirement"], validationRules: ["Original rule"] },
+			performanceBudget: { summary: "Original budget", details: ["Original detail"] },
+			tasks: [],
+		} as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeatureAssetContract",
+			graphicsFeatureAssetRequirements: [" Texture atlas ", ""],
+			graphicsFeatureAssetValidationRules: [" Valid range "],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 2,
+				source: "manual",
+				assetContract: { requirements: ["Texture atlas"], validationRules: ["Valid range"] },
+			}),
+		)
+
+		workspaceState.update.mockClear()
+		workspaceState.get.mockReturnValue({ ...plan, revision: 2 })
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePerformanceBudget",
+			graphicsFeaturePerformanceBudgetSummary: " Under 0.5 ms ",
+			graphicsFeaturePerformanceBudgetDetails: [" Measure GPU ", ""],
+			graphicsFeaturePlanRevision: 2,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 3,
+				source: "manual",
+				performanceBudget: { summary: "Under 0.5 ms", details: ["Measure GPU"] },
+			}),
+		)
+	})
+
+	it("persists decision and compatibility edits with normalization", async () => {
+		const plan = {
+			version: 1,
+			revision: 1,
+			source: "generated",
+			decision: {
+				recommendedLevel: "renderer-pass",
+				rationale: ["Original"],
+				alternatives: [],
+			},
+			compatibility: [],
+			tasks: [],
+		} as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeatureDecision",
+			graphicsFeatureDecisionRationale: [" Prefer pass ", ""],
+			graphicsFeatureDecisionAlternatives: [
+				{ level: " shader ", reasonNotSelected: " More pipeline risk " },
+				{ level: "invalid", reasonNotSelected: " Reject this value " },
+				{ level: "compute", reasonNotSelected: " " },
+			],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 2,
+				source: "manual",
+				decision: {
+					recommendedLevel: "renderer-pass",
+					rationale: ["Prefer pass"],
+					alternatives: [{ level: "shader", reasonNotSelected: "More pipeline risk" }],
+				},
+			}),
+		)
+
+		workspaceState.update.mockClear()
+		workspaceState.get.mockReturnValue({ ...plan, revision: 2 })
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeatureCompatibility",
+			graphicsFeatureCompatibility: [
+				{ target: " Android ", strategy: " Vulkan ", fallback: " Disable " },
+				{ target: "", strategy: "Invalid", fallback: "Ignore" },
+			],
+			graphicsFeaturePlanRevision: 2,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 3,
+				source: "manual",
+				compatibility: [{ target: "Android", strategy: "Vulkan", fallback: "Disable" }],
+			}),
+		)
+	})
+
+	it("filters invalid planning context enum values before persistence", async () => {
+		const plan = createPlan()
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanContext",
+			graphicsFeatureRisks: [
+				{ id: "R1", title: "Risk", impact: "invalid" as "high", mitigation: "Mitigate" },
+				{ id: "R2", title: "Valid risk", impact: "medium", mitigation: "Mitigate" },
+			],
+			graphicsFeatureAcceptancePlan: [
+				{ id: "A1", dimension: "invalid" as "visual", criterion: "Invalid", evidence: "build" },
+				{ id: "A2", dimension: "performance", criterion: "Valid", evidence: "invalid" as "build" },
+				{ id: "A3", dimension: "functional", criterion: "Valid", evidence: "automated-test" },
+			],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY,
+			expect.objectContaining({
+				risks: [{ id: "R2", title: "Valid risk", impact: "medium", mitigation: "Mitigate" }],
+				acceptancePlan: [{ id: "A3", dimension: "functional", criterion: "Valid", evidence: "automated-test" }],
+			}),
+		)
+	})
+
+	it("persists planning context and validation edits with normalization", async () => {
+		const plan = {
+			version: 1,
+			revision: 1,
+			source: "generated",
+			projectContext: ["Original context"],
+			openQuestions: ["Original question"],
+			risks: [],
+			acceptancePlan: [],
+			tasks: [],
+		} as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanContext",
+			graphicsFeatureProjectContext: [" Unity URP ", ""],
+			graphicsFeatureOpenQuestions: [" Confirm Android fallback ", ""],
+			graphicsFeatureRisks: [
+				{
+					id: " R1 ",
+					title: " Ordering ",
+					impact: "high",
+					mitigation: " Prototype ",
+					reviewGate: " Review before merge ",
+				},
+				{ id: "", title: "Invalid", impact: "low", mitigation: "" },
+			],
+			graphicsFeatureAcceptancePlan: [
+				{
+					id: " A1 ",
+					dimension: "visual",
+					criterion: " Matches reference ",
+					evidence: "screenshot",
+				},
+				{ id: "", dimension: "functional", criterion: "Invalid", evidence: "build" },
+			],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).toHaveBeenCalledWith(
+			"graphicsFeaturePlan",
+			expect.objectContaining({
+				revision: 2,
+				source: "manual",
+				projectContext: ["Unity URP"],
+				openQuestions: ["Confirm Android fallback"],
+				risks: [
+					{
+						id: "R1",
+						title: "Ordering",
+						impact: "high",
+						mitigation: "Prototype",
+						reviewGate: "Review before merge",
+					},
+				],
+				acceptancePlan: [
+					{ id: "A1", dimension: "visual", criterion: "Matches reference", evidence: "screenshot" },
+				],
+			}),
+		)
+	})
+
+	it("rejects stale planning context edits", async () => {
+		const plan = { version: 1, revision: 3, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanContext",
+			graphicsFeatureProjectContext: ["Outdated"],
+			graphicsFeaturePlanRevision: 2,
+		})
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "graphicsFeaturePlanConflict", graphicsFeaturePlan: plan }),
+		)
+	})
+
+	it("rejects missing planning context fields", async () => {
+		const plan = { version: 1, revision: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, { type: "updateGraphicsFeaturePlanContext" })
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(log).toHaveBeenCalledWith("[Graphics] updateGraphicsFeaturePlanContext: missing or invalid fields")
+	})
+
+	it("rejects stale decision and compatibility edits", async () => {
+		const plan = { version: 1, revision: 3, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeatureDecision",
+			graphicsFeatureDecisionRationale: ["Outdated"],
+			graphicsFeaturePlanRevision: 2,
+		})
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "graphicsFeaturePlanConflict", graphicsFeaturePlan: plan }),
+		)
+
+		postMessageToWebview.mockClear()
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeatureCompatibility",
+			graphicsFeatureCompatibility: [],
+			graphicsFeaturePlanRevision: 2,
+		})
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "graphicsFeaturePlanConflict", graphicsFeaturePlan: plan }),
+		)
+	})
+
+	it("rejects missing decision and compatibility fields", async () => {
+		const plan = { version: 1, revision: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, { type: "updateGraphicsFeatureDecision" })
+		await handleGraphicsMessage(provider, { type: "updateGraphicsFeatureCompatibility" })
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(log).toHaveBeenCalledWith("[Graphics] updateGraphicsFeatureDecision: missing or invalid fields")
+		expect(log).toHaveBeenCalledWith("[Graphics] updateGraphicsFeatureCompatibility: missing or invalid fields")
+	})
+
+	it("rejects a stale performance budget edit", async () => {
+		const plan = { revision: 3, version: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePerformanceBudget",
+			graphicsFeaturePerformanceBudgetSummary: "Outdated budget",
+			graphicsFeaturePlanRevision: 2,
+		})
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "graphicsFeaturePlanConflict", graphicsFeaturePlan: plan }),
+		)
+	})
+
+	it("rejects an asset contract edit when both fields are missing", async () => {
+		const plan = { revision: 1, version: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, { type: "updateGraphicsFeatureAssetContract" })
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(log).toHaveBeenCalledWith("[Graphics] updateGraphicsFeatureAssetContract: missing or invalid fields")
+	})
+
+	it("rejects a stale plan section edit and returns the current plan", async () => {
+		const plan = { revision: 3, version: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "shaderDesign",
+			graphicsFeaturePlanSectionSummary: "Outdated edit",
+			graphicsFeaturePlanRevision: 2,
+		})
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "graphicsFeaturePlanConflict", graphicsFeaturePlan: plan }),
+		)
+	})
+
+	it("ignores invalid plan section edits", async () => {
+		const plan = { revision: 1, version: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "performanceBudget" as "pipelineDesign",
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).not.toHaveBeenCalled()
+		expect(log).toHaveBeenCalledWith(
+			"[Graphics] updateGraphicsFeaturePlanSection: missing or invalid section fields",
+		)
+	})
+
+	it("rejects a plan section edit when both editable fields are missing", async () => {
+		const plan = { revision: 1, version: 1, tasks: [] } as unknown as GraphicsFeaturePlan
+		workspaceState.get.mockReturnValue(plan)
+
+		await handleGraphicsMessage(provider, {
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "clientDesign",
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		expect(workspaceState.update).not.toHaveBeenCalled()
+		expect(postMessageToWebview).not.toHaveBeenCalled()
+		expect(log).toHaveBeenCalledWith(
+			"[Graphics] updateGraphicsFeaturePlanSection: missing or invalid section fields",
+		)
 	})
 
 	it("rejects a stale manual task edit and returns the current plan", async () => {

@@ -1729,6 +1729,13 @@ Capture 对比前必须记录：
 
 ## 8.1 Done：已完成
 
+> 注释规范：新增 Graphics 代码必须包含解释性注释，优先说明协议字段、边界 Handler、序列化格式、状态同步和兼容性校验等设计意图。
+
+- [x] Feature Plan 支持 Decision rationale、Alternatives 和 Compatibility 的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，并通过 `graphicsFeaturePlanEdited` 同步回 Webview。
+
+- [x] Feature Plan 支持 Pipeline、Shader、Client lifecycle 三个正文区块的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，details 自动 trim/过滤空行，并通过 `graphicsFeaturePlanEdited` 同步回 Webview。
+- [x] Feature Plan 支持 Asset Contract 与 Performance Budget 的人工编辑；资产需求、校验规则和性能预算详情通过 revision 乐观并发控制写入 `workspaceState`，并同步回 Webview。
+
 - [x] 完成现有 Graphics 消息协议、Provider Registry、Workflow、Webview 状态与市场能力集成点盘点。
 - [x] 将 Graphics Workspace 修订为 Provider 无关的核心工作台，明确 RenderDoc 和 AssetStudio 均为可选能力。
 - [x] 在路线图中记录配套市场仓库地址 `H:\Project\vertex-code-market` 及相对路径 `..\vertex-code-market`。
@@ -1775,12 +1782,18 @@ Capture 对比前必须记录：
 - [x] 支持 Feature Plan 任务标题和完成条件的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，并将计划来源标记为 `manual`。
 - [x] 增加独立 Feature Plan 恢复消息；Workspace 挂载时读取已持久化计划，不再通过恢复流程重新生成计划。
 - [x] 增加恢复 Handler 和 Webview 回归覆盖，验证恢复只读取 `workspaceState` 并广播当前 revision。
+- [x] 支持 Feature Plan 标题和摘要的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，将来源标记为 `manual`，并通过 `graphicsFeaturePlanEdited` 同步回 Webview。
+- [x] Feature Plan 支持 Project Context、Open Questions、Risks 和 Acceptance Plan 的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，并通过 `graphicsFeaturePlanEdited` 同步回 Webview。
+- [x] 新增 Graphics 代码遵循解释性注释规范，协议字段、边界 Handler、序列化格式和状态同步逻辑均记录设计意图。
+- [x] 完成项目文件持久化第一阶段：Feature Brief 和 Feature Plan 写入 `.roo/graphics/feature-brief.json` 与 `.roo/graphics/feature-plan.json`，采用临时文件替换保证原子写入。
+- [x] Handler 优先读取项目文件，并在无工作区、文件缺失或 JSON 损坏时回退到 `workspaceState`；成功保存同时更新 `workspaceState` 缓存。
+- [x] 增加项目文件读写、无工作区、损坏文件回退和项目 Feature Brief 优先级测试；多窗口版本合并策略仍待后续实现。
 
 ## 8.2 TODO：未完成
 
 ### Graphics Workspace 与 Feature 开发主链路
 
-- [ ] 将当前 `workspaceState` Feature Brief 进一步升级为项目文件持久化和团队共享，并设计多窗口冲突与版本合并策略。
+- [ ] 在项目文件持久化第一阶段基础上补充团队共享场景的多窗口冲突检测、版本合并和文件变更监听策略。
 - [ ] 继续扩展 Graphics Architecture Index：解析 GUID 到实际 Render Pipeline/Renderer Data 资产的引用图、完整 Pass/Shader 符号、Importer 与命名规范、质量档位具体参数、资源加载/对象池/相机入口，并实现可复用相似 Feature 排名。
 - [ ] 将第一阶段规则式技术选型器升级为可配置规则包，引入市场 Knowledge/Skill/Provider 可用性、资源需求推导、成本预算、架构门禁和固定样本 Golden Test；支持人工覆盖并记录决策历史。
 - [ ] 在现有跨模块任务拆解基础上增加计划正文其他区块的人工编辑/覆盖、增量重生成、角色指派和实际 Agent 执行编排；当前已支持任务标题、完成条件和状态人工更新。

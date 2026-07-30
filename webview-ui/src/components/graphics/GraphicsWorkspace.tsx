@@ -230,6 +230,88 @@ const FeatureHome = () => {
 		})
 	}
 
+	const updatePlan = (title: string, briefSummary: string) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeaturePlan",
+			graphicsFeaturePlanTitle: title,
+			graphicsFeaturePlanBriefSummary: briefSummary,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	const updateAssetContract = (requirements: string[], validationRules: string[]) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeatureAssetContract",
+			graphicsFeatureAssetRequirements: requirements,
+			graphicsFeatureAssetValidationRules: validationRules,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	const updatePerformanceBudget = (summary: string, details: string[]) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeaturePerformanceBudget",
+			graphicsFeaturePerformanceBudgetSummary: summary,
+			graphicsFeaturePerformanceBudgetDetails: details,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	const updateDecision = (rationale: string[], alternatives: Array<{ level: string; reasonNotSelected: string }>) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeatureDecision",
+			graphicsFeatureDecisionRationale: rationale,
+			graphicsFeatureDecisionAlternatives: alternatives,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	const updateCompatibility = (compatibility: Array<{ target: string; strategy: string; fallback: string }>) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeatureCompatibility",
+			graphicsFeatureCompatibility: compatibility,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	/** Sends all editable planning-context sections with the revision currently visible in the Webview. */
+	const updatePlanContext = (context: {
+		projectContext: string[]
+		openQuestions: string[]
+		risks: GraphicsFeaturePlan["risks"]
+		acceptancePlan: GraphicsFeaturePlan["acceptancePlan"]
+	}) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeaturePlanContext",
+			graphicsFeatureProjectContext: context.projectContext,
+			graphicsFeatureOpenQuestions: context.openQuestions,
+			graphicsFeatureRisks: context.risks,
+			graphicsFeatureAcceptancePlan: context.acceptancePlan,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	const updatePlanSection = (
+		section: "pipelineDesign" | "shaderDesign" | "clientDesign",
+		summary: string,
+		details: string[],
+	) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: section,
+			graphicsFeaturePlanSectionSummary: summary,
+			graphicsFeaturePlanSectionDetails: details,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
 	const requestFeaturePlan = () => {
 		setPlanLoading(true)
 		vscode.postMessage({
@@ -333,6 +415,13 @@ const FeatureHome = () => {
 				loading={planLoading}
 				onTaskStatusChange={updateTaskStatus}
 				onTaskEdit={updateTask}
+				onPlanEdit={updatePlan}
+				onPlanSectionEdit={updatePlanSection}
+				onAssetContractEdit={updateAssetContract}
+				onPerformanceBudgetEdit={updatePerformanceBudget}
+				onDecisionEdit={updateDecision}
+				onCompatibilityEdit={updateCompatibility}
+				onPlanContextEdit={updatePlanContext}
 			/>
 
 			<div className="grid gap-3 md:grid-cols-2">

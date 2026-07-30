@@ -8,8 +8,10 @@
  */
 
 import type {
+	GraphicsFeatureAcceptanceCheck,
 	GraphicsFeatureBrief,
 	GraphicsFeaturePlan,
+	GraphicsFeatureRisk,
 	GraphicsFeatureTaskStatus,
 	GraphicsIntent,
 	GraphicsPlaybookId,
@@ -30,6 +32,8 @@ import {
 import { createGraphicsFeaturePlan } from "../../services/graphics-agent/planning/GraphicsFeaturePlanner"
 import { profileGraphicsProject } from "../../services/graphics-agent/planning/GraphicsProjectProfiler"
 import { selectGraphicsSolution } from "../../services/graphics-agent/planning/GraphicsSolutionSelector"
+import { GraphicsFeatureWorkspaceStore } from "../../services/graphics-agent/persistence/GraphicsFeatureWorkspaceStore"
+import type { GraphicsSolutionLevel } from "@roo-code/types"
 import type { GraphicsProviderCapabilities } from "../../services/graphics-provider/GraphicsProviderTypes"
 import {
 	orchestrateGraphicsKnowledge,
@@ -46,6 +50,37 @@ let graphicsRegistry: GraphicsProviderRegistry | null = null
 let graphicsOrchestrator: GraphicsWorkflowOrchestrator | null = null
 const GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY = "graphicsFeatureBrief"
 const GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY = "graphicsFeaturePlan"
+
+/** Creates the project-file store per request so tests and multiple workspaces never share path state. */
+function getGraphicsFeatureWorkspaceStore(provider: ClineProvider): GraphicsFeatureWorkspaceStore {
+	return new GraphicsFeatureWorkspaceStore(provider.cwd, (message) => provider.log(message))
+}
+
+/** Reads the project file first and falls back to workspaceState for legacy and no-workspace sessions. */
+async function loadGraphicsFeatureBrief(provider: ClineProvider): Promise<GraphicsFeatureBrief | undefined> {
+	const projectBrief = await getGraphicsFeatureWorkspaceStore(provider).loadBrief()
+	return (
+		projectBrief ?? provider.context.workspaceState.get<GraphicsFeatureBrief>(GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY)
+	)
+}
+
+/** Reads the team-shared plan first while keeping workspaceState as a fast compatibility cache. */
+async function loadGraphicsFeaturePlan(provider: ClineProvider): Promise<GraphicsFeaturePlan | undefined> {
+	const projectPlan = await getGraphicsFeatureWorkspaceStore(provider).loadPlan()
+	return projectPlan ?? provider.context.workspaceState.get<GraphicsFeaturePlan>(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY)
+}
+
+/** Updates both stores; project persistence is best-effort so it cannot break existing Webview behavior. */
+async function saveGraphicsFeatureBrief(provider: ClineProvider, brief: GraphicsFeatureBrief): Promise<void> {
+	await provider.context.workspaceState.update(GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY, brief)
+	await getGraphicsFeatureWorkspaceStore(provider).saveBrief(brief)
+}
+
+/** Keeps workspaceState warm while atomically publishing the same revision to the project file. */
+async function saveGraphicsFeaturePlan(provider: ClineProvider, plan: GraphicsFeaturePlan): Promise<void> {
+	await provider.context.workspaceState.update(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY, plan)
+	await getGraphicsFeatureWorkspaceStore(provider).savePlan(plan)
+}
 
 /**
  * Get or create the graphics provider registry.
@@ -137,15 +172,41 @@ export async function handleGraphicsMessage(provider: ClineProvider, message: We
 			await handleUpdateGraphicsFeatureTask(provider, message)
 			return true
 
+		case "updateGraphicsFeaturePlan":
+			await handleUpdateGraphicsFeaturePlan(provider, message)
+			return true
+
+		case "updateGraphicsFeaturePlanSection":
+			await handleUpdateGraphicsFeaturePlanSection(provider, message)
+			return true
+
+		case "updateGraphicsFeatureAssetContract":
+			await handleUpdateGraphicsFeatureAssetContract(provider, message)
+			return true
+
+		case "updateGraphicsFeaturePerformanceBudget":
+			await handleUpdateGraphicsFeaturePerformanceBudget(provider, message)
+			return true
+
+		case "updateGraphicsFeatureDecision":
+			await handleUpdateGraphicsFeatureDecision(provider, message)
+			return true
+
+		case "updateGraphicsFeatureCompatibility":
+			await handleUpdateGraphicsFeatureCompatibility(provider, message)
+			return true
+
+		case "updateGraphicsFeaturePlanContext":
+			await handleUpdateGraphicsFeaturePlanContext(provider, message)
+			return true
+
 		default:
 			return false
 	}
 }
 
 async function handleRequestGraphicsFeatureBrief(provider: ClineProvider): Promise<void> {
-	const graphicsFeatureBrief = provider.context.workspaceState.get<GraphicsFeatureBrief>(
-		GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY,
-	)
+	const graphicsFeatureBrief = await loadGraphicsFeatureBrief(provider)
 	await provider.postMessageToWebview({ type: "graphicsFeatureBrief", graphicsFeatureBrief })
 }
 
@@ -155,7 +216,7 @@ async function handleSaveGraphicsFeatureBrief(provider: ClineProvider, message: 
 		return
 	}
 
-	await provider.context.workspaceState.update(GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY, message.graphicsFeatureBrief)
+	await saveGraphicsFeatureBrief(provider, message.graphicsFeatureBrief)
 	await provider.postMessageToWebview({
 		type: "graphicsFeatureBrief",
 		graphicsFeatureBrief: message.graphicsFeatureBrief,
@@ -197,18 +258,52 @@ async function handleRequestGraphicsFeaturePlan(provider: ClineProvider, message
 		graphicsProjectProfile,
 		graphicsSolutionRecommendation,
 	)
-	await provider.context.workspaceState.update(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY, graphicsFeaturePlan)
+	await saveGraphicsFeaturePlan(provider, graphicsFeaturePlan)
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlan", graphicsFeaturePlan })
 }
 
 async function handleRequestGraphicsFeaturePlanRecovery(provider: ClineProvider): Promise<void> {
-	const graphicsFeaturePlan = provider.context.workspaceState.get<GraphicsFeaturePlan>(
-		GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY,
-	)
+	const graphicsFeaturePlan = await loadGraphicsFeaturePlan(provider)
 	await provider.postMessageToWebview({
 		type: "graphicsFeaturePlanRecovered",
 		graphicsFeaturePlan,
 	})
+}
+
+const GRAPHICS_SOLUTION_LEVELS: readonly GraphicsSolutionLevel[] = [
+	"configuration",
+	"shader",
+	"renderer-pass",
+	"post-process",
+	"render-graph",
+	"compute",
+	"cpu-client",
+]
+
+function isGraphicsSolutionLevel(value: unknown): value is GraphicsSolutionLevel {
+	return GRAPHICS_SOLUTION_LEVELS.includes(value as GraphicsSolutionLevel)
+}
+
+/** Keeps manually edited risk rows inside the domain model's supported impact vocabulary. */
+function isGraphicsFeatureRiskImpact(value: unknown): value is GraphicsFeatureRisk["impact"] {
+	return value === "high" || value === "medium" || value === "low"
+}
+
+/** Keeps acceptance checks interoperable with downstream evidence collection and reporting. */
+function isGraphicsFeatureAcceptanceDimension(value: unknown): value is GraphicsFeatureAcceptanceCheck["dimension"] {
+	return value === "visual" || value === "functional" || value === "performance" || value === "compatibility"
+}
+
+/** Rejects unsupported evidence labels before they are persisted in workspaceState. */
+function isGraphicsFeatureAcceptanceEvidence(value: unknown): value is GraphicsFeatureAcceptanceCheck["evidence"] {
+	return (
+		value === "screenshot" ||
+		value === "automated-test" ||
+		value === "build" ||
+		value === "profiler" ||
+		value === "capture" ||
+		value === "device-test"
+	)
 }
 
 function isGraphicsFeatureTaskStatus(value: unknown): value is GraphicsFeatureTaskStatus {
@@ -224,7 +319,7 @@ function isGraphicsFeatureTaskStatus(value: unknown): value is GraphicsFeatureTa
 async function handleUpdateGraphicsFeatureTaskStatus(provider: ClineProvider, message: WebviewMessage): Promise<void> {
 	const taskId = message.graphicsFeatureTaskId
 	const status = message.graphicsFeatureTaskStatus
-	const plan = provider.context.workspaceState.get<GraphicsFeaturePlan>(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY)
+	const plan = await loadGraphicsFeaturePlan(provider)
 
 	if (!plan || plan.version !== 1 || !taskId || !isGraphicsFeatureTaskStatus(status)) {
 		provider.log("[Graphics] updateGraphicsFeatureTaskStatus: missing or invalid plan/task/status")
@@ -260,7 +355,7 @@ async function handleUpdateGraphicsFeatureTaskStatus(provider: ClineProvider, me
 				: task,
 		),
 	}
-	await provider.context.workspaceState.update(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY, updatedPlan)
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanUpdated", graphicsFeaturePlan: updatedPlan })
 }
 
@@ -268,7 +363,7 @@ async function handleUpdateGraphicsFeatureTask(provider: ClineProvider, message:
 	const taskId = message.graphicsFeatureTaskId
 	const title = message.graphicsFeatureTaskTitle?.trim()
 	const completionConditions = message.graphicsFeatureTaskCompletionConditions
-	const plan = provider.context.workspaceState.get<GraphicsFeaturePlan>(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY)
+	const plan = await loadGraphicsFeaturePlan(provider)
 
 	if (!plan || plan.version !== 1 || !taskId || (!title && !completionConditions)) {
 		provider.log("[Graphics] updateGraphicsFeatureTask: missing or invalid plan/task fields")
@@ -311,7 +406,315 @@ async function handleUpdateGraphicsFeatureTask(provider: ClineProvider, message:
 				: candidate,
 		),
 	}
-	await provider.context.workspaceState.update(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY, updatedPlan)
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+async function handleUpdateGraphicsFeaturePlan(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const title = message.graphicsFeaturePlanTitle?.trim()
+	const briefSummary = message.graphicsFeaturePlanBriefSummary?.trim()
+
+	if (!plan || plan.version !== 1 || (title === undefined && briefSummary === undefined)) {
+		provider.log("[Graphics] updateGraphicsFeaturePlan: missing or invalid plan fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this edit was applied.",
+		})
+		return
+	}
+
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		...(title !== undefined ? { title } : {}),
+		...(briefSummary !== undefined ? { briefSummary } : {}),
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+async function handleUpdateGraphicsFeaturePlanSection(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const sectionKey = message.graphicsFeaturePlanSection
+	const summary = message.graphicsFeaturePlanSectionSummary?.trim()
+	const details = message.graphicsFeaturePlanSectionDetails
+
+	if (
+		!plan ||
+		plan.version !== 1 ||
+		(sectionKey !== "pipelineDesign" && sectionKey !== "shaderDesign" && sectionKey !== "clientDesign") ||
+		(summary === undefined && details === undefined)
+	) {
+		provider.log("[Graphics] updateGraphicsFeaturePlanSection: missing or invalid section fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this section edit was applied.",
+		})
+		return
+	}
+
+	const currentSection = plan[sectionKey]
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		[sectionKey]: {
+			...currentSection,
+			...(summary !== undefined ? { summary } : {}),
+			...(details !== undefined ? { details: details.map((detail) => detail.trim()).filter(Boolean) } : {}),
+		},
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+async function handleUpdateGraphicsFeatureAssetContract(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const requirements = message.graphicsFeatureAssetRequirements
+	const validationRules = message.graphicsFeatureAssetValidationRules
+
+	if (!plan || plan.version !== 1 || (requirements === undefined && validationRules === undefined)) {
+		provider.log("[Graphics] updateGraphicsFeatureAssetContract: missing or invalid fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this asset contract edit was applied.",
+		})
+		return
+	}
+
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		assetContract: {
+			...plan.assetContract,
+			...(requirements !== undefined
+				? { requirements: requirements.map((item) => item.trim()).filter(Boolean) }
+				: {}),
+			...(validationRules !== undefined
+				? { validationRules: validationRules.map((item) => item.trim()).filter(Boolean) }
+				: {}),
+		},
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+async function handleUpdateGraphicsFeaturePerformanceBudget(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const summary = message.graphicsFeaturePerformanceBudgetSummary?.trim()
+	const details = message.graphicsFeaturePerformanceBudgetDetails
+
+	if (!plan || plan.version !== 1 || (summary === undefined && details === undefined)) {
+		provider.log("[Graphics] updateGraphicsFeaturePerformanceBudget: missing or invalid fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this performance budget edit was applied.",
+		})
+		return
+	}
+
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		performanceBudget: {
+			...plan.performanceBudget,
+			...(summary !== undefined ? { summary } : {}),
+			...(details !== undefined ? { details: details.map((item) => item.trim()).filter(Boolean) } : {}),
+		},
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+async function handleUpdateGraphicsFeatureDecision(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const rationale = message.graphicsFeatureDecisionRationale
+	const alternatives = message.graphicsFeatureDecisionAlternatives
+	if (!plan || plan.version !== 1 || (rationale === undefined && alternatives === undefined)) {
+		provider.log("[Graphics] updateGraphicsFeatureDecision: missing or invalid fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this decision edit was applied.",
+		})
+		return
+	}
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		decision: {
+			...plan.decision,
+			...(rationale !== undefined ? { rationale: rationale.map((item) => item.trim()).filter(Boolean) } : {}),
+			...(alternatives !== undefined
+				? {
+						alternatives: alternatives
+							.map((alternative) => ({
+								level: alternative.level.trim(),
+								reasonNotSelected: alternative.reasonNotSelected.trim(),
+							}))
+							.filter(
+								(
+									alternative,
+								): alternative is {
+									level: GraphicsFeaturePlan["decision"]["recommendedLevel"]
+									reasonNotSelected: string
+								} =>
+									isGraphicsSolutionLevel(alternative.level) &&
+									Boolean(alternative.reasonNotSelected),
+							),
+					}
+				: {}),
+		},
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+/**
+ * Validates and persists the editable planning-context sections as one atomic plan revision.
+ * Keeping these related fields in one message prevents partial updates from mixing revisions.
+ */
+async function handleUpdateGraphicsFeaturePlanContext(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const projectContext = message.graphicsFeatureProjectContext
+	const openQuestions = message.graphicsFeatureOpenQuestions
+	const risks = message.graphicsFeatureRisks
+	const acceptancePlan = message.graphicsFeatureAcceptancePlan
+
+	if (
+		!plan ||
+		plan.version !== 1 ||
+		(projectContext === undefined &&
+			openQuestions === undefined &&
+			risks === undefined &&
+			acceptancePlan === undefined)
+	) {
+		provider.log("[Graphics] updateGraphicsFeaturePlanContext: missing or invalid fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this context edit was applied.",
+		})
+		return
+	}
+
+	const normalizeList = (items: string[]) => items.map((item) => item.trim()).filter(Boolean)
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		...(projectContext !== undefined ? { projectContext: normalizeList(projectContext) } : {}),
+		...(openQuestions !== undefined ? { openQuestions: normalizeList(openQuestions) } : {}),
+		...(risks !== undefined
+			? {
+					risks: risks
+						.map((risk) => ({
+							...risk,
+							id: risk.id.trim(),
+							title: risk.title.trim(),
+							mitigation: risk.mitigation.trim(),
+							reviewGate: risk.reviewGate?.trim() || undefined,
+						}))
+						.filter(
+							(risk) =>
+								Boolean(risk.id && risk.title && risk.mitigation) &&
+								isGraphicsFeatureRiskImpact(risk.impact),
+						),
+				}
+			: {}),
+		...(acceptancePlan !== undefined
+			? {
+					acceptancePlan: acceptancePlan
+						.map((check) => ({
+							...check,
+							id: check.id.trim(),
+							criterion: check.criterion.trim(),
+						}))
+						.filter(
+							(check) =>
+								Boolean(check.id && check.criterion) &&
+								isGraphicsFeatureAcceptanceDimension(check.dimension) &&
+								isGraphicsFeatureAcceptanceEvidence(check.evidence),
+						),
+				}
+			: {}),
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+}
+
+/** Persists compatibility rows while preserving unrelated plan sections and the optimistic revision contract. */
+async function handleUpdateGraphicsFeatureCompatibility(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const plan = await loadGraphicsFeaturePlan(provider)
+	const compatibility = message.graphicsFeatureCompatibility
+	if (!plan || plan.version !== 1 || compatibility === undefined) {
+		provider.log("[Graphics] updateGraphicsFeatureCompatibility: missing or invalid fields")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanConflict",
+			graphicsFeaturePlan: plan,
+			graphicsFeaturePlanError: "The plan changed before this compatibility edit was applied.",
+		})
+		return
+	}
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+		compatibility: compatibility
+			.map((target) => ({
+				target: target.target.trim(),
+				strategy: target.strategy.trim(),
+				fallback: target.fallback.trim(),
+			}))
+			.filter((target) => target.target && target.strategy && target.fallback),
+	}
+	await saveGraphicsFeaturePlan(provider, updatedPlan)
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 

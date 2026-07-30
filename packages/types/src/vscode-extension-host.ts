@@ -643,6 +643,13 @@ export interface WebviewMessage {
 		| "requestGraphicsFeaturePlanRecovery"
 		| "updateGraphicsFeatureTaskStatus"
 		| "updateGraphicsFeatureTask"
+		| "updateGraphicsFeaturePlan"
+		| "updateGraphicsFeaturePlanSection"
+		| "updateGraphicsFeatureAssetContract"
+		| "updateGraphicsFeaturePerformanceBudget"
+		| "updateGraphicsFeatureDecision"
+		| "updateGraphicsFeatureCompatibility"
+		| "updateGraphicsFeaturePlanContext"
 	text?: string
 	taskId?: string
 	editedMessageContent?: string
@@ -719,6 +726,36 @@ export interface WebviewMessage {
 	graphicsFeatureTaskStatusNote?: string
 	graphicsFeatureTaskTitle?: string
 	graphicsFeatureTaskCompletionConditions?: string[]
+	graphicsFeaturePlanTitle?: string
+	graphicsFeaturePlanBriefSummary?: string
+	graphicsFeaturePlanSection?: "pipelineDesign" | "shaderDesign" | "clientDesign"
+	graphicsFeaturePlanSectionSummary?: string
+	graphicsFeaturePlanSectionDetails?: string[]
+	graphicsFeatureAssetRequirements?: string[]
+	graphicsFeatureAssetValidationRules?: string[]
+	graphicsFeaturePerformanceBudgetSummary?: string
+	graphicsFeaturePerformanceBudgetDetails?: string[]
+	graphicsFeatureDecisionRationale?: string[]
+	graphicsFeatureDecisionAlternatives?: Array<{ level: string; reasonNotSelected: string }>
+	graphicsFeatureCompatibility?: Array<{ target: string; strategy: string; fallback: string }>
+	/** Editable project context and unresolved questions from the planning phase. */
+	graphicsFeatureProjectContext?: string[]
+	graphicsFeatureOpenQuestions?: string[]
+	/** Editable risk rows; impact must remain one of the domain risk levels. */
+	graphicsFeatureRisks?: Array<{
+		id: string
+		title: string
+		impact: "high" | "medium" | "low"
+		mitigation: string
+		reviewGate?: string
+	}>
+	/** Editable acceptance checks used to validate visual, functional, performance, and compatibility outcomes. */
+	graphicsFeatureAcceptancePlan?: Array<{
+		id: string
+		dimension: "visual" | "functional" | "performance" | "compatibility"
+		criterion: string
+		evidence: "screenshot" | "automated-test" | "build" | "profiler" | "capture" | "device-test"
+	}>
 	graphicsFeaturePlanRevision?: number
 	useProviderSignup?: boolean // For rooCloudSignIn to use provider signup flow
 	codeIndexSettings?: {

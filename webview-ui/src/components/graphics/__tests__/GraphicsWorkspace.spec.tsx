@@ -324,6 +324,153 @@ describe("GraphicsWorkspace", () => {
 		).toBeInTheDocument()
 		expect(screen.getByLabelText("T2 title")).toHaveValue("Validate feature")
 		expect(screen.getByText(/Depends on: T1/)).toBeInTheDocument()
+		const planTitle = screen.getByLabelText("Feature plan title")
+		fireEvent.change(planTitle, { target: { value: "Android outline implementation" } })
+		fireEvent.blur(planTitle)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePlan",
+			graphicsFeaturePlanTitle: "Android outline implementation",
+			graphicsFeaturePlanBriefSummary: "Readable outline",
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const planSummary = screen.getByLabelText("Feature plan summary")
+		fireEvent.change(planSummary, { target: { value: "Validated outline for Android Vulkan" } })
+		fireEvent.blur(planSummary)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePlan",
+			graphicsFeaturePlanTitle: "Android outline implementation",
+			graphicsFeaturePlanBriefSummary: "Validated outline for Android Vulkan",
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const decisionRationale = screen.getByLabelText("Decision rationale")
+		fireEvent.change(decisionRationale, { target: { value: "Prefer existing pass\nAvoid pipeline fork" } })
+		fireEvent.blur(decisionRationale)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeatureDecision",
+			graphicsFeatureDecisionRationale: ["Prefer existing pass", "Avoid pipeline fork"],
+			graphicsFeatureDecisionAlternatives: [],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const decisionAlternatives = screen.getByLabelText("Decision alternatives")
+		fireEvent.change(decisionAlternatives, { target: { value: "shader | Avoid extra variant" } })
+		fireEvent.blur(decisionAlternatives)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeatureDecision",
+			graphicsFeatureDecisionRationale: ["Prefer existing pass", "Avoid pipeline fork"],
+			graphicsFeatureDecisionAlternatives: [{ level: "shader", reasonNotSelected: "Avoid extra variant" }],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const compatibilityTargets = screen.getByLabelText("Compatibility targets")
+		fireEvent.change(compatibilityTargets, { target: { value: "Android | Vulkan | Disable\nPC | DX12 | Full" } })
+		fireEvent.blur(compatibilityTargets)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeatureCompatibility",
+			graphicsFeatureCompatibility: [
+				{ target: "Android", strategy: "Vulkan", fallback: "Disable" },
+				{ target: "PC", strategy: "DX12", fallback: "Full" },
+			],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const performanceSummary = screen.getByLabelText("Performance budget summary")
+		fireEvent.change(performanceSummary, { target: { value: "Under 0.5 ms" } })
+		fireEvent.blur(performanceSummary)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePerformanceBudget",
+			graphicsFeaturePerformanceBudgetSummary: "Under 0.5 ms",
+			graphicsFeaturePerformanceBudgetDetails: ["Measure GPU"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const assetRequirements = screen.getByLabelText("Asset requirements")
+		fireEvent.change(assetRequirements, { target: { value: "Width and color\nTexture atlas" } })
+		fireEvent.blur(assetRequirements)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeatureAssetContract",
+			graphicsFeatureAssetRequirements: ["Width and color", "Texture atlas"],
+			graphicsFeatureAssetValidationRules: ["Valid ranges"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const pipelineSummary = screen.getByLabelText("Pipeline summary")
+		fireEvent.change(pipelineSummary, { target: { value: "Edited pipeline design" } })
+		fireEvent.blur(pipelineSummary)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "pipelineDesign",
+			graphicsFeaturePlanSectionSummary: "Edited pipeline design",
+			graphicsFeaturePlanSectionDetails: ["After opaques"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const shaderDetails = screen.getByLabelText("Shader details")
+		fireEvent.change(shaderDetails, { target: { value: "Read depth\nSample normals" } })
+		fireEvent.blur(shaderDetails)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "shaderDesign",
+			graphicsFeaturePlanSectionSummary: "Fullscreen shader.",
+			graphicsFeaturePlanSectionDetails: ["Read depth", "Sample normals"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const clientSummary = screen.getByLabelText("Client lifecycle summary")
+		fireEvent.change(clientSummary, { target: { value: "Edited client lifecycle" } })
+		fireEvent.blur(clientSummary)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith({
+			type: "updateGraphicsFeaturePlanSection",
+			graphicsFeaturePlanSection: "clientDesign",
+			graphicsFeaturePlanSectionSummary: "Edited client lifecycle",
+			graphicsFeaturePlanSectionDetails: ["Enable and disable"],
+			graphicsFeaturePlanRevision: 1,
+		})
+
+		const projectContext = screen.getByLabelText("Project context")
+		fireEvent.change(projectContext, { target: { value: "Unity URP\nAndroid Vulkan" } })
+		fireEvent.blur(projectContext)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				type: "updateGraphicsFeaturePlanContext",
+				graphicsFeatureProjectContext: ["Unity URP", "Android Vulkan"],
+				graphicsFeatureOpenQuestions: [""],
+				graphicsFeaturePlanRevision: 1,
+			}),
+		)
+
+		const planRisks = screen.getByLabelText("Plan risks")
+		fireEvent.change(planRisks, { target: { value: "R1 | Ordering | high | Prototype | Review before merge" } })
+		fireEvent.blur(planRisks)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				type: "updateGraphicsFeaturePlanContext",
+				graphicsFeatureRisks: [
+					{
+						id: "R1",
+						title: "Ordering",
+						impact: "high",
+						mitigation: "Prototype",
+						reviewGate: "Review before merge",
+					},
+				],
+			}),
+		)
+
+		const acceptancePlan = screen.getByLabelText("Acceptance plan")
+		fireEvent.change(acceptancePlan, { target: { value: "A1 | visual | Matches reference | screenshot" } })
+		fireEvent.blur(acceptancePlan)
+		expect(vscode.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				type: "updateGraphicsFeaturePlanContext",
+				graphicsFeatureAcceptancePlan: [
+					{ id: "A1", dimension: "visual", criterion: "Matches reference", evidence: "screenshot" },
+				],
+			}),
+		)
+
 		const taskTitle = screen.getByLabelText("T2 title")
 		fireEvent.change(taskTitle, { target: { value: "Validate on Android" } })
 		fireEvent.blur(taskTitle)
