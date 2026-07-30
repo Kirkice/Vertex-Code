@@ -2,6 +2,7 @@ import * as fs from "fs/promises"
 import * as path from "path"
 import type { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
 import { getGlobalRooDirectory } from "../roo-config"
+import { KNOWLEDGE_DIR } from "../knowledge/knowledgeLoader"
 import type { KnowledgeSourceType } from "./types"
 
 export interface RagDocumentSource {
@@ -41,14 +42,27 @@ export async function discoverRagDocuments(
 	workspacePath: string,
 	ignoreController?: RooIgnoreController,
 ): Promise<RagDocumentSource[]> {
-	return discoverRagDocumentsFromRoots(
-		[
-			{ path: workspacePath, sourceType: "markdown", basePath: workspacePath },
-			{ path: path.join(getGlobalRooDirectory(), "knowledge"), sourceType: "knowledge" },
-		],
-		workspacePath,
-		ignoreController,
-	)
+	return discoverRagDocumentsFromRoots(defaultRagDocumentRoots(workspacePath), workspacePath, ignoreController)
+}
+
+/**
+ * Builds the default RAG document roots: the workspace itself plus the
+ * global (`~/.roo/knowledge`) and built-in bundled knowledge directories.
+ * Duplicate root paths are removed so overlapping locations are not scanned twice.
+ */
+export function defaultRagDocumentRoots(workspacePath: string): RagDocumentRoot[] {
+	const roots: RagDocumentRoot[] = [
+		{ path: workspacePath, sourceType: "markdown", basePath: workspacePath },
+		{ path: path.join(getGlobalRooDirectory(), "knowledge"), sourceType: "knowledge" },
+		{ path: KNOWLEDGE_DIR, sourceType: "knowledge" },
+	]
+	const seen = new Set<string>()
+	return roots.filter((root) => {
+		const key = path.resolve(root.path)
+		if (seen.has(key)) return false
+		seen.add(key)
+		return true
+	})
 }
 
 export async function discoverRagDocumentsFromRoots(
@@ -56,22 +70,33 @@ export async function discoverRagDocumentsFromRoots(
 	workspacePath: string,
 	ignoreController?: RooIgnoreController,
 ): Promise<RagDocumentSource[]> {
-	const files: string[] = []
 	const sources: RagDocumentSource[] = []
+	const seen = new Set<string>()
 	for (const root of roots) {
-		files.length = 0
+		const files: string[] = []
 		await walk(root.path, files)
-		const basePath = root.basePath ?? workspacePath
-		const relativeFiles = files.map((filePath) => path.relative(basePath, filePath))
-		const allowedFiles = ignoreController ? ignoreController.filterPaths(relativeFiles) : relativeFiles
-		for (const relativePath of allowedFiles) {
-			const extension = path.extname(relativePath).toLowerCase()
+		const isWorkspaceRoot = path.resolve(root.path) === path.resolve(workspacePath)
+		for (const absolutePath of files) {
+			const extension = path.extname(absolutePath).toLowerCase()
 			const sourceType = root.sourceType === "knowledge" ? "knowledge" : EXTENSIONS.get(extension)
 			if (!sourceType) continue
-			sources.push({
-				path: path.resolve(root.path, path.relative(root.path, path.join(basePath, relativePath))),
-				sourceType,
-			})
+			if (isWorkspaceRoot) {
+				// Workspace files are stored relative to the workspace and optionally
+				// filtered by .rooignore.
+				const relativePath = path.relative(workspacePath, absolutePath)
+				if (ignoreController && !ignoreController.filterPaths([relativePath]).length) continue
+				if (!seen.has(relativePath)) {
+					seen.add(relativePath)
+					sources.push({ path: relativePath, sourceType })
+				}
+			} else {
+				// External knowledge roots are outside the workspace ignore scope and
+				// stored as absolute paths.
+				if (!seen.has(absolutePath)) {
+					seen.add(absolutePath)
+					sources.push({ path: absolutePath, sourceType })
+				}
+			}
 		}
 	}
 	return sources

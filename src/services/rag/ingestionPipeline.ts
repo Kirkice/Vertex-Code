@@ -87,6 +87,7 @@ export class IngestionPipeline {
 							endLine: node.endLine,
 							nodeId: node.id,
 							sourceType: options.sourceType,
+							contentHash: node.contentHash,
 						},
 					})
 				}

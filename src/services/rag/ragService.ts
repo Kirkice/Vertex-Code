@@ -1,9 +1,10 @@
 import type { IEmbedder, IVectorStore } from "../code-index/interfaces"
 import { formatCitations, toSources } from "./citationFormatter"
+import { RAG_DEFAULTS } from "./config"
 import { VectorRetriever } from "./retriever"
 import { vectorResultToNode, type RagQueryOptions, type RagQueryResult } from "./types"
 
-const DEFAULT_MAX_CONTEXT_TOKENS = 4000
+export const DEFAULT_MAX_CONTEXT_TOKENS = RAG_DEFAULTS.maxContextTokens
 
 function estimateTokens(text: string): number {
 	return Math.ceil(text.length / 4)
@@ -26,7 +27,7 @@ export class RagService {
 
 		for (const result of retrieved) {
 			const tokens = estimateTokens(result.node.text)
-			if (selected.length > 0 && tokenCount + tokens > maxTokens) break
+			if (tokenCount + tokens > maxTokens) continue
 			selected.push(result)
 			tokenCount += tokens
 		}

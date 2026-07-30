@@ -39,6 +39,24 @@ vi.mock("os-name", () => ({
 
 vi.mock("fs/promises")
 
+vi.mock("../../../services/code-index/manager", () => ({
+	CodeIndexManager: {
+		getInstance: vi.fn(),
+	},
+}))
+
+vi.mock("../../../services/knowledge", () => ({
+	buildKnowledgeContextBlock: vi.fn(),
+}))
+
+vi.mock("../../../services/rag", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../../../services/rag")>()
+	return {
+		...actual,
+		buildRagContextBlock: vi.fn(),
+	}
+})
+
 import * as vscode from "vscode"
 
 import { ModeConfig } from "@roo-code/types"
@@ -49,6 +67,9 @@ import { defaultModeSlug, modes, Mode } from "../../../shared/modes"
 import "../../../utils/path"
 import { addCustomInstructions } from "../sections/custom-instructions"
 import { MultiSearchReplaceDiffStrategy } from "../../diff/strategies/multi-search-replace"
+import { CodeIndexManager } from "../../../services/code-index/manager"
+import { buildKnowledgeContextBlock } from "../../../services/knowledge"
+import { buildRagContextBlock } from "../../../services/rag"
 
 // Mock the sections
 vi.mock("../sections/modes", () => ({
@@ -123,6 +144,7 @@ vi.mock("vscode", () => ({
 	workspace: {
 		workspaceFolders: [{ uri: { fsPath: "/test/path" } }],
 		getWorkspaceFolder: vi.fn().mockReturnValue({ uri: { fsPath: "/test/path" } }),
+		getConfiguration: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(false) }),
 	},
 	window: {
 		activeTextEditor: undefined,
@@ -201,6 +223,11 @@ describe("SYSTEM_PROMPT", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		vi.mocked(buildKnowledgeContextBlock).mockReturnValue("")
+		vi.mocked(CodeIndexManager.getInstance).mockReturnValue(undefined)
+		;(vscode.workspace as any).getConfiguration = vi.fn().mockReturnValue({
+			get: vi.fn().mockReturnValue(false),
+		})
 	})
 
 	afterEach(async () => {
@@ -286,6 +313,7 @@ describe("SYSTEM_PROMPT", () => {
 					fsPath: "/test/path",
 				},
 			}),
+			getConfiguration: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(false) }),
 		}
 		vscode.window = {
 			activeTextEditor: undefined,
@@ -329,6 +357,7 @@ describe("SYSTEM_PROMPT", () => {
 					fsPath: "/test/path",
 				},
 			}),
+			getConfiguration: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(false) }),
 		}
 		vscode.window = {
 			activeTextEditor: undefined,
@@ -569,6 +598,112 @@ describe("SYSTEM_PROMPT", () => {
 		expect(prompt).toContain("RULES")
 		expect(prompt).toContain("SYSTEM INFORMATION")
 		expect(prompt).toContain("OBJECTIVE")
+	})
+
+	it("keeps static knowledge when dynamic RAG retrieval fails", async () => {
+		vi.mocked(buildKnowledgeContextBlock).mockReturnValue("<knowledge-context>static evidence</knowledge-context>")
+		;(vscode.workspace as any).getConfiguration = vi.fn().mockReturnValue({
+			get: vi.fn().mockReturnValue(true),
+		})
+		vi.mocked(CodeIndexManager.getInstance).mockReturnValue({ getRagService: () => ({}) } as any)
+		vi.mocked(buildRagContextBlock).mockRejectedValue(new Error("vector store unavailable"))
+
+		const prompt = await SYSTEM_PROMPT(
+			mockContext,
+			"/test/path",
+			false,
+			undefined,
+			undefined,
+			defaultModeSlug,
+			undefined,
+			undefined,
+			undefined,
+			experiments,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			"How does workspace policy work?",
+		)
+
+		expect(prompt).toContain("<knowledge-context>static evidence</knowledge-context>")
+		expect(prompt).not.toContain("<rag-context>")
+	})
+
+	it("passes configured retrieval limits to dynamic RAG", async () => {
+		;(vscode.workspace as any).getConfiguration = vi.fn().mockReturnValue({
+			get: vi.fn((key: string, defaultValue: unknown) => {
+				const values: Record<string, unknown> = {
+					"rag.enabled": true,
+					"rag.topK": 9,
+					"rag.minScore": 0.7,
+					"rag.maxContextTokens": 4200,
+				}
+				return values[key] ?? defaultValue
+			}),
+		})
+		const ragService = {}
+		vi.mocked(CodeIndexManager.getInstance).mockReturnValue({ getRagService: () => ragService } as any)
+		vi.mocked(buildRagContextBlock).mockResolvedValue({
+			block: "<rag-context>dynamic evidence</rag-context>",
+			result: { context: "", nodes: [], sources: [], retrievalMode: "vector", diagnostics: {} },
+		} as any)
+
+		const prompt = await SYSTEM_PROMPT(
+			mockContext,
+			"/test/path",
+			false,
+			undefined,
+			undefined,
+			defaultModeSlug,
+			undefined,
+			undefined,
+			undefined,
+			experiments,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			"Find workspace policy",
+		)
+
+		expect(buildRagContextBlock).toHaveBeenCalledWith(ragService, "Find workspace policy", {
+			topK: 9,
+			minScore: 0.7,
+			maxTokens: 4200,
+		})
+		expect(prompt).toContain("<rag-context>dynamic evidence</rag-context>")
+	})
+
+	it("keeps static knowledge when RAG is disabled", async () => {
+		vi.mocked(buildKnowledgeContextBlock).mockReturnValue("static fallback")
+
+		const prompt = await SYSTEM_PROMPT(
+			mockContext,
+			"/test/path",
+			false,
+			undefined,
+			undefined,
+			defaultModeSlug,
+			undefined,
+			undefined,
+			undefined,
+			experiments,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			"Find relevant workspace knowledge",
+		)
+
+		expect(prompt).toContain("static fallback")
+		expect(buildRagContextBlock).not.toHaveBeenCalled()
 	})
 
 	afterAll(() => {

@@ -546,12 +546,36 @@ The first milestone should be a working local vector retrieval path with increme
 - [x] Rebuilt the shared types package and verified the workspace with `pnpm check-types`.
 - [x] Added explicit global `~/.roo/knowledge` discovery alongside workspace documents.
 - [x] Updated ingestion path handling so external knowledge roots retain stable absolute source paths.
+- [x] Added the built-in bundled knowledge directory as an explicit RAG source root via [`defaultRagDocumentRoots()`](../src/services/rag/documentSources.ts:53).
+- [x] Added multi-root document discovery unit tests covering workspace, external, dedup, and ignore filtering.
+- [x] Added ingestion pipeline unit tests covering skip-unchanged, stale deletion, re-embed, cancellation, max file size, and external absolute paths.
+- [x] Added user-facing status/progress feedback for [`ragRebuild`](../src/activate/registerCommands.ts:197), [`ragClear`](../src/activate/registerCommands.ts:211), and [`ragStatus`](../src/activate/registerCommands.ts:227) commands.
+- [x] Added [`VectorRetriever`](../src/services/rag/retriever.ts:4) unit tests covering embedding, missing embedding, sourceType filtering, deduplication, and topK/minScore/directoryPrefix pass-through.
+- [x] Added [`RagService`](../src/services/rag/ragService.ts:13) unit tests covering bounded context, token-budget truncation, and `querySafely` fallback.
+- [x] Added [`buildRagContextBlock()`](../src/services/rag/ragService.ts:59) unit tests covering source block formatting and empty-result handling.
+- [x] Verified the full RAG test suite (26 tests across 5 files) and `pnpm check-types` pass.
+- [x] Added fake-timer tests for [`CodeIndexManager.refreshRagIngestion()`](../src/services/code-index/manager.ts:395) covering debounce coalescing, disabled-RAG behavior, pending timer cancellation, and active ingestion abort.
+- [x] Exported [`getCommandsMap()`](../src/activate/registerCommands.ts:71) as a test seam and added command handler tests for rebuild, clear, status, unavailable-manager warnings, success feedback, and failure feedback.
+- [x] Verified the manager and command suites (31 tests across 2 files) and `pnpm check-types` pass.
+- [x] Extracted [`ingestRagDocuments()`](../src/services/code-index/manager.ts:22) as a testable manager ingestion boundary while retaining the same background manager behavior.
+- [x] Added manager ingestion integration tests covering real multi-root discovery, source grouping, embedding/upsert, absolute external knowledge paths, per-source manifest persistence, and pre-start cancellation.
+- [x] Added system prompt integration tests confirming static knowledge survives disabled RAG and dynamic retrieval failures.
+- [x] Verified the combined RAG, manager, command, and prompt suites (72 tests across 9 files) and `pnpm check-types` pass.
+- [x] Added a deterministic in-memory retrieval quality fixture with fixed corpus/query mappings and Hit@1, MRR, and unrelated-query rejection gates.
+- [x] Tuned the first measured defaults to 4,000-character chunks, 400-character overlap, top-k 6, minimum score 0.4, and a 3,000-token context budget.
+- [x] Made [`VectorRetriever.retrieve()`](../src/services/rag/retriever.ts:14) explicitly sort by descending score before deduplication and removed the untyped source-filter path.
+- [x] Improved context packing so oversized nodes are skipped and later relevant nodes can still fit within the token budget.
+- [x] Fixed Qdrant search payload projection to return `nodeId`, `sourceType`, and `contentHash`, and persisted `contentHash` during RAG ingestion.
+- [x] Verified 84 focused retrieval/Qdrant tests, 78 combined RAG/manager/command/prompt tests, and `pnpm check-types` pass.
+- [x] Evaluated hybrid retrieval and reranking against the initial fixture: Hit@1 and MRR are both 1.0, so neither is justified for the first implementation.
+- [x] Centralized chunking, retrieval, context-budget, and file-size defaults in [`config.ts`](../src/services/rag/config.ts), removing duplicated prompt constants.
+- [x] Added bounded runtime resolution for `rag.topK`, `rag.minScore`, and `rag.maxContextTokens`, including fallback behavior for invalid and non-finite values.
+- [x] Exposed `vertex.rag.topK`, `vertex.rag.minScore`, and `vertex.rag.maxContextTokens` through the VSCode extension configuration with English localization descriptions.
+- [x] Added configuration tests covering defaults, user overrides, and boundary clamping, plus a prompt integration test confirming configured values reach dynamic retrieval.
+- [x] Updated the system-prompt RAG mock to retain real configuration behavior and verified all focused RAG/prompt tests (49 tests across 8 files) pass.
+- [x] Re-ran workspace type checking after the configuration closure; all 7 type-check tasks pass.
 
 ### Todo
 
-- [ ] Add the built-in bundled knowledge directory as an explicit RAG source root; the global `~/.roo/knowledge` root is implemented.
-- [ ] Add user-facing status/progress feedback for RAG commands.
-- [ ] Add integration tests for multi-root discovery, ingestion, deletion, cancellation, and prompt fallback.
-- [ ] Add tests for debounced refresh and rebuild/clear/status commands.
-- [ ] Add retrieval quality fixtures and tune chunk size, top-k, score threshold, and context budget.
-- [ ] Consider hybrid retrieval or reranking only after measuring the first implementation.
+- [ ] Expand retrieval quality fixtures with real embedding-provider baselines and larger multilingual/workspace corpora after production telemetry is available.
+- [ ] Reconsider hybrid retrieval or reranking only if measured Hit@K/MRR, terminology recall, or user feedback regresses.

@@ -26,7 +26,7 @@ import {
 } from "./sections"
 import { GRAPHICS_MODE_PROMPT, buildGraphicsModePrompt } from "./sections/graphics-agent"
 import { buildKnowledgeContextBlock } from "../../services/knowledge"
-import { buildRagContextBlock } from "../../services/rag"
+import { buildRagContextBlock, getRagQueryOptions } from "../../services/rag"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -111,10 +111,15 @@ async function generatePrompt(
 		knowledgeSection = buildKnowledgeContextBlock(userMessage, mode as string) || ""
 		// Dynamic workspace RAG is optional. Static knowledge remains the fallback.
 		try {
-			const ragEnabled = vscode.workspace.getConfiguration("vertex").get<boolean>("rag.enabled", false)
+			const configuration = vscode.workspace.getConfiguration("vertex")
+			const ragEnabled = configuration.get<boolean>("rag.enabled", false)
 			const ragService = ragEnabled ? codeIndexManager?.getRagService() : undefined
 			if (ragService) {
-				const ragResult = await buildRagContextBlock(ragService, userMessage, { topK: 5, maxTokens: 3000 })
+				const ragResult = await buildRagContextBlock(
+					ragService,
+					userMessage,
+					getRagQueryOptions(configuration),
+				)
 				if (ragResult.block) {
 					knowledgeSection = [knowledgeSection, ragResult.block].filter(Boolean).join("\n\n")
 				}

@@ -46,6 +46,9 @@ vi.mock("vscode", () => {
 					index: 0,
 				},
 			],
+			getConfiguration: vi.fn().mockReturnValue({
+				get: vi.fn().mockReturnValue(false),
+			}),
 			createFileSystemWatcher: vi.fn().mockReturnValue({
 				onDidCreate: vi.fn().mockReturnValue({ dispose: vi.fn() }),
 				onDidChange: vi.fn().mockReturnValue({ dispose: vi.fn() }),
@@ -774,6 +777,64 @@ describe("CodeIndexManager - handleSettingsChange regression", () => {
 			;(manager as any)._orchestrator = undefined
 
 			expect(() => manager.stopIndexing()).not.toThrow()
+		})
+	})
+
+	describe("RAG refresh scheduling", () => {
+		beforeEach(() => {
+			vi.useFakeTimers()
+		})
+
+		afterEach(() => {
+			vi.useRealTimers()
+		})
+
+		it("coalesces repeated refresh requests into one ingestion start", async () => {
+			const vscode = await import("vscode")
+			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+				get: vi.fn().mockReturnValue(true),
+			} as any)
+			const startSpy = vi.spyOn(manager, "startRagIngestion").mockImplementation(() => {})
+
+			manager.refreshRagIngestion()
+			await vi.advanceTimersByTimeAsync(500)
+			manager.refreshRagIngestion()
+			await vi.advanceTimersByTimeAsync(749)
+
+			expect(startSpy).not.toHaveBeenCalled()
+			await vi.advanceTimersByTimeAsync(1)
+			expect(startSpy).toHaveBeenCalledTimes(1)
+		})
+
+		it("does not schedule ingestion when RAG is disabled", async () => {
+			const vscode = await import("vscode")
+			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+				get: vi.fn().mockReturnValue(false),
+			} as any)
+			const startSpy = vi.spyOn(manager, "startRagIngestion").mockImplementation(() => {})
+
+			manager.refreshRagIngestion()
+			await vi.advanceTimersByTimeAsync(1000)
+
+			expect(startSpy).not.toHaveBeenCalled()
+		})
+
+		it("cancels pending refresh and active ingestion when stopped", async () => {
+			const vscode = await import("vscode")
+			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+				get: vi.fn().mockReturnValue(true),
+			} as any)
+			const startSpy = vi.spyOn(manager, "startRagIngestion").mockImplementation(() => {})
+			const abortController = new AbortController()
+			;(manager as any)._ragAbortController = abortController
+
+			manager.refreshRagIngestion()
+			manager.stopRagIngestion()
+			await vi.advanceTimersByTimeAsync(1000)
+
+			expect(startSpy).not.toHaveBeenCalled()
+			expect(abortController.signal.aborted).toBe(true)
+			expect((manager as any)._ragRefreshTimer).toBeUndefined()
 		})
 	})
 

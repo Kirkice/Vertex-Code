@@ -33,4 +33,19 @@ describe("RAG node parser", () => {
 
 		expect(nodes).toEqual([])
 	})
+
+	it("uses tuned defaults that keep ordinary knowledge chunks near 1000 estimated tokens", () => {
+		const document = {
+			id: "knowledge:quality.md",
+			path: "quality.md",
+			sourceType: "knowledge" as const,
+			contentHash: "hash",
+			metadata: {},
+		}
+		const nodes = parseDocument(document, Array.from({ length: 120 }, (_, index) => `line-${index} ${"x".repeat(55)}`).join("\n"))
+
+		expect(nodes.length).toBeGreaterThan(1)
+		expect(Math.max(...nodes.map((node) => node.text.length))).toBeLessThanOrEqual(4400)
+		expect(nodes.slice(1).every((node) => node.text.length >= 400)).toBe(true)
+	})
 })

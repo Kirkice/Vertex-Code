@@ -68,7 +68,7 @@ export const registerCommands = (options: RegisterCommandOptions) => {
 	}
 }
 
-const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOptions): Record<CommandId, any> => ({
+export const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOptions): Record<CommandId, any> => ({
 	activationCompleted: () => {},
 	plusButtonClicked: async () => {
 		const visibleProvider = getVisibleProviderOrLog(outputChannel)
@@ -196,13 +196,50 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 	},
 	ragRebuild: async () => {
 		const manager = CodeIndexManager.getInstance(context)
-		await manager?.rebuildRag()
+		if (!manager) {
+			vscode.window.showWarningMessage("RAG index is not available for this workspace.")
+			return
+		}
+		outputChannel.appendLine("[RAG] Rebuilding index...")
+		vscode.window.showInformationMessage("RAG: Rebuilding index in the background.")
+		try {
+			await manager.rebuildRag()
+			outputChannel.appendLine("[RAG] Rebuild started.")
+		} catch (error) {
+			outputChannel.appendLine(`[RAG] Rebuild failed: ${error}`)
+			vscode.window.showErrorMessage(`RAG rebuild failed: ${error}`)
+		}
 	},
 	ragClear: async () => {
 		const manager = CodeIndexManager.getInstance(context)
-		await manager?.clearRagData()
+		if (!manager) {
+			vscode.window.showWarningMessage("RAG index is not available for this workspace.")
+			return
+		}
+		outputChannel.appendLine("[RAG] Clearing index data...")
+		try {
+			await manager.clearRagData()
+			outputChannel.appendLine("[RAG] Index cleared.")
+			vscode.window.showInformationMessage("RAG: Index cleared.")
+		} catch (error) {
+			outputChannel.appendLine(`[RAG] Clear failed: ${error}`)
+			vscode.window.showErrorMessage(`RAG clear failed: ${error}`)
+		}
 	},
-	ragStatus: () => CodeIndexManager.getInstance(context)?.getRagStatus(),
+	ragStatus: () => {
+		const manager = CodeIndexManager.getInstance(context)
+		const status = manager?.getRagStatus()
+		if (!status) {
+			vscode.window.showWarningMessage("RAG index is not available for this workspace.")
+			return
+		}
+		const message = `RAG: ${status.enabled ? "enabled" : "disabled"} | ${
+			status.running ? "indexing" : "idle"
+		} | ${status.workspacePath}`
+		outputChannel.appendLine(`[RAG] ${message}`)
+		vscode.window.showInformationMessage(message)
+		return status
+	},
 })
 
 export const openClineInNewTab = async ({ context, outputChannel }: Omit<RegisterCommandOptions, "provider">) => {

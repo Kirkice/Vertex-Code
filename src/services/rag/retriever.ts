@@ -1,5 +1,9 @@
 import type { IEmbedder, VectorStoreSearchResult } from "../code-index/interfaces"
-import type { KnowledgeNode, RagQueryOptions, RagVectorStore, RetrievedNode } from "./types"
+import { RAG_DEFAULTS } from "./config"
+import type { KnowledgeNode, KnowledgeSourceType, RagQueryOptions, RagVectorStore, RetrievedNode } from "./types"
+
+export const DEFAULT_RAG_TOP_K = RAG_DEFAULTS.topK
+export const DEFAULT_RAG_MIN_SCORE = RAG_DEFAULTS.minScore
 
 export class VectorRetriever {
 	constructor(
@@ -16,16 +20,22 @@ export class VectorRetriever {
 		const results = await this.vectorStore.search(
 			vector,
 			options.directoryPrefix,
-			options.minScore,
-			options.topK ?? 8,
+			options.minScore ?? DEFAULT_RAG_MIN_SCORE,
+			options.topK ?? DEFAULT_RAG_TOP_K,
 		)
-		const sourceTypes = options.sourceTypes ? new Set(options.sourceTypes) : undefined
+		const sourceTypes: Set<KnowledgeSourceType> | undefined = options.sourceTypes
+			? new Set(options.sourceTypes)
+			: undefined
 		const seen = new Set<string>()
 
-		return results
+		return [...results]
+			.sort((left, right) => right.score - left.score)
 			.map((result) => ({ result, node: this.nodeResolver(result) }))
 			.filter(({ node }) => node !== undefined)
-			.filter(({ node }) => !sourceTypes || sourceTypes.has(node!.metadata.sourceType as any))
+			.filter(({ node }) => {
+				const sourceType = node!.metadata.sourceType
+				return !sourceTypes || (typeof sourceType === "string" && sourceTypes.has(sourceType as KnowledgeSourceType))
+			})
 			.filter(({ node }) => {
 				if (seen.has(node!.id)) return false
 				seen.add(node!.id)

@@ -1,4 +1,5 @@
 import { createHash } from "crypto"
+import { RAG_DEFAULTS } from "./config"
 import type { KnowledgeDocument, KnowledgeNode } from "./types"
 
 export interface NodeParserOptions {
@@ -6,8 +7,8 @@ export interface NodeParserOptions {
 	overlapCharacters?: number
 }
 
-const DEFAULT_MAX_CHARACTERS = 6000
-const DEFAULT_OVERLAP_CHARACTERS = 500
+export const DEFAULT_MAX_CHARACTERS = RAG_DEFAULTS.maxCharacters
+export const DEFAULT_OVERLAP_CHARACTERS = RAG_DEFAULTS.overlapCharacters
 
 export function hashContent(content: string): string {
 	return createHash("sha256").update(content, "utf8").digest("hex")

@@ -1287,7 +1287,7 @@ describe("QdrantVectorStore", () => {
 					exact: false,
 				},
 				with_payload: {
-					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 				},
 			})
 			expect(callArgs.filter).toEqual({
@@ -1326,7 +1326,7 @@ describe("QdrantVectorStore", () => {
 				score_threshold: DEFAULT_SEARCH_MIN_SCORE,
 				limit: DEFAULT_MAX_SEARCH_RESULTS,
 				params: { hnsw_ef: 128, exact: false },
-				with_payload: { include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"] },
+				with_payload: { include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"] },
 			})
 			expect(callArgs2.filter).toEqual({
 				must: [
@@ -1358,7 +1358,7 @@ describe("QdrantVectorStore", () => {
 					exact: false,
 				},
 				with_payload: {
-					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 				},
 			})
 			expect(callArgs3.filter).toEqual({
@@ -1385,7 +1385,7 @@ describe("QdrantVectorStore", () => {
 					exact: false,
 				},
 				with_payload: {
-					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 				},
 			})
 			expect(callArgs4.filter).toEqual({
@@ -1516,7 +1516,7 @@ describe("QdrantVectorStore", () => {
 					exact: false,
 				},
 				with_payload: {
-					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+					include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 				},
 			})
 			expect(callArgs5.filter).toEqual({
@@ -1590,7 +1590,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs7.filter).toEqual({
@@ -1619,7 +1619,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs6.filter).toEqual({
@@ -1646,7 +1646,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs8.filter).toEqual({
@@ -1673,7 +1673,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs9.filter).toEqual({
@@ -1700,7 +1700,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs10.filter).toEqual({
@@ -1727,7 +1727,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs11.filter).toEqual({
@@ -1760,7 +1760,7 @@ describe("QdrantVectorStore", () => {
 						exact: false,
 					},
 					with_payload: {
-						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments"],
+						include: ["filePath", "codeChunk", "startLine", "endLine", "pathSegments", "nodeId", "sourceType", "contentHash"],
 					},
 				})
 				expect(callArgs12.filter).toEqual({

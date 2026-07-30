@@ -412,6 +412,27 @@
 					"default": false,
 					"description": "%settings.rag.enabled.description%"
 				},
+				"vertex.rag.topK": {
+					"type": "number",
+					"default": 6,
+					"minimum": 1,
+					"maximum": 20,
+					"description": "%settings.rag.topK.description%"
+				},
+				"vertex.rag.minScore": {
+					"type": "number",
+					"default": 0.4,
+					"minimum": 0,
+					"maximum": 1,
+					"description": "%settings.rag.minScore.description%"
+				},
+				"vertex.rag.maxContextTokens": {
+					"type": "number",
+					"default": 3000,
+					"minimum": 256,
+					"maximum": 16000,
+					"description": "%settings.rag.maxContextTokens.description%"
+				},
 				"vertex.debug": {
 					"type": "boolean",
 					"default": false,

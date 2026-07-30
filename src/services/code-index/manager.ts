@@ -16,8 +16,32 @@ import { t } from "../../i18n"
 
 import { TelemetryEventName } from "@roo-code/types"
 import { RagService } from "../rag/ragService"
-import { discoverRagDocuments } from "../rag/documentSources"
+import { discoverRagDocuments, type RagDocumentSource } from "../rag/documentSources"
 import { IngestionPipeline } from "../rag/ingestionPipeline"
+
+export async function ingestRagDocuments(
+	workspacePath: string,
+	documents: RagDocumentSource[],
+	embedder: import("./interfaces").IEmbedder,
+	vectorStore: import("./interfaces").IVectorStore,
+	signal: AbortSignal,
+): Promise<void> {
+	const grouped = new Map<string, string[]>()
+	for (const document of documents)
+		grouped.set(document.sourceType, [...(grouped.get(document.sourceType) ?? []), document.path])
+	const pipeline = new IngestionPipeline(embedder, vectorStore)
+	for (const [sourceType, files] of grouped) {
+		if (signal.aborted) return
+		await pipeline.ingest({
+			rootPath: workspacePath,
+			files,
+			sourceType: sourceType as "markdown" | "text" | "knowledge",
+			manifestPath: path.join(workspacePath, ".roo", "rag", `${sourceType}-manifest.json`),
+			maxFileSize: 512 * 1024,
+			signal,
+		})
+	}
+}
 
 export class CodeIndexManager {
 	// --- Singleton Implementation ---
@@ -443,21 +467,7 @@ export class CodeIndexManager {
 			const ignoreController = new RooIgnoreController(this.workspacePath)
 			await ignoreController.initialize()
 			const documents = await discoverRagDocuments(this.workspacePath, ignoreController)
-			const grouped = new Map<string, string[]>()
-			for (const document of documents)
-				grouped.set(document.sourceType, [...(grouped.get(document.sourceType) ?? []), document.path])
-			const pipeline = new IngestionPipeline(embedder, vectorStore)
-			for (const [sourceType, files] of grouped) {
-				if (signal.aborted) return
-				await pipeline.ingest({
-					rootPath: this.workspacePath,
-					files,
-					sourceType: sourceType as "markdown" | "text" | "knowledge",
-					manifestPath: path.join(this.workspacePath, ".roo", "rag", `${sourceType}-manifest.json`),
-					maxFileSize: 512 * 1024,
-					signal,
-				})
-			}
+			await ingestRagDocuments(this.workspacePath, documents, embedder, vectorStore, signal)
 		} catch (error) {
 			console.warn("[RAG] Background document ingestion skipped:", error)
 		}
