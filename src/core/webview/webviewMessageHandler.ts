@@ -567,6 +567,9 @@ export const webviewMessageHandler = async (
 		"runGraphicsPlaybook",
 		"selectGraphicsProvider",
 		"requestGraphicsProviderStatus",
+		"requestGraphicsFeatureBrief",
+		"saveGraphicsFeatureBrief",
+		"requestGraphicsProjectProfile",
 	]
 	if (graphicsMessageTypes.includes(message.type)) {
 		await handleGraphicsMessage(provider, message)

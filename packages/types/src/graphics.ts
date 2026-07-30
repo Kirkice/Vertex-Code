@@ -324,6 +324,229 @@ export interface SuspectedIssue {
 	confidence: "high" | "medium" | "low"
 }
 
+// ─── Workspace Types ─────────────────────────────────────────────────────────
+
+/** Editable, provider-independent input that starts a graphics feature workflow. */
+export interface GraphicsFeatureBrief {
+	version: 1
+	title: string
+	visualGoal: string
+	lifecycle: string
+	artControls: string
+	targetPlatforms: string
+	performanceBudget: string
+	compatibilityRequirements: string
+	acceptanceCriteria: string
+	updatedAt?: string
+}
+
+/** A source file or directory that supports a detected project-profile fact. */
+export interface GraphicsProjectEvidence {
+	path: string
+	description: string
+}
+
+/** Stable categories used by planning and solution-selection workflows. */
+export type GraphicsArchitectureCategory = "pipeline" | "pass" | "shader" | "client" | "asset" | "quality"
+
+/** A source-backed architecture fact discovered in the active project. */
+export interface GraphicsArchitectureFinding {
+	category: GraphicsArchitectureCategory
+	path: string
+	kind: string
+	symbol?: string
+	detail: string
+}
+
+/** Bounded deep index of graphics configuration and source-code entry points. */
+export interface GraphicsArchitectureIndex {
+	version: 1
+	findings: GraphicsArchitectureFinding[]
+	analyzedFileCount: number
+	truncated: boolean
+}
+
+/** Implementation levels compared by the first-phase graphics solution selector. */
+export type GraphicsSolutionLevel =
+	| "configuration"
+	| "shader"
+	| "renderer-pass"
+	| "post-process"
+	| "render-graph"
+	| "compute"
+	| "cpu-client"
+
+/** Explainable score for one possible graphics implementation level. */
+export interface GraphicsSolutionCandidate {
+	level: GraphicsSolutionLevel
+	label: string
+	score: number
+	confidence: "high" | "medium" | "low"
+	reasons: string[]
+	risks: string[]
+	rejectionReasons: string[]
+}
+
+/** Deterministic, project-aware recommendation produced before implementation begins. */
+export interface GraphicsSolutionRecommendation {
+	version: 1
+	recommendedLevel: GraphicsSolutionLevel
+	summary: string
+	candidates: GraphicsSolutionCandidate[]
+	assumptions: string[]
+	generatedAt: string
+}
+
+/** A focused design section in a cross-module graphics feature plan. */
+export interface GraphicsFeaturePlanSection {
+	summary: string
+	details: string[]
+}
+
+export type GraphicsFeatureTaskKind =
+	| "spike"
+	| "prototype"
+	| "pipeline"
+	| "shader"
+	| "client"
+	| "asset"
+	| "observability"
+	| "validation"
+	| "delivery"
+
+export type GraphicsFeatureTaskOwner = "graphics" | "client" | "technical-art" | "qa" | "design"
+
+export type GraphicsFeatureTaskStatus = "pending" | "in-progress" | "blocked" | "completed" | "skipped"
+
+/** An independently verifiable unit of implementation work, ordered by dependencies. */
+export interface GraphicsFeatureTask {
+	id: string
+	kind: GraphicsFeatureTaskKind
+	title: string
+	owner: GraphicsFeatureTaskOwner
+	status: GraphicsFeatureTaskStatus
+	statusNote?: string
+	statusUpdatedAt?: string
+	inputs: string[]
+	outputs: string[]
+	dependsOn: string[]
+	completionConditions: string[]
+}
+
+export interface GraphicsFeatureRisk {
+	id: string
+	title: string
+	impact: "high" | "medium" | "low"
+	mitigation: string
+	reviewGate?: string
+}
+
+export interface GraphicsFeatureCompatibilityTarget {
+	target: string
+	strategy: string
+	fallback: string
+}
+
+export interface GraphicsFeatureAcceptanceCheck {
+	id: string
+	dimension: "visual" | "functional" | "performance" | "compatibility"
+	criterion: string
+	evidence: "screenshot" | "automated-test" | "build" | "profiler" | "capture" | "device-test"
+}
+
+export type GraphicsFeaturePlanSource = "generated" | "workspace" | "manual"
+
+/** Versioned, deterministic first-phase plan spanning graphics, client, art, and validation work. */
+export interface GraphicsFeaturePlan {
+	version: 1
+	revision: number
+	source: GraphicsFeaturePlanSource
+	updatedAt: string
+	title: string
+	briefSummary: string
+	openQuestions: string[]
+	projectContext: string[]
+	decision: {
+		recommendedLevel: GraphicsSolutionLevel
+		rationale: string[]
+		alternatives: Array<{ level: GraphicsSolutionLevel; reasonNotSelected: string }>
+	}
+	pipelineDesign: GraphicsFeaturePlanSection
+	shaderDesign: GraphicsFeaturePlanSection
+	clientDesign: GraphicsFeaturePlanSection
+	assetContract: {
+		requirements: string[]
+		validationRules: string[]
+	}
+	performanceBudget: GraphicsFeaturePlanSection
+	compatibility: GraphicsFeatureCompatibilityTarget[]
+	risks: GraphicsFeatureRisk[]
+	tasks: GraphicsFeatureTask[]
+	acceptancePlan: GraphicsFeatureAcceptanceCheck[]
+	generatedAt: string
+}
+
+/** Source-derived graphics architecture profile for the active workspace. */
+export interface GraphicsProjectProfile {
+	version: 1
+	workspaceName: string
+	engine: "unity" | "unreal" | "custom" | "unknown"
+	engineVersion?: string
+	renderPipelines: string[]
+	graphicsApis: string[]
+	targetPlatforms: string[]
+	shaderLanguages: string[]
+	architectureSignals: string[]
+	architectureIndex: GraphicsArchitectureIndex
+	evidence: GraphicsProjectEvidence[]
+	warnings: string[]
+	scannedAt: string
+}
+
+/** Request to update one task without replacing the rest of the persisted plan. */
+export interface GraphicsFeatureTaskStatusUpdate {
+	taskId: string
+	status: GraphicsFeatureTaskStatus
+	statusNote?: string
+	expectedRevision?: number
+}
+
+/** Graphics data persisted in VS Code's webview state for reload-safe draft recovery. */
+export interface GraphicsWorkspacePersistedState {
+	featureBrief?: GraphicsFeatureBrief
+	featurePlan?: GraphicsFeaturePlan
+}
+
+/** Shared envelope used to merge graphics drafts without replacing unrelated webview state. */
+export interface GraphicsWebviewPersistedState {
+	graphicsWorkspace?: GraphicsWorkspacePersistedState
+	[key: string]: unknown
+}
+
+/** Provider-independent sections exposed by the Graphics Workspace. */
+export type GraphicsWorkspaceSection = "feature" | "assets" | "runtime"
+
+/** Availability of an optional workspace capability. */
+export type GraphicsCapabilityAvailability = "available" | "unavailable" | "degraded" | "unknown"
+
+/** A capability card rendered by the workspace without binding to a specific tool. */
+export interface GraphicsWorkspaceCapability {
+	id: "feature-planning" | "source-analysis" | "asset-validation" | "runtime-capture"
+	label: string
+	description: string
+	availability: GraphicsCapabilityAvailability
+	providerId?: GraphicsProviderId
+	providerName?: string
+	reason?: string
+}
+
+/** Payload returned for the lazily requested runtime provider status. */
+export interface GraphicsProviderStatusPayload {
+	providers: GraphicsProviderStatusInfo[]
+	selectedProviderId?: GraphicsProviderId
+	capabilitiesByProviderId: Record<GraphicsProviderId, GraphicsProviderCapabilities | null>
+}
+
 // ─── UI Action Types ─────────────────────────────────────────────────────────
 
 /**

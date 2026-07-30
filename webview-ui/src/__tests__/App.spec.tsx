@@ -8,6 +8,8 @@ import AppWithProviders from "../App"
 vi.mock("@src/utils/vscode", () => ({
 	vscode: {
 		postMessage: vi.fn(),
+		getState: vi.fn(() => undefined),
+		setState: vi.fn((state) => state),
 	},
 }))
 
@@ -23,6 +25,14 @@ vi.mock("@src/utils/TelemetryClient", () => ({
 		capture: vi.fn(),
 		updateTelemetryState: vi.fn(),
 	},
+}))
+
+vi.mock("@src/components/marketplace/MarketplaceView", () => ({
+	MarketplaceView: () => <div data-testid="marketplace-view">Marketplace View</div>,
+}))
+
+vi.mock("@src/components/marketplace/MarketplaceViewStateManager", () => ({
+	MarketplaceViewStateManager: class MarketplaceViewStateManager {},
 }))
 
 vi.mock("@src/components/chat/ChatView", () => ({
@@ -200,6 +210,39 @@ describe("App", () => {
 		expect(chatView).toBeInTheDocument()
 		expect(chatView.getAttribute("data-hidden")).toBe("false")
 	}, 10000)
+
+	it("opens the provider-independent workspace by default in graphics mode and allows returning to chat", () => {
+		mockUseExtensionState.mockReturnValue({
+			didHydrateState: true,
+			showWelcome: false,
+			shouldShowAnnouncement: false,
+			experiments: {},
+			language: "en",
+			telemetrySetting: "enabled",
+			mode: "graphics",
+		})
+
+		render(<AppWithProviders />)
+
+		const chatView = screen.getByTestId("chat-view")
+		expect(screen.getByTestId("graphics-workspace")).toBeInTheDocument()
+		expect(screen.getByTestId("graphics-feature-home")).toBeInTheDocument()
+		expect(chatView.getAttribute("data-hidden")).toBe("true")
+
+		act(() => {
+			screen.getByRole("button", { name: "Back to chat" }).click()
+		})
+
+		expect(screen.queryByTestId("graphics-workspace")).not.toBeInTheDocument()
+		expect(chatView.getAttribute("data-hidden")).toBe("false")
+		expect(screen.getByRole("button", { name: "Graphics Workspace" })).toBeInTheDocument()
+	})
+
+	it("does not expose the workspace entry outside graphics mode", () => {
+		render(<AppWithProviders />)
+
+		expect(screen.queryByRole("button", { name: "Graphics Workspace" })).not.toBeInTheDocument()
+	})
 
 	it("shows welcome view when setup is incomplete", () => {
 		mockUseExtensionState.mockReturnValue({

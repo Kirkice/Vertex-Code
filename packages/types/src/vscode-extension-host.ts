@@ -17,6 +17,13 @@ import type { OpenAiCodexRateLimitInfo } from "./providers/openai-codex-rate-lim
 import type { SkillMetadata } from "./skills.js"
 import type { TelemetrySetting } from "./telemetry.js"
 import type { WorktreeIncludeStatus } from "./worktree.js"
+import type {
+	GraphicsFeatureBrief,
+	GraphicsFeaturePlan,
+	GraphicsFeatureTaskStatus,
+	GraphicsProjectProfile,
+	GraphicsSolutionRecommendation,
+} from "./graphics.js"
 
 /**
  * ExtensionMessage
@@ -99,12 +106,20 @@ export interface ExtensionMessage {
 		| "branchWorktreeIncludeResult"
 		| "folderSelected"
 		| "skills"
+		| "graphicsFeatureBrief"
+		| "graphicsProjectProfile"
+		| "graphicsSolutionRecommendation"
+		| "graphicsFeaturePlan"
+		| "graphicsFeaturePlanUpdated"
+		| "graphicsFeaturePlanRecovered"
+		| "graphicsFeaturePlanConflict"
+		| "graphicsFeaturePlanEdited"
 		| "fileContent"
-		// Orchestrator message types (legacy — most removed after refactor into Task)
-		// orchestratorSessionUpdate, orchestratorTaskUpdate, orchestratorReviewResult,
-		// orchestratorCostUpdate, orchestratorChatMessage were removed.
-		// Orchestrator state is now derived from Task.orchestratorState and pushed
-		// via the regular "state" message (see ClineProvider.getStateToPostToWebview).
+	// Orchestrator message types (legacy — most removed after refactor into Task)
+	// orchestratorSessionUpdate, orchestratorTaskUpdate, orchestratorReviewResult,
+	// orchestratorCostUpdate, orchestratorChatMessage were removed.
+	// Orchestrator state is now derived from Task.orchestratorState and pushed
+	// via the regular "state" message (see ClineProvider.getStateToPostToWebview).
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
@@ -182,6 +197,11 @@ export interface ExtensionMessage {
 	list?: string[] // For dismissedUpsells
 	tools?: SerializedCustomToolDefinition[] // For customToolsResult
 	skills?: SkillMetadata[] // For skills response
+	graphicsFeatureBrief?: GraphicsFeatureBrief
+	graphicsProjectProfile?: GraphicsProjectProfile
+	graphicsSolutionRecommendation?: GraphicsSolutionRecommendation
+	graphicsFeaturePlan?: GraphicsFeaturePlan
+	graphicsFeaturePlanError?: string
 	modes?: { slug: string; name: string }[] // For modes response
 	aggregatedCosts?: {
 		// For taskWithAggregatedCosts response
@@ -406,7 +426,6 @@ export type ExtensionState = Pick<
 	 * (captured during async getStateToPostToWebview) from overwriting newer messages.
 	 */
 	clineMessagesSeq?: number
-
 }
 
 export interface Command {
@@ -616,6 +635,14 @@ export interface WebviewMessage {
 		| "runGraphicsPlaybook"
 		| "selectGraphicsProvider"
 		| "requestGraphicsProviderStatus"
+		| "requestGraphicsFeatureBrief"
+		| "saveGraphicsFeatureBrief"
+		| "requestGraphicsProjectProfile"
+		| "requestGraphicsSolutionRecommendation"
+		| "requestGraphicsFeaturePlan"
+		| "requestGraphicsFeaturePlanRecovery"
+		| "updateGraphicsFeatureTaskStatus"
+		| "updateGraphicsFeatureTask"
 	text?: string
 	taskId?: string
 	editedMessageContent?: string
@@ -686,6 +713,13 @@ export interface WebviewMessage {
 	graphicsIntent?: string // For runGraphicsWorkflow
 	graphicsPlaybookId?: string // For runGraphicsPlaybook
 	graphicsProviderId?: string // For selectGraphicsProvider
+	graphicsFeatureBrief?: GraphicsFeatureBrief
+	graphicsFeatureTaskId?: string
+	graphicsFeatureTaskStatus?: GraphicsFeatureTaskStatus
+	graphicsFeatureTaskStatusNote?: string
+	graphicsFeatureTaskTitle?: string
+	graphicsFeatureTaskCompletionConditions?: string[]
+	graphicsFeaturePlanRevision?: number
 	useProviderSignup?: boolean // For rooCloudSignIn to use provider signup flow
 	codeIndexSettings?: {
 		// Global state settings

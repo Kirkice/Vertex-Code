@@ -16,6 +16,7 @@ import HistoryView from "./components/history/HistoryView"
 import SettingsView, { SettingsViewRef } from "./components/settings/SettingsView"
 import WelcomeView from "./components/welcome/WelcomeViewProvider"
 import { MarketplaceView } from "./components/marketplace/MarketplaceView"
+import GraphicsWorkspace from "./components/graphics/GraphicsWorkspace"
 import { CheckpointRestoreDialog } from "./components/chat/CheckpointRestoreDialog"
 import { DeleteMessageDialog, EditMessageDialog } from "./components/chat/MessageModificationConfirmationDialog"
 import ErrorBoundary from "./components/ErrorBoundary"
@@ -25,7 +26,7 @@ import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 import { Button } from "./components/ui"
 import { ThemeProvider } from "./themes"
 
-type Tab = "settings" | "history" | "chat" | "marketplace"
+type Tab = "settings" | "history" | "chat" | "marketplace" | "graphics"
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -71,9 +72,12 @@ const App = () => {
 	const [currentSection, setCurrentSection] = useState<string | undefined>(undefined)
 	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
 	const handledImportRef = useRef<number | undefined>(undefined)
+	const previousModeRef = useRef<string | undefined>(undefined)
 
 	// Graphics mode suggestion state
-	const [graphicsModeSuggestion, setGraphicsModeSuggestion] = useState<{ text: string; targetMode: string } | null>(null)
+	const [graphicsModeSuggestion, setGraphicsModeSuggestion] = useState<{ text: string; targetMode: string } | null>(
+		null,
+	)
 
 	// Create a persistent state manager
 	const marketplaceStateManager = useMemo(() => new MarketplaceViewStateManager(), [])
@@ -113,7 +117,6 @@ const App = () => {
 		},
 		[mdmCompliant],
 	)
-
 
 	const onMessage = useCallback(
 		(e: MessageEvent) => {
@@ -173,7 +176,7 @@ const App = () => {
 			}
 
 			// Handle graphics mode suggestion from extension
-			if (message.type === "graphicsModeSuggestion" as any) {
+			if (message.type === ("graphicsModeSuggestion" as any)) {
 				const suggestionText = (message as any).text as string | undefined
 				const targetMode = (message as any).targetMode as string | undefined
 				if (suggestionText && targetMode) {
@@ -186,6 +189,24 @@ const App = () => {
 	)
 
 	useEvent("message", onMessage)
+
+	useEffect(() => {
+		if (!didHydrateState || showWelcome || mdmCompliant === false) {
+			return
+		}
+
+		const previousMode = previousModeRef.current
+		const enteredGraphicsMode = mode === "graphics" && previousMode !== "graphics"
+		const leftGraphicsMode = mode !== "graphics" && previousMode === "graphics"
+		previousModeRef.current = mode
+
+		if (enteredGraphicsMode) {
+			setCurrentSection(undefined)
+			setTab("graphics")
+		} else if (leftGraphicsMode) {
+			setTab((currentTab) => (currentTab === "graphics" ? "chat" : currentTab))
+		}
+	}, [didHydrateState, mdmCompliant, mode, showWelcome])
 
 	useEffect(() => {
 		if (shouldShowAnnouncement && tab === "chat") {
@@ -259,8 +280,19 @@ const App = () => {
 					targetTab={currentMarketplaceTab as "mcp" | "mode" | "skill" | "knowledge" | undefined}
 				/>
 			)}
+			{tab === "graphics" && <GraphicsWorkspace onDone={() => switchTab("chat")} />}
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
+			)}
+			{mode === "graphics" && tab === "chat" && (
+				<Button
+					variant="secondary"
+					size="sm"
+					className="fixed right-4 top-3 z-40 shadow-lg"
+					onClick={() => switchTab("graphics")}>
+					<span className="codicon codicon-dashboard" />
+					Graphics Workspace
+				</Button>
 			)}
 			{graphicsModeSuggestion && (
 				<div className="fixed bottom-4 right-4 z-50 max-w-sm bg-vscode-editor-background border border-vscode-panel-border rounded-lg shadow-lg p-4">
@@ -282,10 +314,7 @@ const App = () => {
 									}}>
 									Switch to Graphics Mode
 								</Button>
-								<Button
-									variant="secondary"
-									size="sm"
-									onClick={() => setGraphicsModeSuggestion(null)}>
+								<Button variant="secondary" size="sm" onClick={() => setGraphicsModeSuggestion(null)}>
 									Dismiss
 								</Button>
 							</div>
