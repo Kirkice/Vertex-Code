@@ -1,5 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 
+// Keep profile-card assertions independent from i18next initialization by using
+// the same deterministic translation resources as the workspace tests.
+vi.mock("@src/i18n/TranslationContext", async () =>
+	await vi.importActual("@src/i18n/__mocks__/TranslationContext"),
+)
+
 import type { GraphicsProjectProfile } from "@roo-code/types"
 
 import { GraphicsProjectProfileCard } from "../GraphicsProjectProfileCard"

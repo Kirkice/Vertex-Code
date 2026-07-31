@@ -96,13 +96,14 @@ export default defineConfig(({ mode }) => {
 
 	return {
 		plugins,
+		resolve: {
+			alias: mode === "visual-regression" ? { vscode: resolve(__dirname, "src/visual-regression/vscode.ts") } : undefined,
+			tsconfigPaths: true,
+		},
 		test: {
 			globals: true,
 			environment: "jsdom",
 			setupFiles: ["./src/test/setup.ts"],
-		},
-		resolve: {
-			tsconfigPaths: true,
 		},
 		build: {
 			outDir,

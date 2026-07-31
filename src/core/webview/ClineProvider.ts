@@ -90,6 +90,7 @@ import { Task } from "../task/Task"
 import { ProductionTaskRuntimeAdapter } from "../task/runtime"
 
 import { webviewMessageHandler } from "./webviewMessageHandler"
+import { disposeGraphicsExecutionRuntime } from "./graphicsMessageHandler"
 import type { ClineMessage, TodoItem } from "@roo-code/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
@@ -159,6 +160,10 @@ export class ClineProvider
 	private taskCreationCallback: (task: Task) => void
 	private taskEventListeners: WeakMap<Task, Array<() => void>> = new WeakMap()
 	private currentWorkspacePath: string | undefined
+	/** Watches the shared graphics plan so another VS Code window can be surfaced to this one. */
+	private graphicsFeaturePlanWatcher?: vscode.FileSystemWatcher
+	/** Coalesces atomic-write create/change/delete bursts into one recovery signal. */
+	private graphicsFeaturePlanWatcherTimer?: ReturnType<typeof setTimeout>
 	private _disposed = false
 
 	private recentTasksCache?: string[]
@@ -200,6 +205,7 @@ export class ClineProvider
 		)
 
 		ClineProvider.activeInstances.add(this)
+		this.initializeGraphicsFeaturePlanWatcher()
 
 		this.updateGlobalState("codebaseIndexModels", EMBEDDING_MODEL_PROFILES)
 
@@ -555,6 +561,8 @@ export class ClineProvider
 
 		this._disposed = true
 		this.log("Disposing ClineProvider...")
+		// Stop and release background Graphics Agent attempts before task teardown.
+		disposeGraphicsExecutionRuntime()
 
 		// Clear all tasks from the stack.
 		while (this.clineStack.length > 0) {
@@ -591,6 +599,12 @@ export class ClineProvider
 		this.marketplaceManager?.cleanup()
 		this.customModesManager?.dispose()
 		this.taskHistoryStore.dispose()
+		this.graphicsFeaturePlanWatcher?.dispose()
+		this.graphicsFeaturePlanWatcher = undefined
+		if (this.graphicsFeaturePlanWatcherTimer) {
+			clearTimeout(this.graphicsFeaturePlanWatcherTimer)
+			this.graphicsFeaturePlanWatcherTimer = undefined
+		}
 		this.flushGlobalStateWriteThrough()
 		this.log("Disposed all disposables")
 		ClineProvider.activeInstances.delete(this)
@@ -2746,6 +2760,26 @@ export class ClineProvider
 	}
 
 	// logging
+
+	/** Installs a lightweight watcher for the team-shared Feature Plan project file. */
+	private initializeGraphicsFeaturePlanWatcher(): void {
+		if (!this.currentWorkspacePath || typeof vscode.workspace.createFileSystemWatcher !== "function") return
+		const pattern = new vscode.RelativePattern(this.currentWorkspacePath, ".roo/graphics/feature-plan.json")
+		this.graphicsFeaturePlanWatcher = vscode.workspace.createFileSystemWatcher(pattern)
+		const notify = () => {
+			// Atomic replacement can emit create/change/delete in quick succession. Delay
+			// the signal so the Webview performs one recovery against the settled file.
+			if (this.graphicsFeaturePlanWatcherTimer) clearTimeout(this.graphicsFeaturePlanWatcherTimer)
+			this.graphicsFeaturePlanWatcherTimer = setTimeout(() => {
+				this.graphicsFeaturePlanWatcherTimer = undefined
+				if (this._disposed) return
+				void this.postMessageToWebview({ type: "graphicsFeaturePlanExternalChange" })
+			}, 100)
+		}
+		this.graphicsFeaturePlanWatcher.onDidCreate(notify, this, this.disposables)
+		this.graphicsFeaturePlanWatcher.onDidChange(notify, this, this.disposables)
+		this.graphicsFeaturePlanWatcher.onDidDelete(notify, this, this.disposables)
+	}
 
 	public log(message: string) {
 		this.outputChannel.appendLine(message)

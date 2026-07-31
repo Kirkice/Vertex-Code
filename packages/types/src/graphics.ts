@@ -16,12 +16,12 @@
  * - `extension-bridge`: VS Code extension command bridge
  * - `hybrid`: Combination of MCP + extension commands
  */
-export type GraphicsProviderKind = "mcp" | "extension-bridge" | "hybrid"
+export type GraphicsProviderKind = "mcp" | "extension-bridge" | "hybrid";
 
 /**
  * Unique identifier for a graphics provider instance.
  */
-export type GraphicsProviderId = string
+export type GraphicsProviderId = string;
 
 // ─── Provider Capabilities ───────────────────────────────────────────────────
 
@@ -31,32 +31,32 @@ export type GraphicsProviderId = string
  * required capabilities before execution via preflight checks.
  */
 export interface GraphicsProviderCapabilities {
-	/** Can retrieve frame-level summary (pass list, timings overview) */
-	frameSummary: boolean
-	/** Can retrieve the currently selected draw/event context */
-	selectionContext: boolean
-	/** Can retrieve detailed event information */
-	eventDetails: boolean
-	/** Can retrieve pipeline state for a given event */
-	pipelineState: boolean
-	/** Can retrieve shader metadata (stage, entry point, reflection) */
-	shaderInfo: boolean
-	/** Can retrieve shader source code */
-	shaderSource: boolean
-	/** Can retrieve mesh/geometry data */
-	meshData: boolean
-	/** Can retrieve resource (buffer/texture) details */
-	resourceDetail: boolean
-	/** Can retrieve raw texture data */
-	textureData: boolean
-	/** Can retrieve raw buffer data */
-	bufferData: boolean
-	/** Can retrieve pass graph / render pass structure */
-	passGraph: boolean
-	/** Can map capture objects back to project source code */
-	projectMapping: boolean
-	/** Can compare two captures or events for regression analysis */
-	captureDiff: boolean
+  /** Can retrieve frame-level summary (pass list, timings overview) */
+  frameSummary: boolean;
+  /** Can retrieve the currently selected draw/event context */
+  selectionContext: boolean;
+  /** Can retrieve detailed event information */
+  eventDetails: boolean;
+  /** Can retrieve pipeline state for a given event */
+  pipelineState: boolean;
+  /** Can retrieve shader metadata (stage, entry point, reflection) */
+  shaderInfo: boolean;
+  /** Can retrieve shader source code */
+  shaderSource: boolean;
+  /** Can retrieve mesh/geometry data */
+  meshData: boolean;
+  /** Can retrieve resource (buffer/texture) details */
+  resourceDetail: boolean;
+  /** Can retrieve raw texture data */
+  textureData: boolean;
+  /** Can retrieve raw buffer data */
+  bufferData: boolean;
+  /** Can retrieve pass graph / render pass structure */
+  passGraph: boolean;
+  /** Can map capture objects back to project source code */
+  projectMapping: boolean;
+  /** Can compare two captures or events for regression analysis */
+  captureDiff: boolean;
 }
 
 // ─── Provider Status ─────────────────────────────────────────────────────────
@@ -65,19 +65,19 @@ export interface GraphicsProviderCapabilities {
  * Current availability status of a graphics provider.
  */
 export type GraphicsProviderStatus =
-	| "available" // Provider is online and ready
-	| "unavailable" // Provider is not installed or not running
-	| "no-capture" // Provider is running but no capture is open
-	| "error" // Provider encountered an error
+  | "available" // Provider is online and ready
+  | "unavailable" // Provider is not installed or not running
+  | "no-capture" // Provider is running but no capture is open
+  | "error"; // Provider encountered an error
 
 /**
  * Detailed status information for a provider.
  */
 export interface GraphicsProviderStatusInfo {
-	status: GraphicsProviderStatus
-	message?: string
-	providerId: GraphicsProviderId
-	providerName: string
+  status: GraphicsProviderStatus;
+  message?: string;
+  providerId: GraphicsProviderId;
+  providerName: string;
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────
@@ -86,158 +86,158 @@ export interface GraphicsProviderStatusInfo {
  * Result from opening the current capture.
  */
 export interface OpenCaptureResult {
-	success: boolean
-	capturePath?: string
-	api?: string // e.g. "D3D12", "Vulkan", "OpenGL"
-	frameCount?: number
-	error?: string
+  success: boolean;
+  capturePath?: string;
+  api?: string; // e.g. "D3D12", "Vulkan", "OpenGL"
+  frameCount?: number;
+  error?: string;
 }
 
 /**
  * Result from retrieving frame summary.
  */
 export interface FrameSummaryResult {
-	success: boolean
-	passes?: PassSummary[]
-	totalDurationMs?: number
-	hotEvents?: HotEventSummary[]
-	error?: string
+  success: boolean;
+  passes?: PassSummary[];
+  totalDurationMs?: number;
+  hotEvents?: HotEventSummary[];
+  error?: string;
 }
 
 /**
  * Summary of a single render pass.
  */
 export interface PassSummary {
-	name: string
-	eventIdRange: [number, number]
-	durationMs?: number
-	drawCount?: number
+  name: string;
+  eventIdRange: [number, number];
+  durationMs?: number;
+  drawCount?: number;
 }
 
 /**
  * Summary of a hot (expensive) event.
  */
 export interface HotEventSummary {
-	eventId: number
-	name: string
-	durationMs: number
-	passName?: string
+  eventId: number;
+  name: string;
+  durationMs: number;
+  passName?: string;
 }
 
 /**
  * Result from retrieving the current selection context.
  */
 export interface SelectionContextResult {
-	success: boolean
-	eventId?: number
-	eventName?: string
-	passName?: string
-	drawType?: string
-	error?: string
+  success: boolean;
+  eventId?: number;
+  eventName?: string;
+  passName?: string;
+  drawType?: string;
+  error?: string;
 }
 
 /**
  * Result from retrieving detailed event information.
  */
 export interface EventDetailsResult {
-	success: boolean
-	eventId?: number
-	name?: string
-	durationMs?: number
-	drawCallCount?: number
-	primitiveCount?: number
-	shaderStages?: string[]
-	error?: string
+  success: boolean;
+  eventId?: number;
+  name?: string;
+  durationMs?: number;
+  drawCallCount?: number;
+  primitiveCount?: number;
+  shaderStages?: string[];
+  error?: string;
 }
 
 /**
  * Result from retrieving pipeline state.
  */
 export interface PipelineStateResult {
-	success: boolean
-	eventId?: number
-	renderTargets?: ResourceBinding[]
-	depthStencil?: ResourceBinding
-	vertexBuffers?: ResourceBinding[]
-	samplers?: ResourceBinding[]
-	constantBuffers?: ResourceBinding[]
-	error?: string
+  success: boolean;
+  eventId?: number;
+  renderTargets?: ResourceBinding[];
+  depthStencil?: ResourceBinding;
+  vertexBuffers?: ResourceBinding[];
+  samplers?: ResourceBinding[];
+  constantBuffers?: ResourceBinding[];
+  error?: string;
 }
 
 /**
  * A single resource binding in the pipeline state.
  */
 export interface ResourceBinding {
-	slot: number | string
-	name?: string
-	type?: string
-	format?: string
-	dimensions?: string
+  slot: number | string;
+  name?: string;
+  type?: string;
+  format?: string;
+  dimensions?: string;
 }
 
 /**
  * Request parameters for shader info retrieval.
  */
 export interface ShaderInfoRequest {
-	eventId: string | number
-	stage?: string // e.g. "vertex", "pixel", "compute"
+  eventId: string | number;
+  stage?: string; // e.g. "vertex", "pixel", "compute"
 }
 
 /**
  * Result from retrieving shader information.
  */
 export interface ShaderInfoResult {
-	success: boolean
-	eventId?: number
-	stage?: string
-	entryPoint?: string
-	language?: string // e.g. "HLSL", "GLSL", "SPIR-V"
-	instructionCount?: number
-	inputs?: ShaderVariable[]
-	outputs?: ShaderVariable[]
-	constantBuffers?: string[]
-	error?: string
+  success: boolean;
+  eventId?: number;
+  stage?: string;
+  entryPoint?: string;
+  language?: string; // e.g. "HLSL", "GLSL", "SPIR-V"
+  instructionCount?: number;
+  inputs?: ShaderVariable[];
+  outputs?: ShaderVariable[];
+  constantBuffers?: string[];
+  error?: string;
 }
 
 /**
  * A shader input/output variable.
  */
 export interface ShaderVariable {
-	name: string
-	type: string
-	semantic?: string
+  name: string;
+  type: string;
+  semantic?: string;
 }
 
 /**
  * Request parameters for project implementation mapping.
  */
 export interface ProjectMappingRequest {
-	/** The type of object to map */
-	kind: "shader" | "pass" | "draw" | "resource"
-	/** Identifier or name of the object */
-	identifier: string
-	/** Optional event ID for context */
-	eventId?: number
+  /** The type of object to map */
+  kind: "shader" | "pass" | "draw" | "resource";
+  /** Identifier or name of the object */
+  identifier: string;
+  /** Optional event ID for context */
+  eventId?: number;
 }
 
 /**
  * Result from project implementation mapping.
  */
 export interface ProjectMappingResult {
-	success: boolean
-	candidates?: ProjectMappingCandidate[]
-	error?: string
+  success: boolean;
+  candidates?: ProjectMappingCandidate[];
+  error?: string;
 }
 
 /**
  * A candidate source code location for a capture object.
  */
 export interface ProjectMappingCandidate {
-	filePath: string
-	line?: number
-	functionName?: string
-	confidence: "high" | "medium" | "low"
-	description?: string
+  filePath: string;
+  line?: number;
+  functionName?: string;
+  confidence: "high" | "medium" | "low";
+  description?: string;
 }
 
 // ─── Graphics Intent ─────────────────────────────────────────────────────────
@@ -247,22 +247,26 @@ export interface ProjectMappingCandidate {
  * Used by GraphicsIntentRouter to select the appropriate workflow.
  */
 export type GraphicsIntent =
-	| "frame_summary" // "分析当前帧", "帧概览"
-	| "frame_performance" // "为什么这帧慢", "帧性能"
-	| "selected_draw_explain" // "解释当前 draw", "这个 draw"
-	| "shader_analysis" // "shader 分析", "shader 为什么慢"
-	| "pipeline_analysis" // "pipeline 分析", "pipeline state"
-	| "resource_trace" // "资源追踪", "这个纹理从哪来"
-	| "project_mapping" // "对应哪段代码", "owner 在哪"
-	| "regression_compare" // "对比", "回归分析"
-	| "graphics_playbook" // "黑屏排查", "GPU 慢排查"
+  | "frame_summary" // "分析当前帧", "帧概览"
+  | "frame_performance" // "为什么这帧慢", "帧性能"
+  | "selected_draw_explain" // "解释当前 draw", "这个 draw"
+  | "shader_analysis" // "shader 分析", "shader 为什么慢"
+  | "pipeline_analysis" // "pipeline 分析", "pipeline state"
+  | "resource_trace" // "资源追踪", "这个纹理从哪来"
+  | "project_mapping" // "对应哪段代码", "owner 在哪"
+  | "regression_compare" // "对比", "回归分析"
+  | "graphics_playbook"; // "黑屏排查", "GPU 慢排查"
 
 // ─── Graphics Playbook ───────────────────────────────────────────────────────
 
 /**
  * Identifier for built-in graphics debug playbooks.
  */
-export type GraphicsPlaybookId = "black_screen" | "gpu_slow" | "heavy_shader" | "shadow_issue"
+export type GraphicsPlaybookId =
+  | "black_screen"
+  | "gpu_slow"
+  | "heavy_shader"
+  | "shadow_issue";
 
 // ─── Workflow Types ──────────────────────────────────────────────────────────
 
@@ -270,281 +274,517 @@ export type GraphicsPlaybookId = "black_screen" | "gpu_slow" | "heavy_shader" | 
  * Request to execute a graphics workflow.
  */
 export interface GraphicsWorkflowRequest {
-	intent: GraphicsIntent
-	userMessage: string
-	/** Optional playbook ID when intent is "graphics_playbook" */
-	playbookId?: GraphicsPlaybookId
-	/** Optional explicit event ID */
-	eventId?: number
+  intent: GraphicsIntent;
+  userMessage: string;
+  /** Optional playbook ID when intent is "graphics_playbook" */
+  playbookId?: GraphicsPlaybookId;
+  /** Optional explicit event ID */
+  eventId?: number;
 }
 
 /**
  * Structured result from a graphics workflow execution.
  */
 export interface GraphicsWorkflowResult {
-	/** High-level summary / conclusion */
-	summary: string
-	/** Evidence items supporting the conclusion */
-	evidence: EvidenceItem[]
-	/** Suspected bottleneck or risk areas */
-	suspectedIssues: SuspectedIssue[]
-	/** Recommended next steps */
-	suggestions: string[]
-	/** Project code mapping candidates, if available */
-	projectMapping?: ProjectMappingCandidate[]
-	/** Raw data from provider calls, for debugging */
-	rawData?: Record<string, unknown>
-	/** Whether the workflow completed successfully */
-	success: boolean
-	/** Error message if workflow failed */
-	error?: string
+  /** High-level summary / conclusion */
+  summary: string;
+  /** Evidence items supporting the conclusion */
+  evidence: EvidenceItem[];
+  /** Suspected bottleneck or risk areas */
+  suspectedIssues: SuspectedIssue[];
+  /** Recommended next steps */
+  suggestions: string[];
+  /** Project code mapping candidates, if available */
+  projectMapping?: ProjectMappingCandidate[];
+  /** Raw data from provider calls, for debugging */
+  rawData?: Record<string, unknown>;
+  /** Whether the workflow completed successfully */
+  success: boolean;
+  /** Error message if workflow failed */
+  error?: string;
 }
 
 /**
  * A single piece of evidence in a workflow result.
  */
 export interface EvidenceItem {
-	/** Source of the evidence (e.g. "frameSummary", "pipelineState") */
-	source: string
-	/** Human-readable description */
-	description: string
-	/** Raw data value, if applicable */
-	value?: unknown
+  /** Source of the evidence (e.g. "frameSummary", "pipelineState") */
+  source: string;
+  /** Human-readable description */
+  description: string;
+  /** Raw data value, if applicable */
+  value?: unknown;
 }
 
 /**
  * A suspected issue or bottleneck identified during analysis.
  */
 export interface SuspectedIssue {
-	/** Category of the issue */
-	category: "performance" | "correctness" | "resource" | "configuration"
-	/** Human-readable description */
-	description: string
-	/** Confidence level */
-	confidence: "high" | "medium" | "low"
+  /** Category of the issue */
+  category: "performance" | "correctness" | "resource" | "configuration";
+  /** Human-readable description */
+  description: string;
+  /** Confidence level */
+  confidence: "high" | "medium" | "low";
 }
 
 // ─── Workspace Types ─────────────────────────────────────────────────────────
 
 /** Editable, provider-independent input that starts a graphics feature workflow. */
 export interface GraphicsFeatureBrief {
-	version: 1
-	title: string
-	visualGoal: string
-	lifecycle: string
-	artControls: string
-	targetPlatforms: string
-	performanceBudget: string
-	compatibilityRequirements: string
-	acceptanceCriteria: string
-	updatedAt?: string
+  version: 1;
+  title: string;
+  visualGoal: string;
+  lifecycle: string;
+  artControls: string;
+  targetPlatforms: string;
+  performanceBudget: string;
+  compatibilityRequirements: string;
+  acceptanceCriteria: string;
+  updatedAt?: string;
 }
 
 /** A source file or directory that supports a detected project-profile fact. */
 export interface GraphicsProjectEvidence {
-	path: string
-	description: string
+  path: string;
+  description: string;
 }
 
 /** Stable categories used by planning and solution-selection workflows. */
-export type GraphicsArchitectureCategory = "pipeline" | "pass" | "shader" | "client" | "asset" | "quality"
+export type GraphicsArchitectureCategory =
+  | "pipeline"
+  | "pass"
+  | "shader"
+  | "client"
+  | "asset"
+  | "quality";
 
 /** A source-backed architecture fact discovered in the active project. */
 export interface GraphicsArchitectureFinding {
-	category: GraphicsArchitectureCategory
-	path: string
-	kind: string
-	symbol?: string
-	detail: string
+  category: GraphicsArchitectureCategory;
+  path: string;
+  kind: string;
+  symbol?: string;
+  detail: string;
+}
+
+/** A stable node in the project graphics architecture relationship graph. */
+export interface GraphicsArchitectureGraphNode {
+  id: string;
+  kind: "file" | "asset" | "symbol" | "guid";
+  label: string;
+  path?: string;
+  guid?: string;
+}
+
+/** A directed reference such as pipeline asset -> renderer data or shader -> include. */
+export interface GraphicsArchitectureGraphEdge {
+  from: string;
+  to: string;
+  kind: "references" | "contains" | "includes" | "implements";
+  detail?: string;
+}
+
+/** A reusable-feature candidate ranked by architecture evidence overlap. */
+export interface GraphicsSimilarFeature {
+  id: string;
+  label: string;
+  score: number;
+  evidence: string[];
 }
 
 /** Bounded deep index of graphics configuration and source-code entry points. */
 export interface GraphicsArchitectureIndex {
-	version: 1
-	findings: GraphicsArchitectureFinding[]
-	analyzedFileCount: number
-	truncated: boolean
+  version: 1;
+  findings: GraphicsArchitectureFinding[];
+  analyzedFileCount: number;
+  truncated: boolean;
+  /** Optional graph fields keep persisted version-one profiles backward compatible. */
+  graph?: {
+    nodes: GraphicsArchitectureGraphNode[];
+    edges: GraphicsArchitectureGraphEdge[];
+  };
+  similarFeatures?: GraphicsSimilarFeature[];
 }
 
 /** Implementation levels compared by the first-phase graphics solution selector. */
 export type GraphicsSolutionLevel =
-	| "configuration"
-	| "shader"
-	| "renderer-pass"
-	| "post-process"
-	| "render-graph"
-	| "compute"
-	| "cpu-client"
+  | "configuration"
+  | "shader"
+  | "renderer-pass"
+  | "post-process"
+  | "render-graph"
+  | "compute"
+  | "cpu-client";
+
+/** Optional capability and budget inputs used to gate a solution candidate. */
+export interface GraphicsSolutionConstraints {
+  availableCapabilities?: string[];
+  maxCost?: number;
+  costUnit?: string;
+}
 
 /** Explainable score for one possible graphics implementation level. */
 export interface GraphicsSolutionCandidate {
-	level: GraphicsSolutionLevel
-	label: string
-	score: number
-	confidence: "high" | "medium" | "low"
-	reasons: string[]
-	risks: string[]
-	rejectionReasons: string[]
+  level: GraphicsSolutionLevel;
+  label: string;
+  score: number;
+  confidence: "high" | "medium" | "low";
+  reasons: string[];
+  risks: string[];
+  rejectionReasons: string[];
+  requiredCapabilities?: string[];
+  resourceNeeds?: string[];
+  estimatedCost?: number;
+}
+
+/** A serializable rule that can be supplied by a market Knowledge/Skill package. */
+export interface GraphicsSolutionRulePackage {
+  id: string;
+  label: string;
+  rules: Array<{
+    levels: GraphicsSolutionLevel[];
+    pattern: string;
+    score: number;
+    reason: string;
+    risk?: string;
+    requiredCapabilities?: string[];
+    resourceNeeds?: string[];
+    estimatedCost?: number;
+  }>;
+}
+
+/** Optional human decision that takes precedence over automatic ranking. */
+export interface GraphicsSolutionOverride {
+  level: GraphicsSolutionLevel;
+  reason: string;
+  decidedBy?: string;
 }
 
 /** Deterministic, project-aware recommendation produced before implementation begins. */
 export interface GraphicsSolutionRecommendation {
-	version: 1
-	recommendedLevel: GraphicsSolutionLevel
-	summary: string
-	candidates: GraphicsSolutionCandidate[]
-	assumptions: string[]
-	generatedAt: string
+  version: 1;
+  recommendedLevel: GraphicsSolutionLevel;
+  summary: string;
+  candidates: GraphicsSolutionCandidate[];
+  assumptions: string[];
+  constraints?: GraphicsSolutionConstraints;
+  /** Records whether a package or human override influenced this recommendation. */
+  decisionHistory?: Array<{
+    source: string;
+    decision: string;
+    reason: string;
+    at: string;
+  }>;
+  generatedAt: string;
+}
+
+/** A conflict produced by a three-way shared-plan merge. */
+export interface GraphicsFeaturePlanMergeConflict {
+  path: string;
+  baseValue: unknown;
+  localValue: unknown;
+  currentValue: unknown;
 }
 
 /** A focused design section in a cross-module graphics feature plan. */
 export interface GraphicsFeaturePlanSection {
-	summary: string
-	details: string[]
+  summary: string;
+  details: string[];
 }
 
 export type GraphicsFeatureTaskKind =
-	| "spike"
-	| "prototype"
-	| "pipeline"
-	| "shader"
-	| "client"
-	| "asset"
-	| "observability"
-	| "validation"
-	| "delivery"
+  | "spike"
+  | "prototype"
+  | "pipeline"
+  | "shader"
+  | "client"
+  | "asset"
+  | "observability"
+  | "validation"
+  | "delivery";
 
-export type GraphicsFeatureTaskOwner = "graphics" | "client" | "technical-art" | "qa" | "design"
+export type GraphicsFeatureTaskOwner =
+  | "graphics"
+  | "client"
+  | "technical-art"
+  | "qa"
+  | "design";
 
-export type GraphicsFeatureTaskStatus = "pending" | "in-progress" | "blocked" | "completed" | "skipped"
+export type GraphicsFeatureTaskStatus =
+  | "pending"
+  | "in-progress"
+  | "blocked"
+  | "completed"
+  | "skipped";
 
 /** An independently verifiable unit of implementation work, ordered by dependencies. */
 export interface GraphicsFeatureTask {
-	id: string
-	kind: GraphicsFeatureTaskKind
-	title: string
-	owner: GraphicsFeatureTaskOwner
-	status: GraphicsFeatureTaskStatus
-	statusNote?: string
-	statusUpdatedAt?: string
-	inputs: string[]
-	outputs: string[]
-	dependsOn: string[]
-	completionConditions: string[]
+  id: string;
+  kind: GraphicsFeatureTaskKind;
+  title: string;
+  owner: GraphicsFeatureTaskOwner;
+  status: GraphicsFeatureTaskStatus;
+  statusNote?: string;
+  statusUpdatedAt?: string;
+  inputs: string[];
+  outputs: string[];
+  dependsOn: string[];
+  completionConditions: string[];
 }
 
 export interface GraphicsFeatureRisk {
-	id: string
-	title: string
-	impact: "high" | "medium" | "low"
-	mitigation: string
-	reviewGate?: string
+  id: string;
+  title: string;
+  impact: "high" | "medium" | "low";
+  mitigation: string;
+  reviewGate?: string;
 }
 
 export interface GraphicsFeatureCompatibilityTarget {
-	target: string
-	strategy: string
-	fallback: string
+  target: string;
+  strategy: string;
+  fallback: string;
 }
 
 export interface GraphicsFeatureAcceptanceCheck {
-	id: string
-	dimension: "visual" | "functional" | "performance" | "compatibility"
-	criterion: string
-	evidence: "screenshot" | "automated-test" | "build" | "profiler" | "capture" | "device-test"
+  id: string;
+  dimension: "visual" | "functional" | "performance" | "compatibility";
+  criterion: string;
+  evidence:
+    | "screenshot"
+    | "automated-test"
+    | "build"
+    | "profiler"
+    | "capture"
+    | "device-test";
 }
 
-export type GraphicsFeaturePlanSource = "generated" | "workspace" | "manual"
+export type GraphicsFeaturePlanSource = "generated" | "workspace" | "manual";
+
+/** A single observable event emitted while a feature task is executing. */
+export interface GraphicsFeatureTaskExecutionLog {
+  timestamp: string;
+  level: "info" | "warning" | "error";
+  message: string;
+}
+
+/**
+ * A bounded execution record for a task delegated to an Agent or human role.
+ *
+ * Optional fields deliberately preserve compatibility with plans written before
+ * execution history was introduced, while allowing retries to remain traceable.
+ */
+export interface GraphicsFeatureTaskExecution {
+  /** Stable identity for one attempt; retries receive a new execution ID. */
+  executionId?: string;
+  taskId: string;
+  executor: "agent" | "human";
+  role: GraphicsFeatureTaskOwner;
+  status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  retryCount?: number;
+  startedAt?: string;
+  finishedAt?: string;
+  updatedAt?: string;
+  output?: string[];
+  error?: string;
+  logs?: GraphicsFeatureTaskExecutionLog[];
+  cancellationReason?: string;
+  /** Revision/fingerprint used to reject stale asynchronous completions. */
+  planRevision?: number;
+  planFingerprint?: string;
+  /** ID of the underlying Agent Task when executor is `agent`. */
+  agentTaskId?: string;
+}
+
+/** A versioned artifact envelope keeps independently recoverable plan sections tied to one revision. */
+export interface GraphicsFeatureArtifactEnvelope<T> {
+  version: 1;
+  kind: GraphicsFeatureArtifactKind;
+  featurePlanRevision: number;
+  generatedAt: string;
+  value: T;
+}
+
+export type GraphicsFeatureArtifactKind =
+  | "architecture-decision"
+  | "asset-contract"
+  | "performance-budget"
+  | "compatibility-matrix"
+  | "verification-report";
+
+export type GraphicsArchitectureDecisionArtifact = GraphicsFeaturePlan["decision"];
+export type GraphicsAssetContractArtifact = GraphicsFeaturePlan["assetContract"];
+export type GraphicsPerformanceBudgetArtifact = GraphicsFeaturePlan["performanceBudget"];
+export type GraphicsCompatibilityMatrixArtifact = GraphicsFeaturePlan["compatibility"];
+
+/** Persisted verification evidence remains independently editable without changing the plan schema. */
+export interface GraphicsVerificationReportArtifact {
+  checks: GraphicsFeatureAcceptanceCheck[];
+  status: "pending" | "passed" | "failed";
+  summary: string;
+}
+
+export interface GraphicsFeaturePlanArtifacts {
+  architectureDecision: GraphicsFeatureArtifactEnvelope<GraphicsArchitectureDecisionArtifact>;
+  assetContract: GraphicsFeatureArtifactEnvelope<GraphicsAssetContractArtifact>;
+  performanceBudget: GraphicsFeatureArtifactEnvelope<GraphicsPerformanceBudgetArtifact>;
+  compatibilityMatrix: GraphicsFeatureArtifactEnvelope<GraphicsCompatibilityMatrixArtifact>;
+  verificationReport: GraphicsFeatureArtifactEnvelope<GraphicsVerificationReportArtifact>;
+}
 
 /** Versioned, deterministic first-phase plan spanning graphics, client, art, and validation work. */
 export interface GraphicsFeaturePlan {
-	version: 1
-	revision: number
-	source: GraphicsFeaturePlanSource
-	updatedAt: string
-	title: string
-	briefSummary: string
-	openQuestions: string[]
-	projectContext: string[]
-	decision: {
-		recommendedLevel: GraphicsSolutionLevel
-		rationale: string[]
-		alternatives: Array<{ level: GraphicsSolutionLevel; reasonNotSelected: string }>
-	}
-	pipelineDesign: GraphicsFeaturePlanSection
-	shaderDesign: GraphicsFeaturePlanSection
-	clientDesign: GraphicsFeaturePlanSection
-	assetContract: {
-		requirements: string[]
-		validationRules: string[]
-	}
-	performanceBudget: GraphicsFeaturePlanSection
-	compatibility: GraphicsFeatureCompatibilityTarget[]
-	risks: GraphicsFeatureRisk[]
-	tasks: GraphicsFeatureTask[]
-	acceptancePlan: GraphicsFeatureAcceptanceCheck[]
-	generatedAt: string
+  version: 1;
+  revision: number;
+  source: GraphicsFeaturePlanSource;
+  updatedAt: string;
+  title: string;
+  briefSummary: string;
+  openQuestions: string[];
+  projectContext: string[];
+  decision: {
+    recommendedLevel: GraphicsSolutionLevel;
+    rationale: string[];
+    alternatives: Array<{
+      level: GraphicsSolutionLevel;
+      reasonNotSelected: string;
+    }>;
+  };
+  pipelineDesign: GraphicsFeaturePlanSection;
+  shaderDesign: GraphicsFeaturePlanSection;
+  clientDesign: GraphicsFeaturePlanSection;
+  assetContract: {
+    requirements: string[];
+    validationRules: string[];
+  };
+  performanceBudget: GraphicsFeaturePlanSection;
+  compatibility: GraphicsFeatureCompatibilityTarget[];
+  risks: GraphicsFeatureRisk[];
+  tasks: GraphicsFeatureTask[];
+  /** Optional execution state remains backward compatible with existing plans. */
+  executions?: GraphicsFeatureTaskExecution[];
+  acceptancePlan: GraphicsFeatureAcceptanceCheck[];
+  generatedAt: string;
 }
 
 /** Source-derived graphics architecture profile for the active workspace. */
 export interface GraphicsProjectProfile {
-	version: 1
-	workspaceName: string
-	engine: "unity" | "unreal" | "custom" | "unknown"
-	engineVersion?: string
-	renderPipelines: string[]
-	graphicsApis: string[]
-	targetPlatforms: string[]
-	shaderLanguages: string[]
-	architectureSignals: string[]
-	architectureIndex: GraphicsArchitectureIndex
-	evidence: GraphicsProjectEvidence[]
-	warnings: string[]
-	scannedAt: string
+  version: 1;
+  workspaceName: string;
+  engine: "unity" | "unreal" | "custom" | "unknown";
+  engineVersion?: string;
+  renderPipelines: string[];
+  graphicsApis: string[];
+  targetPlatforms: string[];
+  shaderLanguages: string[];
+  architectureSignals: string[];
+  architectureIndex: GraphicsArchitectureIndex;
+  evidence: GraphicsProjectEvidence[];
+  warnings: string[];
+  scannedAt: string;
 }
 
 /** Request to update one task without replacing the rest of the persisted plan. */
 export interface GraphicsFeatureTaskStatusUpdate {
-	taskId: string
-	status: GraphicsFeatureTaskStatus
-	statusNote?: string
-	expectedRevision?: number
+  taskId: string;
+  status: GraphicsFeatureTaskStatus;
+  statusNote?: string;
+  expectedRevision?: number;
 }
 
 /** Graphics data persisted in VS Code's webview state for reload-safe draft recovery. */
 export interface GraphicsWorkspacePersistedState {
-	featureBrief?: GraphicsFeatureBrief
-	featurePlan?: GraphicsFeaturePlan
+  featureBrief?: GraphicsFeatureBrief;
+  featurePlan?: GraphicsFeaturePlan;
 }
 
 /** Shared envelope used to merge graphics drafts without replacing unrelated webview state. */
 export interface GraphicsWebviewPersistedState {
-	graphicsWorkspace?: GraphicsWorkspacePersistedState
-	[key: string]: unknown
+  graphicsWorkspace?: GraphicsWorkspacePersistedState;
+  [key: string]: unknown;
 }
 
 /** Provider-independent sections exposed by the Graphics Workspace. */
-export type GraphicsWorkspaceSection = "feature" | "assets" | "runtime"
+export type GraphicsWorkspaceSection = "feature" | "assets" | "runtime";
+
+/** Marketplace or runtime source that contributes a graphics capability. */
+export type GraphicsCapabilitySourceKind =
+  | "knowledge"
+  | "skill"
+  | "mcp"
+  | "provider";
+
+/** Health state reported by a capability source. */
+export type GraphicsCapabilityHealth =
+  | "healthy"
+  | "degraded"
+  | "unavailable"
+  | "unknown";
+
+/** Installation/runtime scope used when resolving duplicate capability sources. */
+export type GraphicsCapabilityScope = "built-in" | "global" | "project";
+
+/** A normalized, source-independent capability declaration. */
+export interface GraphicsCapabilityDescriptor {
+  id: string;
+  label: string;
+  description?: string;
+  sourceKind: GraphicsCapabilitySourceKind;
+  sourceId: string;
+  version?: string;
+  providedCapabilities: string[];
+  requiredCapabilities?: string[];
+  dependencies?: string[];
+  availability: GraphicsCapabilityAvailability;
+  health: GraphicsCapabilityHealth;
+  scope?: GraphicsCapabilityScope;
+  reason?: string;
+  diagnostics?: string[];
+}
+
+/** Registry entry retaining registration metadata without changing the descriptor contract. */
+export interface GraphicsCapabilityRegistryEntry {
+  descriptor: GraphicsCapabilityDescriptor;
+  registeredAt: string;
+}
+
+/** Result of checking the capability dependencies of a registry entry. */
+export interface GraphicsCapabilityDependencyResolution {
+  satisfied: boolean;
+  missing: string[];
+}
 
 /** Availability of an optional workspace capability. */
-export type GraphicsCapabilityAvailability = "available" | "unavailable" | "degraded" | "unknown"
+export type GraphicsCapabilityAvailability =
+  | "available"
+  | "unavailable"
+  | "degraded"
+  | "unknown";
 
 /** A capability card rendered by the workspace without binding to a specific tool. */
 export interface GraphicsWorkspaceCapability {
-	id: "feature-planning" | "source-analysis" | "asset-validation" | "runtime-capture"
-	label: string
-	description: string
-	availability: GraphicsCapabilityAvailability
-	providerId?: GraphicsProviderId
-	providerName?: string
-	reason?: string
+  id:
+    | "feature-planning"
+    | "source-analysis"
+    | "asset-validation"
+    | "runtime-capture";
+  label: string;
+  description: string;
+  availability: GraphicsCapabilityAvailability;
+  providerId?: GraphicsProviderId;
+  providerName?: string;
+  reason?: string;
 }
 
 /** Payload returned for the lazily requested runtime provider status. */
 export interface GraphicsProviderStatusPayload {
-	providers: GraphicsProviderStatusInfo[]
-	selectedProviderId?: GraphicsProviderId
-	capabilitiesByProviderId: Record<GraphicsProviderId, GraphicsProviderCapabilities | null>
+  providers: GraphicsProviderStatusInfo[];
+  selectedProviderId?: GraphicsProviderId;
+  capabilitiesByProviderId: Record<
+    GraphicsProviderId,
+    GraphicsProviderCapabilities | null
+  >;
 }
 
 // ─── UI Action Types ─────────────────────────────────────────────────────────
@@ -553,20 +793,20 @@ export interface GraphicsProviderStatusPayload {
  * Actions that the frontend can send to the backend for graphics operations.
  */
 export type GraphicsUIAction =
-	| { type: "runGraphicsWorkflow"; intent: GraphicsIntent; message?: string }
-	| { type: "runGraphicsPlaybook"; playbookId: GraphicsPlaybookId }
-	| { type: "selectGraphicsProvider"; providerId: string }
-	| { type: "analyzeCurrentFrame" }
-	| { type: "explainSelectedDraw" }
-	| { type: "findOwnerInProject" }
+  | { type: "runGraphicsWorkflow"; intent: GraphicsIntent; message?: string }
+  | { type: "runGraphicsPlaybook"; playbookId: GraphicsPlaybookId }
+  | { type: "selectGraphicsProvider"; providerId: string }
+  | { type: "analyzeCurrentFrame" }
+  | { type: "explainSelectedDraw" }
+  | { type: "findOwnerInProject" };
 
 /**
  * Messages sent from backend to frontend with graphics results.
  */
 export interface GraphicsResultMessage {
-	type: "graphicsResult"
-	result: GraphicsWorkflowResult
-	providerId: string
-	providerName: string
-	timestamp: number
+  type: "graphicsResult";
+  result: GraphicsWorkflowResult;
+  providerId: string;
+  providerName: string;
+  timestamp: number;
 }

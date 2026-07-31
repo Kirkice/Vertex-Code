@@ -1,5 +1,7 @@
 # Vertex Graphics Agent 开发路线图
 
+> 最后更新：2026-07-31。每完成一个可验证的开发步骤、测试步骤或路线图子目标，必须同步更新本节。
+
 > 文档目标：把 Vertex 从“具备图形能力的通用 Coding Agent”推进为“覆盖图形 Feature 设计、实现、联调、验证、调试与优化全生命周期的图形开发 Agent”。
 >
 > **配套市场仓库本地地址**：`H:\Project\vertex-code-market`。在当前 Vertex 工作区中可通过相对路径 `..\vertex-code-market` 访问。后续涉及市场 Knowledge、Skill、MCP、清单或契约检查时，默认使用该地址，无需再次询问仓库位置；如果目录不存在或工作区布局发生变化，再执行路径发现或要求确认。
@@ -1725,7 +1727,9 @@ Capture 对比前必须记录：
 
 # 8. 实施状态清单
 
-> 最后更新：2026-07-30。该清单用于记录实际代码落地状态；完成项使用 `[x]`，未完成项使用 `[ ]`。路线图正文描述的是目标架构，本节描述当前仓库的真实进度。
+> 最后更新：2026-07-31。该清单用于记录实际代码落地状态；完成项使用 `[x]`，未完成项使用 `[ ]`。路线图正文描述的是目标架构，本节描述当前仓库的真实进度。每完成一个可验证的开发步骤、测试步骤或路线图子目标，必须同步更新本节的完成状态、验证结果和剩余 TODO。
+>
+> 本批次完成：Marketplace Capability Registry 核心模型纵向切片。验证结果：`GraphicsCapabilityRegistry` focused tests 5/5、`src` typecheck 与 `git diff --check` 通过。正式市场仓库发布校验、Knowledge Registry、Skill-MCP/Provider 契约测试和 Capability 驱动 Quick Actions 仍保留在 TODO。
 
 ## 8.1 Done：已完成
 
@@ -1786,24 +1790,41 @@ Capture 对比前必须记录：
 - [x] Feature Plan 支持 Project Context、Open Questions、Risks 和 Acceptance Plan 的人工编辑；编辑通过 revision 乐观并发控制写入 `workspaceState`，并通过 `graphicsFeaturePlanEdited` 同步回 Webview。
 - [x] 新增 Graphics 代码遵循解释性注释规范，协议字段、边界 Handler、序列化格式和状态同步逻辑均记录设计意图。
 - [x] 完成项目文件持久化第一阶段：Feature Brief 和 Feature Plan 写入 `.roo/graphics/feature-brief.json` 与 `.roo/graphics/feature-plan.json`，采用临时文件替换保证原子写入。
+- [x] 扩展 Graphics Workspace artifact 持久化：Project Profile 与 Solution Recommendation 分别写入 `.roo/graphics/project-profile.json` 和 `.roo/graphics/solution-recommendation.json`，保留决策历史、架构索引和任务执行记录，支持项目级恢复。
 - [x] Handler 优先读取项目文件，并在无工作区、文件缺失或 JSON 损坏时回退到 `workspaceState`；成功保存同时更新 `workspaceState` 缓存。
-- [x] 增加项目文件读写、无工作区、损坏文件回退和项目 Feature Brief 优先级测试；多窗口版本合并策略仍待后续实现。
+- [x] 增加项目文件读写、无工作区、损坏文件回退、项目 Feature Brief 优先级、artifact round-trip 和 conditional plan write 测试；`GraphicsFeatureWorkspaceStore` focused suite 5/5 通过。
+- [x] 增加 Feature Plan 项目文件 watcher，并让 Webview 外部变更通知统一走 `requestGraphicsFeaturePlanRecovery`，避免使用过期事件 payload 覆盖本地状态。
+- [x] 完成共享 Feature Plan 三方合并协议，支持 `base`/`local`/`current` 语义、scalar/object 合并和按 `id`/`target` 的 identity-array 合并，并输出结构化冲突路径及三方值。
+- [x] 增加 `graphicsFeaturePlanMergePreview`、`previewGraphicsFeaturePlanMerge` 和 `mergeGraphicsFeaturePlan` 消息协议。
+- [x] Extension Host 支持重新读取 shared/current 版本、生成 merge preview，并在保存前重新校验 snapshot/fingerprint，避免覆盖新的共享编辑。
+- [x] Graphics Workspace 支持 Reload shared、Keep local draft 和 Preview manual merge 三种冲突处理路径。
+- [x] 冲突预览支持 Base/Local/Shared 三栏展示、逐字段 Use local/Use shared、多冲突选择累积和 Save merged plan。
+- [x] Feature Plan watcher 支持 create/change/delete 事件去抖，原子文件替换产生的事件 burst 只触发一次外部恢复通知。
+- [x] ClineProvider watcher 测试覆盖 RelativePattern 初始化、workspace-backed watcher、burst debounce、dispose cleanup 和 dispose 后不再发送消息。
+- [x] 完成 ClineProvider focused suite 93/93、`graphicsMessageHandler` 33/33、`GraphicsFeaturePlanMerger` 2/2 和 `GraphicsWorkspace` 15/15 focused tests。
+- [x] Architecture Index focused suite 4/4 通过；`src` package typecheck 通过；`git diff --check` 通过（仅有换行符规范提示）。
+- [x] 统一 Feature Plan 编辑 Handler 使用 snapshot/fingerprint conditional save，覆盖任务 Owner、Asset Contract、Performance Budget、Decision、Compatibility 和计划上下文编辑，避免共享计划并发写入覆盖外部更新。
+- [x] `src` 与 `webview-ui` typecheck 通过，`git diff --check` 通过。
 
 ## 8.2 TODO：未完成
 
 ### Graphics Workspace 与 Feature 开发主链路
 
-- [ ] 在项目文件持久化第一阶段基础上补充团队共享场景的多窗口冲突检测、版本合并和文件变更监听策略。
-- [ ] 继续扩展 Graphics Architecture Index：解析 GUID 到实际 Render Pipeline/Renderer Data 资产的引用图、完整 Pass/Shader 符号、Importer 与命名规范、质量档位具体参数、资源加载/对象池/相机入口，并实现可复用相似 Feature 排名。
-- [ ] 将第一阶段规则式技术选型器升级为可配置规则包，引入市场 Knowledge/Skill/Provider 可用性、资源需求推导、成本预算、架构门禁和固定样本 Golden Test；支持人工覆盖并记录决策历史。
-- [ ] 在现有跨模块任务拆解基础上增加计划正文其他区块的人工编辑/覆盖、增量重生成、角色指派和实际 Agent 执行编排；当前已支持任务标题、完成条件和状态人工更新。
-- [ ] 实现 Feature Plan、架构决策、Asset Contract、性能预算、兼容矩阵和验证报告的持久化与恢复。
-- [ ] 将 Workspace 文案接入项目国际化资源，替换当前硬编码英文文本。
-- [ ] 增加 Workspace 的可访问性、键盘导航、响应式布局和真实 Webview 视觉回归测试。
+- [x] 继续扩展 Graphics Architecture Index：解析 GUID 到实际 Render Pipeline/Renderer Data/Renderer Feature 资产的引用图，扩展 Pass/Shader entry symbol 识别，并实现稳定、可复用的相似 Feature 排名。
+- [x] Architecture Index 增量批次：新增 Importer 元数据、图形资产命名规范、质量档位参数、资源加载、对象池、相机入口、Shader variant/type/function symbols，并补充 5 个 focused tests。
+- [x] 将第一阶段规则式技术选型器升级为可配置规则包，引入市场 Knowledge/Skill/Provider 可用性、资源需求推导、成本预算、架构门禁和固定样本 Golden Test；支持人工覆盖并记录决策历史。`GraphicsSolutionSelector` focused suite 7/7 通过；完整市场 Capability Registry 已独立落地，Selector 仍通过显式 capability snapshot 解耦运行时注册表。
+- [x] Solution Selector 增量批次：支持规则包元数据、候选所需能力与资源需求推导、估算成本、能力缺失/预算超限 rejection reasons、推荐约束回传，并补充 5 个 focused tests；`src` typecheck 与 `git diff --check` 通过。市场能力注册表、固定样本 Golden Test 与完整架构门禁仍待实现。
+- [x] 在现有跨模块任务拆解基础上增加计划正文其他区块的人工编辑/覆盖、角色指派和实际 Agent 执行编排；当前已支持计划标题/摘要、Pipeline/Shader/Client、Asset Contract、Performance Budget、Decision、Compatibility、Project Context、Open Questions、Risks、Acceptance Plan、任务标题/完成条件/Owner、任务状态和 Agent/Human 执行、取消、重试、输出、错误、日志与依赖门禁。
+- [x] 实现 Feature Plan、架构决策、Asset Contract、性能预算、兼容矩阵和验证报告的完整 artifact 持久化与恢复；新增版本化 artifact envelope、五类独立项目文件、旧计划嵌套字段兼容恢复和恢复消息 bundle；Store focused suite 6/6、graphicsMessageHandler focused suite 33/33、src typecheck 通过。跨文件事务提交和独立 artifact 编辑协议仍作为后续增强项。
+- [x] 将 Workspace 文案全面接入项目国际化资源，替换当前仍残留的硬编码英文文本；Graphics 组件及其子组件已完成硬编码 JSX 文案扫描，现有英文资源和 TranslationContext mock 覆盖 Workspace、Profile、Recommendation、Feature Plan、merge、Asset/Runtime 与可访问性文案；GraphicsWorkspace focused suite 15/15、webview-ui typecheck 通过。
+- [x] 增加基础 Workspace 可访问性语义、冲突区域角色标记、响应式三栏布局和对应 focused tests。
+- [x] 完成完整键盘导航、focus management、aria-live 状态播报和真实 Webview visual regression 测试。键盘导航、focus restoration、冲突恢复焦点、`aria-live` 播报由 `GraphicsWorkspace` focused suite 17/17 覆盖；真实 Chromium visual regression 通过 `webview-ui/playwright.config.ts` 与 `webview-ui/visual-regression/graphics-workspace.spec.ts` 覆盖截图基线、roving tab navigation 和 ARIA tab/panel 关联，当前 2/2 通过。
 
 ### Marketplace、Knowledge 与 Capability
 
-- [ ] 建立 Marketplace Capability Registry，统一描述 Knowledge、Skill、MCP 和 Provider 的能力、依赖、版本与健康状态。
+- [x] 建立可复用 Graphics Capability Registry 核心模型，统一归一化 Knowledge、Skill、MCP 和 Provider 的能力、依赖、版本、scope、availability 与 health；支持 source replacement、unregister、capability 查询、依赖解析、可用性聚合和稳定排序。
+- [x] 完成现有接入点盘点：Marketplace item schema、Skill/MCP runtime metadata、GraphicsProviderRegistry/runtime capabilities 与 Workspace capability cards 已明确职责边界；Capability Registry 不替代 Provider selection/preflight。
+- [x] 增加 `GraphicsCapabilityRegistry` focused suite 5/5；`src` typecheck 与 `git diff --check` 通过。
 - [ ] 显式发布并校验市场仓库中的正式 Graphics、Unity、RenderDoc Skills 和 AssetStudio MCP。
 - [ ] 建立 Knowledge Registry，合并内置、全局和项目级 Knowledge 索引，使市场安装的 Knowledge 能参与运行时路由与上下文注入。
 - [ ] 建立 Skill 到 MCP/Provider 的工具契约测试，防止 Skill 引用不存在或不兼容的工具。

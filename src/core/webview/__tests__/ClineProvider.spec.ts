@@ -148,6 +148,13 @@ vi.mock("vscode", () => ({
 			toString: () => `file://${filePath}`,
 		})),
 	},
+	// Match the VS Code constructor used by the Feature Plan watcher.
+	RelativePattern: class {
+		constructor(
+			public base: string,
+			public pattern: string,
+		) {}
+	},
 	CodeActionKind: {
 		QuickFix: { value: "quickfix" },
 		RefactorRewrite: { value: "refactor.rewrite" },
@@ -172,6 +179,14 @@ vi.mock("vscode", () => ({
 			dispose: vi.fn(),
 		})),
 		onDidSaveTextDocument: vi.fn(() => ({ dispose: vi.fn() })),
+		// Keep provider construction safe in suites that configure a workspace but
+		// do not exercise the Graphics watcher directly.
+		createFileSystemWatcher: vi.fn(() => ({
+			onDidCreate: vi.fn(),
+			onDidChange: vi.fn(),
+			onDidDelete: vi.fn(),
+			dispose: vi.fn(),
+		})),
 		onDidChangeTextDocument: vi.fn(() => ({ dispose: vi.fn() })),
 		onDidOpenTextDocument: vi.fn(() => ({ dispose: vi.fn() })),
 		onDidCloseTextDocument: vi.fn(() => ({ dispose: vi.fn() })),
@@ -487,9 +502,11 @@ describe("ClineProvider", () => {
 			onDidChangeVisibility: vi.fn().mockImplementation(() => ({ dispose: vi.fn() })),
 		} as unknown as vscode.WebviewView
 
-		provider = new ClineProvider(mockContext, mockOutputChannel, "sidebar", new ContextProxy(mockContext))
-		// Reset shared workspace state between tests to prevent cross-suite leakage.
+		// Reset shared workspace state before construction so each provider starts
+		// with the same watcher configuration as the test that owns it.
 		;(vscode.workspace as any).workspaceFolders = undefined
+		;(vscode.workspace.createFileSystemWatcher as any).mockReset()
+		provider = new ClineProvider(mockContext, mockOutputChannel, "sidebar", new ContextProxy(mockContext))
 
 		defaultTaskOptions = {
 			provider,
@@ -686,6 +703,65 @@ describe("ClineProvider", () => {
 
 		expect(postMessageSpy).toHaveBeenCalledTimes(1)
 		expect(postMessageSpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: "action" }))
+	})
+
+	test("debounces Graphics Feature Plan watcher bursts and disposes it safely", async () => {
+		const callbacks = {
+			create: undefined as (() => void) | undefined,
+			change: undefined as (() => void) | undefined,
+			delete: undefined as (() => void) | undefined,
+		}
+		const watcher = {
+			onDidCreate: vi.fn((callback: () => void) => {
+				callbacks.create = callback
+				return { dispose: vi.fn() }
+			}),
+			onDidChange: vi.fn((callback: () => void) => {
+				callbacks.change = callback
+				return { dispose: vi.fn() }
+			}),
+			onDidDelete: vi.fn((callback: () => void) => {
+				callbacks.delete = callback
+				return { dispose: vi.fn() }
+			}),
+			dispose: vi.fn(),
+		}
+		// The shared beforeEach provider is intentionally workspace-less. Dispose it
+		// before constructing the workspace-backed provider used by this watcher test.
+		await provider.dispose()
+		;(vscode.workspace as any).workspaceFolders = [{ uri: { fsPath: "/test/workspace" } }]
+		const pathUtils = await import("../../../utils/path")
+		vi.mocked(pathUtils.getWorkspacePath).mockReturnValue("/test/workspace")
+		;(vscode.workspace.createFileSystemWatcher as any).mockReturnValue(watcher)
+		provider = new ClineProvider(mockContext, mockOutputChannel, "sidebar", new ContextProxy(mockContext))
+		const postMessageSpy = vi.spyOn(provider, "postMessageToWebview").mockImplementation(async () => undefined)
+		;(provider as any).view = mockWebviewView
+
+		callbacks.create?.()
+		callbacks.change?.()
+		callbacks.delete?.()
+		await new Promise((resolve) => setTimeout(resolve, 130))
+		expect(postMessageSpy).toHaveBeenCalledTimes(1)
+		expect(postMessageSpy).toHaveBeenCalledWith({ type: "graphicsFeaturePlanExternalChange" })
+
+		await provider.dispose()
+		expect(watcher.dispose).toHaveBeenCalled()
+		postMessageSpy.mockClear()
+		callbacks.change?.()
+		await new Promise((resolve) => setTimeout(resolve, 130))
+		expect(postMessageSpy).not.toHaveBeenCalled()
+
+		// Restore the process-wide mock state so later ClineProvider suites do not
+		// accidentally construct a watcher with this test's disposed fake.
+		;(vscode.workspace as any).workspaceFolders = undefined
+		;(vscode.workspace.createFileSystemWatcher as any).mockReset()
+		;(vscode.workspace.createFileSystemWatcher as any).mockImplementation(() => ({
+			onDidCreate: vi.fn(),
+			onDidChange: vi.fn(),
+			onDidDelete: vi.fn(),
+			dispose: vi.fn(),
+		}))
+		vi.mocked((await import("../../../utils/path")).getWorkspacePath).mockReturnValue("")
 	})
 
 	test("postMessageToWebview skips postMessage after dispose", async () => {

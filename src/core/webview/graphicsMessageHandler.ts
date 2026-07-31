@@ -7,14 +7,19 @@
  * @module webview/graphicsMessageHandler
  */
 
+import { RooCodeEventName } from "@roo-code/types"
+import type { TaskLike } from "@roo-code/types"
 import type {
 	GraphicsFeatureAcceptanceCheck,
 	GraphicsFeatureBrief,
 	GraphicsFeaturePlan,
+	GraphicsFeaturePlanArtifacts,
 	GraphicsFeatureRisk,
+	GraphicsFeatureTaskExecution,
 	GraphicsFeatureTaskStatus,
 	GraphicsIntent,
 	GraphicsPlaybookId,
+	GraphicsProjectProfile,
 	WebviewMessage,
 } from "@roo-code/types"
 import type { ClineProvider } from "./ClineProvider"
@@ -32,7 +37,11 @@ import {
 import { createGraphicsFeaturePlan } from "../../services/graphics-agent/planning/GraphicsFeaturePlanner"
 import { profileGraphicsProject } from "../../services/graphics-agent/planning/GraphicsProjectProfiler"
 import { selectGraphicsSolution } from "../../services/graphics-agent/planning/GraphicsSolutionSelector"
-import { GraphicsFeatureWorkspaceStore } from "../../services/graphics-agent/persistence/GraphicsFeatureWorkspaceStore"
+import {
+	GraphicsFeatureWorkspaceStore,
+	type GraphicsWorkspaceSnapshot,
+} from "../../services/graphics-agent/persistence/GraphicsFeatureWorkspaceStore"
+import { mergeGraphicsFeaturePlans } from "../../services/graphics-agent/planning/GraphicsFeaturePlanMerger"
 import type { GraphicsSolutionLevel } from "@roo-code/types"
 import type { GraphicsProviderCapabilities } from "../../services/graphics-provider/GraphicsProviderTypes"
 import {
@@ -51,9 +60,75 @@ let graphicsOrchestrator: GraphicsWorkflowOrchestrator | null = null
 const GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY = "graphicsFeatureBrief"
 const GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY = "graphicsFeaturePlan"
 
+/** Keeps the concrete Agent Task available for targeted cancellation without touching the foreground task API. */
+const graphicsExecutionTasks = new Map<string, TaskLike>()
+/** Carries an explicit user cancellation reason into the asynchronous TaskAborted callback. */
+const graphicsExecutionCancellationReasons = new Map<string, string>()
+/** Serializes asynchronous execution writes so output, logs, and terminal state cannot overwrite each other. */
+const graphicsExecutionUpdateQueues = new Map<string, Promise<void>>()
+
+/** Releases all in-memory execution resources owned by a provider instance. */
+export function disposeGraphicsExecutionRuntime(): void {
+	for (const task of graphicsExecutionTasks.values()) task.abortTask()
+	graphicsExecutionTasks.clear()
+	graphicsExecutionCancellationReasons.clear()
+	graphicsExecutionUpdateQueues.clear()
+}
+
 /** Creates the project-file store per request so tests and multiple workspaces never share path state. */
 function getGraphicsFeatureWorkspaceStore(provider: ClineProvider): GraphicsFeatureWorkspaceStore {
 	return new GraphicsFeatureWorkspaceStore(provider.cwd, (message) => provider.log(message))
+}
+
+/** Reads the current shared plan snapshot for optimistic multi-window writes. */
+async function loadGraphicsFeaturePlanSnapshot(
+	provider: ClineProvider,
+): Promise<GraphicsWorkspaceSnapshot<GraphicsFeaturePlan> | undefined> {
+	return getGraphicsFeatureWorkspaceStore(provider).loadPlanSnapshot()
+}
+
+/** Sends a consistent conflict response when the project file changed outside this window. */
+async function postGraphicsFeaturePlanConflict(
+	provider: ClineProvider,
+	currentPlan: GraphicsFeaturePlan | undefined,
+	error: string,
+): Promise<void> {
+	await provider.postMessageToWebview({
+		type: "graphicsFeaturePlanConflict",
+		graphicsFeaturePlan: currentPlan,
+		graphicsFeaturePlanError: error,
+		graphicsFeaturePlanConflict: {
+			currentRevision: currentPlan?.revision,
+			currentPlan,
+			path: getGraphicsFeatureWorkspaceStore(provider).getPlanPath(),
+		},
+	})
+}
+
+/**
+ * Persists a plan only when the project snapshot observed before editing is still current.
+ * This helper keeps every plan-edit handler on the same multi-window conflict path.
+ */
+async function persistGraphicsFeaturePlanEdit(
+	provider: ClineProvider,
+	plan: GraphicsFeaturePlan,
+	snapshot: GraphicsWorkspaceSnapshot<GraphicsFeaturePlan> | undefined,
+): Promise<boolean> {
+	const store = getGraphicsFeatureWorkspaceStore(provider)
+	const result = snapshot
+		? await store.savePlanIfUnchanged(plan, snapshot)
+		: { saved: await store.savePlan(plan), conflict: false }
+	if (result.conflict) {
+		await postGraphicsFeaturePlanConflict(
+			provider,
+			result.current?.value,
+			"The shared plan changed before this edit was saved.",
+		)
+		return false
+	}
+	// Keep workspaceState as the compatibility fallback even when project persistence is unavailable.
+	await saveGraphicsFeaturePlan(provider, plan)
+	return true
 }
 
 /** Reads the project file first and falls back to workspaceState for legacy and no-workspace sessions. */
@@ -62,6 +137,12 @@ async function loadGraphicsFeatureBrief(provider: ClineProvider): Promise<Graphi
 	return (
 		projectBrief ?? provider.context.workspaceState.get<GraphicsFeatureBrief>(GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY)
 	)
+}
+
+/** Restores the team-shared profile before scanning so plan requests remain deterministic across windows. */
+async function loadGraphicsProjectProfile(provider: ClineProvider): Promise<GraphicsProjectProfile> {
+	const store = getGraphicsFeatureWorkspaceStore(provider)
+	return (await store.loadProfile()) ?? profileGraphicsProject(provider.cwd)
 }
 
 /** Reads the team-shared plan first while keeping workspaceState as a fast compatibility cache. */
@@ -76,10 +157,20 @@ async function saveGraphicsFeatureBrief(provider: ClineProvider, brief: Graphics
 	await getGraphicsFeatureWorkspaceStore(provider).saveBrief(brief)
 }
 
-/** Keeps workspaceState warm while atomically publishing the same revision to the project file. */
+/** Keeps the compatibility cache and all independently recoverable artifacts on the same plan revision. */
 async function saveGraphicsFeaturePlan(provider: ClineProvider, plan: GraphicsFeaturePlan): Promise<void> {
+	const store = getGraphicsFeatureWorkspaceStore(provider)
 	await provider.context.workspaceState.update(GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY, plan)
-	await getGraphicsFeatureWorkspaceStore(provider).savePlan(plan)
+	await store.savePlan(plan)
+	await store.savePlanArtifacts(plan)
+}
+
+/** Restores split artifacts while projecting legacy plans into the same bundle shape. */
+async function loadGraphicsFeaturePlanArtifacts(
+	provider: ClineProvider,
+	plan: GraphicsFeaturePlan | undefined,
+): Promise<GraphicsFeaturePlanArtifacts | undefined> {
+	return getGraphicsFeatureWorkspaceStore(provider).loadPlanArtifacts(plan)
 }
 
 /**
@@ -122,6 +213,344 @@ function getGraphicsOrchestrator(provider: ClineProvider): GraphicsWorkflowOrche
  * @param message - The webview message
  * @returns true if the message was handled, false otherwise
  */
+/** Returns true when a task's dependencies are all complete and it can be delegated. */
+function canExecuteGraphicsTask(plan: GraphicsFeaturePlan, taskId: string): boolean {
+	const task = plan.tasks.find((candidate) => candidate.id === taskId)
+	return Boolean(
+		task &&
+			task.dependsOn.every(
+				(dependencyId) => plan.tasks.find((candidate) => candidate.id === dependencyId)?.status === "completed",
+			),
+	)
+}
+
+/** Creates a stable execution identity without coupling persistence to the underlying Agent Task ID. */
+function createGraphicsExecutionId(taskId: string): string {
+	return `graphics-${taskId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** Computes a compact structural plan identity while ignoring mutable execution status fields. */
+function getGraphicsPlanFingerprint(plan: GraphicsFeaturePlan): string {
+	return [
+		plan.title,
+		plan.briefSummary,
+		...plan.tasks.map(
+			(task) => `${task.id}:${task.title}:${task.owner}:${task.dependsOn.join(",")}:${task.completionConditions.join(";")}`,
+		),
+	].join("|")
+}
+
+/** Computes an execution update from the latest persisted record to avoid stale async merges. */
+type GraphicsExecutionUpdate =
+	| Partial<GraphicsFeatureTaskExecution>
+	| ((execution: GraphicsFeatureTaskExecution) => Partial<GraphicsFeatureTaskExecution>)
+
+/** Updates one execution record and broadcasts the complete plan for deterministic Webview reconciliation. */
+async function updateGraphicsExecutionNow(
+	provider: ClineProvider,
+	executionId: string,
+	update: GraphicsExecutionUpdate,
+): Promise<void> {
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
+	if (!plan) return
+	const execution = plan.executions?.find((candidate) => candidate.executionId === executionId)
+	if (!execution) return
+	if (execution.planFingerprint && execution.planFingerprint !== getGraphicsPlanFingerprint(plan)) {
+		provider.log(`[Graphics] ignored stale execution update for ${executionId}`)
+		return
+	}
+	const now = new Date().toISOString()
+	const resolvedUpdate = typeof update === "function" ? update(execution) : update
+	const updatedExecution = { ...execution, ...resolvedUpdate, updatedAt: now }
+	const nextPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		updatedAt: now,
+		executions: plan.executions?.map((candidate) =>
+			candidate.executionId === executionId ? updatedExecution : candidate,
+		),
+		tasks: plan.tasks.map((task) =>
+			task.id === execution.taskId && resolvedUpdate.status
+				? {
+						...task,
+						status:
+							resolvedUpdate.status === "succeeded"
+								? "completed"
+								: resolvedUpdate.status === "failed" || resolvedUpdate.status === "cancelled"
+									? "pending"
+									: "in-progress",
+						statusUpdatedAt: now,
+					}
+				: task,
+		),
+	}
+	if (!(await persistGraphicsFeaturePlanEdit(provider, nextPlan, snapshot))) return
+	await provider.postMessageToWebview({ type: "graphicsFeatureTaskExecutionUpdated", graphicsFeaturePlan: nextPlan })
+}
+
+/** Queues one execution update behind all prior updates for the same attempt. */
+function updateGraphicsExecution(
+	provider: ClineProvider,
+	executionId: string,
+	update: GraphicsExecutionUpdate,
+): Promise<void> {
+	const previous = graphicsExecutionUpdateQueues.get(executionId) ?? Promise.resolve()
+	const next = previous
+		.catch(() => undefined)
+		.then(() => updateGraphicsExecutionNow(provider, executionId, update))
+	graphicsExecutionUpdateQueues.set(executionId, next)
+	void next.finally(() => {
+		if (graphicsExecutionUpdateQueues.get(executionId) === next) graphicsExecutionUpdateQueues.delete(executionId)
+	})
+	return next
+}
+
+async function handleExecuteGraphicsFeatureTask(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
+	const taskId = message.graphicsFeatureTaskId
+	if (!plan || !taskId || !canExecuteGraphicsTask(plan, taskId)) {
+		provider.log("[Graphics] executeGraphicsFeatureTask: task is missing or blocked by dependencies")
+		return
+	}
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await postGraphicsFeaturePlanConflict(provider, plan, "The plan changed before execution was queued.")
+		return
+	}
+	const now = new Date().toISOString()
+	const task = plan.tasks.find((candidate) => candidate.id === taskId)!
+	const execution: GraphicsFeatureTaskExecution = {
+		executionId: createGraphicsExecutionId(taskId),
+		taskId,
+		executor: message.graphicsFeatureTaskExecutor ?? "agent",
+		role: message.graphicsFeatureTaskRole ?? task.owner,
+		status: "queued",
+		retryCount: 0,
+		updatedAt: now,
+		planRevision: plan.revision,
+		planFingerprint: getGraphicsPlanFingerprint(plan),
+		logs: [{ timestamp: now, level: "info", message: "Execution queued." }],
+	}
+	const updatedPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		source: "manual",
+		updatedAt: now,
+		executions: [...(plan.executions ?? []), execution],
+		tasks: plan.tasks.map((candidate) =>
+			candidate.id === taskId ? { ...candidate, status: "in-progress", statusUpdatedAt: now } : candidate,
+		),
+	}
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
+
+	// Human execution is intentionally a persisted queue item. Agent execution uses
+	// the existing Task runtime, but does not call provider.cancelTask(), which would
+	// incorrectly cancel the user's foreground chat task.
+	if (execution.executor === "agent") {
+		void runGraphicsAgentExecution(provider, task, execution)
+	}
+}
+
+/** Cancels only the Agent Task associated with this execution, never the user's active chat Task. */
+async function handleCancelGraphicsFeatureTaskExecution(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const executionId = message.graphicsFeatureExecutionId
+	if (!executionId) return
+
+	const agentTask = graphicsExecutionTasks.get(executionId)
+	if (!agentTask) {
+		provider.log(`[Graphics] cancel: execution ${executionId} has no active Agent Task`)
+		return
+	}
+
+	// TaskLike exposes abortTask as the safe task-scoped cancellation boundary.
+	graphicsExecutionCancellationReasons.set(executionId, "Cancelled from Graphics Feature Plan.")
+	// The task-scoped abort event persists the terminal state and reason.
+	agentTask.abortTask()
+}
+
+/** Creates a new attempt after a failed/cancelled execution while retaining the prior attempt history. */
+async function handleRetryGraphicsFeatureTaskExecution(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
+	const executionId = message.graphicsFeatureExecutionId
+	const previous = plan?.executions?.find((execution) => execution.executionId === executionId)
+	if (!plan || !previous || (previous.status !== "failed" && previous.status !== "cancelled")) return
+	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
+		await postGraphicsFeaturePlanConflict(provider, plan, "The plan changed before retry was queued.")
+		return
+	}
+	const task = plan.tasks.find((candidate) => candidate.id === previous.taskId)
+	if (!task || !canExecuteGraphicsTask(plan, task.id)) {
+		provider.log(`[Graphics] retry: task ${previous.taskId} is blocked by dependencies`)
+		return
+	}
+
+	const now = new Date().toISOString()
+	const retry: GraphicsFeatureTaskExecution = {
+		...previous,
+		executionId: createGraphicsExecutionId(previous.taskId),
+		status: "queued",
+		retryCount: (previous.retryCount ?? 0) + 1,
+		startedAt: undefined,
+		finishedAt: undefined,
+		updatedAt: now,
+		output: undefined,
+		error: undefined,
+		cancellationReason: undefined,
+		logs: [{ timestamp: now, level: "info", message: `Retry ${ (previous.retryCount ?? 0) + 1 } queued.` }],
+		agentTaskId: undefined,
+		planRevision: plan.revision,
+		planFingerprint: getGraphicsPlanFingerprint(plan),
+	}
+	const nextPlan: GraphicsFeaturePlan = {
+		...plan,
+		revision: plan.revision + 1,
+		updatedAt: now,
+		executions: [...(plan.executions ?? []), retry],
+		tasks: plan.tasks.map((candidate) =>
+			candidate.id === task.id ? { ...candidate, status: "in-progress", statusUpdatedAt: now } : candidate,
+		),
+	}
+	if (!(await persistGraphicsFeaturePlanEdit(provider, nextPlan, snapshot))) return
+	await provider.postMessageToWebview({ type: "graphicsFeatureTaskExecutionUpdated", graphicsFeaturePlan: nextPlan })
+	if (retry.executor === "agent") void runGraphicsAgentExecution(provider, task, retry)
+}
+
+/** Runs one Agent attempt and maps Task lifecycle events into the Graphics execution state machine. */
+async function runGraphicsAgentExecution(
+	provider: ClineProvider,
+	task: GraphicsFeaturePlan["tasks"][number],
+	execution: GraphicsFeatureTaskExecution,
+): Promise<void> {
+	if (!execution.executionId) return
+
+	try {
+		// Attach the graphics execution to the current task when possible. This keeps
+		// createTask from removing the user's foreground task as it would for a new
+		// top-level task, while preserving a top-level fallback for background use.
+		const foregroundTask = provider.getCurrentTask()
+		const agentTask = await provider.createTask(
+			`Implement Graphics Feature task ${task.id}: ${task.title}\n\nCompletion conditions:\n${task.completionConditions.join("\n")}`,
+			undefined,
+			foregroundTask,
+			{ startTask: true, initialStatus: "active" },
+		)
+		const executionId = execution.executionId
+		graphicsExecutionTasks.set(executionId, agentTask)
+		const startedAt = new Date().toISOString()
+
+		await updateGraphicsExecution(provider, executionId, {
+			status: "running",
+			agentTaskId: agentTask.taskId,
+			startedAt,
+			logs: [
+				...(execution.logs ?? []),
+				{ timestamp: startedAt, level: "info", message: "Agent Task started." },
+			],
+		})
+
+		await new Promise<void>((resolve) => {
+			let settled = false
+
+			const cleanup = () => {
+				agentTask.off(RooCodeEventName.TaskCompleted, onTaskCompleted)
+				agentTask.off(RooCodeEventName.TaskAborted, onTaskAborted)
+				agentTask.off(RooCodeEventName.Message, onTaskMessage)
+				agentTask.off(RooCodeEventName.TaskToolFailed, onTaskToolFailed)
+			}
+
+			/** Persists a diagnostic event from the latest queued execution snapshot. */
+			const appendLog = async (level: "info" | "warning" | "error", message: string) => {
+				await updateGraphicsExecution(provider, executionId, (currentExecution) => ({
+					logs: [
+						...(currentExecution.logs ?? []),
+						{ timestamp: new Date().toISOString(), level, message },
+					],
+				}))
+			}
+
+			/** Stores assistant text separately from operational logs and ignores repeated updates. */
+			const appendOutput = async (message: string) => {
+				await updateGraphicsExecution(provider, executionId, (currentExecution) => {
+					const output = currentExecution.output ?? []
+					return output.includes(message) ? {} : { output: [...output, message] }
+				})
+			}
+
+			const complete = async (status: "succeeded" | "cancelled") => {
+				if (settled) return
+				settled = true
+				cleanup()
+				const timestamp = new Date().toISOString()
+				const cancellationReason = graphicsExecutionCancellationReasons.get(executionId)
+				await updateGraphicsExecution(provider, executionId, (currentExecution) => ({
+					status,
+					finishedAt: timestamp,
+					cancellationReason,
+					logs: [
+						...(currentExecution.logs ?? []),
+						{
+							timestamp,
+							level: status === "cancelled" ? "warning" : "info",
+							message: `Agent Task ${status}.`,
+						},
+					],
+				}))
+				graphicsExecutionTasks.delete(executionId)
+				graphicsExecutionCancellationReasons.delete(executionId)
+				resolve()
+			}
+
+			const onTaskCompleted = () => void complete("succeeded")
+			const onTaskAborted = () => void complete("cancelled")
+			const onTaskMessage = ({ message }: { action: "created" | "updated"; message: { text?: string } }) => {
+				const text = message.text?.trim()
+				if (text) {
+					// Keep human-readable Agent output distinct from lifecycle and tool diagnostics.
+					void appendOutput(text)
+					void appendLog("info", text)
+				}
+			}
+			const onTaskToolFailed = (_taskId: string, tool: string, error: string) => {
+				const message = `Tool ${tool} failed: ${error}`
+				// Keep the attempt visibly failed while allowing the Task lifecycle event to
+				// provide the final terminal state and completion timestamp.
+				void appendLog("error", message)
+				void updateGraphicsExecution(provider, executionId, { error: message })
+			}
+
+			// Task-scoped events avoid observing unrelated foreground tasks and keep
+			// output and diagnostics attached to this execution attempt.
+			agentTask.on(RooCodeEventName.TaskCompleted, onTaskCompleted)
+			agentTask.on(RooCodeEventName.TaskAborted, onTaskAborted)
+			agentTask.on(RooCodeEventName.Message, onTaskMessage)
+			agentTask.on(RooCodeEventName.TaskToolFailed, onTaskToolFailed)
+		})
+	} catch (error) {
+		const timestamp = new Date().toISOString()
+		graphicsExecutionTasks.delete(execution.executionId)
+		graphicsExecutionCancellationReasons.delete(execution.executionId)
+		const failureMessage = error instanceof Error ? error.message : String(error)
+		await updateGraphicsExecution(provider, execution.executionId, (currentExecution) => ({
+			status: "failed",
+			finishedAt: timestamp,
+			error: failureMessage,
+			logs: [
+				...(currentExecution.logs ?? []),
+				{ timestamp, level: "error", message: failureMessage },
+			],
+		}))
+	}
+}
+
 export async function handleGraphicsMessage(provider: ClineProvider, message: WebviewMessage): Promise<boolean> {
 	switch (message.type) {
 		case "runGraphicsWorkflow":
@@ -164,8 +593,27 @@ export async function handleGraphicsMessage(provider: ClineProvider, message: We
 			await handleRequestGraphicsFeaturePlanRecovery(provider)
 			return true
 
+		case "previewGraphicsFeaturePlanMerge":
+			await handlePreviewGraphicsFeaturePlanMerge(provider, message)
+			return true
+
+		case "mergeGraphicsFeaturePlan":
+			await handleMergeGraphicsFeaturePlan(provider, message)
+			return true
+
 		case "updateGraphicsFeatureTaskStatus":
 			await handleUpdateGraphicsFeatureTaskStatus(provider, message)
+			return true
+		case "executeGraphicsFeatureTask":
+			await handleExecuteGraphicsFeatureTask(provider, message)
+			return true
+
+		case "cancelGraphicsFeatureTaskExecution":
+			await handleCancelGraphicsFeatureTaskExecution(provider, message)
+			return true
+
+		case "retryGraphicsFeatureTaskExecution":
+			await handleRetryGraphicsFeatureTaskExecution(provider, message)
 			return true
 
 		case "updateGraphicsFeatureTask":
@@ -224,7 +672,10 @@ async function handleSaveGraphicsFeatureBrief(provider: ClineProvider, message: 
 }
 
 async function handleRequestGraphicsProjectProfile(provider: ClineProvider): Promise<void> {
-	const graphicsProjectProfile = await profileGraphicsProject(provider.cwd)
+	const store = getGraphicsFeatureWorkspaceStore(provider)
+	const graphicsProjectProfile = await loadGraphicsProjectProfile(provider)
+	// Persist the scan result so another window can restore the same planning context without rescanning.
+	await store.saveProfile(graphicsProjectProfile)
 	await provider.postMessageToWebview({ type: "graphicsProjectProfile", graphicsProjectProfile })
 }
 
@@ -237,8 +688,10 @@ async function handleRequestGraphicsSolutionRecommendation(
 		return
 	}
 
-	const graphicsProjectProfile = await profileGraphicsProject(provider.cwd)
+	const graphicsProjectProfile = await loadGraphicsProjectProfile(provider)
+	// Recompute for the submitted brief; reusing a different brief's recommendation would be unsafe.
 	const graphicsSolutionRecommendation = selectGraphicsSolution(message.graphicsFeatureBrief, graphicsProjectProfile)
+	await getGraphicsFeatureWorkspaceStore(provider).saveRecommendation(graphicsSolutionRecommendation)
 	await provider.postMessageToWebview({
 		type: "graphicsSolutionRecommendation",
 		graphicsSolutionRecommendation,
@@ -251,8 +704,12 @@ async function handleRequestGraphicsFeaturePlan(provider: ClineProvider, message
 		return
 	}
 
-	const graphicsProjectProfile = await profileGraphicsProject(provider.cwd)
+	const graphicsProjectProfile = await loadGraphicsProjectProfile(provider)
 	const graphicsSolutionRecommendation = selectGraphicsSolution(message.graphicsFeatureBrief, graphicsProjectProfile)
+	const store = getGraphicsFeatureWorkspaceStore(provider)
+	// Persist the inputs used to create the plan so recovery can explain and reproduce the decision later.
+	await store.saveProfile(graphicsProjectProfile)
+	await store.saveRecommendation(graphicsSolutionRecommendation)
 	const graphicsFeaturePlan = createGraphicsFeaturePlan(
 		message.graphicsFeatureBrief,
 		graphicsProjectProfile,
@@ -264,10 +721,67 @@ async function handleRequestGraphicsFeaturePlan(provider: ClineProvider, message
 
 async function handleRequestGraphicsFeaturePlanRecovery(provider: ClineProvider): Promise<void> {
 	const graphicsFeaturePlan = await loadGraphicsFeaturePlan(provider)
+	const graphicsFeaturePlanArtifacts = await loadGraphicsFeaturePlanArtifacts(provider, graphicsFeaturePlan)
 	await provider.postMessageToWebview({
 		type: "graphicsFeaturePlanRecovered",
 		graphicsFeaturePlan,
+		graphicsFeaturePlanArtifacts,
 	})
+}
+
+/** Builds a three-way preview from the draft's base, local edits, and current shared file. */
+async function handlePreviewGraphicsFeaturePlanMerge(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const base = message.graphicsFeaturePlanBase
+	const local = message.graphicsFeaturePlanLocal
+	const current = (await loadGraphicsFeaturePlanSnapshot(provider))?.value ?? (await loadGraphicsFeaturePlan(provider))
+	if (!base || !local || !current || base.version !== 1 || local.version !== 1 || current.version !== 1) {
+		provider.log("[Graphics] previewGraphicsFeaturePlanMerge: missing valid base, local, or shared plan")
+		return
+	}
+	const preview = mergeGraphicsFeaturePlans(base, local, current, message.graphicsFeaturePlanChoices)
+	await provider.postMessageToWebview({
+		type: "graphicsFeaturePlanMergePreview",
+		graphicsFeaturePlanMergePreview: {
+			baseRevision: base.revision,
+			currentRevision: current.revision,
+			mergedPlan: preview.mergedPlan,
+			conflicts: preview.conflicts,
+		},
+	})
+}
+
+/** Saves a reviewed merge only if the shared file still equals the preview's current revision. */
+async function handleMergeGraphicsFeaturePlan(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const base = message.graphicsFeaturePlanBase
+	const local = message.graphicsFeaturePlanLocal
+	const choices = message.graphicsFeaturePlanChoices ?? {}
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const current = snapshot?.value
+	if (!base || !local || !current || !snapshot || base.version !== 1 || local.version !== 1 || current.version !== 1) {
+		provider.log("[Graphics] mergeGraphicsFeaturePlan: missing valid merge versions")
+		return
+	}
+	const preview = mergeGraphicsFeaturePlans(base, local, current, choices)
+	if (preview.conflicts.some((conflict) => !choices[conflict.path])) {
+		await provider.postMessageToWebview({
+			type: "graphicsFeaturePlanMergePreview",
+			graphicsFeaturePlanMergePreview: {
+				baseRevision: base.revision,
+				currentRevision: current.revision,
+				mergedPlan: preview.mergedPlan,
+				conflicts: preview.conflicts,
+			},
+		})
+		return
+	}
+	const mergedPlan: GraphicsFeaturePlan = {
+		...preview.mergedPlan,
+		revision: current.revision + 1,
+		source: "manual",
+		updatedAt: new Date().toISOString(),
+	}
+	if (!(await persistGraphicsFeaturePlanEdit(provider, mergedPlan, snapshot))) return
+	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: mergedPlan })
 }
 
 const GRAPHICS_SOLUTION_LEVELS: readonly GraphicsSolutionLevel[] = [
@@ -319,7 +833,8 @@ function isGraphicsFeatureTaskStatus(value: unknown): value is GraphicsFeatureTa
 async function handleUpdateGraphicsFeatureTaskStatus(provider: ClineProvider, message: WebviewMessage): Promise<void> {
 	const taskId = message.graphicsFeatureTaskId
 	const status = message.graphicsFeatureTaskStatus
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 
 	if (!plan || plan.version !== 1 || !taskId || !isGraphicsFeatureTaskStatus(status)) {
 		provider.log("[Graphics] updateGraphicsFeatureTaskStatus: missing or invalid plan/task/status")
@@ -355,17 +870,19 @@ async function handleUpdateGraphicsFeatureTaskStatus(provider: ClineProvider, me
 				: task,
 		),
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanUpdated", graphicsFeaturePlan: updatedPlan })
 }
 
 async function handleUpdateGraphicsFeatureTask(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
 	const taskId = message.graphicsFeatureTaskId
 	const title = message.graphicsFeatureTaskTitle?.trim()
+	const owner = message.graphicsFeatureTaskOwner
 	const completionConditions = message.graphicsFeatureTaskCompletionConditions
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 
-	if (!plan || plan.version !== 1 || !taskId || (!title && !completionConditions)) {
+	if (!plan || plan.version !== 1 || !taskId || (!title && !owner && !completionConditions)) {
 		provider.log("[Graphics] updateGraphicsFeatureTask: missing or invalid plan/task fields")
 		return
 	}
@@ -395,6 +912,7 @@ async function handleUpdateGraphicsFeatureTask(provider: ClineProvider, message:
 				? {
 						...candidate,
 						...(title ? { title } : {}),
+						...(owner ? { owner } : {}),
 						...(completionConditions
 							? {
 									completionConditions: completionConditions
@@ -406,12 +924,13 @@ async function handleUpdateGraphicsFeatureTask(provider: ClineProvider, message:
 				: candidate,
 		),
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
 async function handleUpdateGraphicsFeaturePlan(provider: ClineProvider, message: WebviewMessage): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const title = message.graphicsFeaturePlanTitle?.trim()
 	const briefSummary = message.graphicsFeaturePlanBriefSummary?.trim()
 
@@ -420,11 +939,7 @@ async function handleUpdateGraphicsFeaturePlan(provider: ClineProvider, message:
 		return
 	}
 	if (message.graphicsFeaturePlanRevision !== undefined && message.graphicsFeaturePlanRevision !== plan.revision) {
-		await provider.postMessageToWebview({
-			type: "graphicsFeaturePlanConflict",
-			graphicsFeaturePlan: plan,
-			graphicsFeaturePlanError: "The plan changed before this edit was applied.",
-		})
+		await postGraphicsFeaturePlanConflict(provider, plan, "The plan changed before this edit was applied.")
 		return
 	}
 
@@ -436,12 +951,13 @@ async function handleUpdateGraphicsFeaturePlan(provider: ClineProvider, message:
 		...(title !== undefined ? { title } : {}),
 		...(briefSummary !== undefined ? { briefSummary } : {}),
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
 async function handleUpdateGraphicsFeaturePlanSection(provider: ClineProvider, message: WebviewMessage): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const sectionKey = message.graphicsFeaturePlanSection
 	const summary = message.graphicsFeaturePlanSectionSummary?.trim()
 	const details = message.graphicsFeaturePlanSectionDetails
@@ -476,7 +992,7 @@ async function handleUpdateGraphicsFeaturePlanSection(provider: ClineProvider, m
 			...(details !== undefined ? { details: details.map((detail) => detail.trim()).filter(Boolean) } : {}),
 		},
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
@@ -484,7 +1000,8 @@ async function handleUpdateGraphicsFeatureAssetContract(
 	provider: ClineProvider,
 	message: WebviewMessage,
 ): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const requirements = message.graphicsFeatureAssetRequirements
 	const validationRules = message.graphicsFeatureAssetValidationRules
 
@@ -516,7 +1033,7 @@ async function handleUpdateGraphicsFeatureAssetContract(
 				: {}),
 		},
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
@@ -524,7 +1041,8 @@ async function handleUpdateGraphicsFeaturePerformanceBudget(
 	provider: ClineProvider,
 	message: WebviewMessage,
 ): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const summary = message.graphicsFeaturePerformanceBudgetSummary?.trim()
 	const details = message.graphicsFeaturePerformanceBudgetDetails
 
@@ -552,12 +1070,13 @@ async function handleUpdateGraphicsFeaturePerformanceBudget(
 			...(details !== undefined ? { details: details.map((item) => item.trim()).filter(Boolean) } : {}),
 		},
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
 async function handleUpdateGraphicsFeatureDecision(provider: ClineProvider, message: WebviewMessage): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const rationale = message.graphicsFeatureDecisionRationale
 	const alternatives = message.graphicsFeatureDecisionAlternatives
 	if (!plan || plan.version !== 1 || (rationale === undefined && alternatives === undefined)) {
@@ -601,7 +1120,7 @@ async function handleUpdateGraphicsFeatureDecision(provider: ClineProvider, mess
 				: {}),
 		},
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
@@ -610,7 +1129,8 @@ async function handleUpdateGraphicsFeatureDecision(provider: ClineProvider, mess
  * Keeping these related fields in one message prevents partial updates from mixing revisions.
  */
 async function handleUpdateGraphicsFeaturePlanContext(provider: ClineProvider, message: WebviewMessage): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const projectContext = message.graphicsFeatureProjectContext
 	const openQuestions = message.graphicsFeatureOpenQuestions
 	const risks = message.graphicsFeatureRisks
@@ -678,7 +1198,7 @@ async function handleUpdateGraphicsFeaturePlanContext(provider: ClineProvider, m
 				}
 			: {}),
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 
@@ -687,7 +1207,8 @@ async function handleUpdateGraphicsFeatureCompatibility(
 	provider: ClineProvider,
 	message: WebviewMessage,
 ): Promise<void> {
-	const plan = await loadGraphicsFeaturePlan(provider)
+	const snapshot = await loadGraphicsFeaturePlanSnapshot(provider)
+	const plan = snapshot?.value ?? (await loadGraphicsFeaturePlan(provider))
 	const compatibility = message.graphicsFeatureCompatibility
 	if (!plan || plan.version !== 1 || compatibility === undefined) {
 		provider.log("[Graphics] updateGraphicsFeatureCompatibility: missing or invalid fields")
@@ -714,7 +1235,7 @@ async function handleUpdateGraphicsFeatureCompatibility(
 			}))
 			.filter((target) => target.target && target.strategy && target.fallback),
 	}
-	await saveGraphicsFeaturePlan(provider, updatedPlan)
+	if (!(await persistGraphicsFeaturePlanEdit(provider, updatedPlan, snapshot))) return
 	await provider.postMessageToWebview({ type: "graphicsFeaturePlanEdited", graphicsFeaturePlan: updatedPlan })
 }
 

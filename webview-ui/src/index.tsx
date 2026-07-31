@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 
 import "./index.css"
 import App from "./App"
+import { GraphicsWorkspaceHarness } from "./visual-regression/GraphicsWorkspaceHarness"
 import { initializeTheme } from "./themes/ThemeProvider"
 import "../node_modules/@vscode/codicons/dist/codicon.css"
 
@@ -16,8 +17,10 @@ getHighlighter().catch((error: Error) => console.error("Failed to initialize Shi
 // interaction repaints the webview.
 initializeTheme()
 
+const isGraphicsVisualRegression = new URLSearchParams(window.location.search).has("graphics-visual-regression")
+
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<App />
+		{isGraphicsVisualRegression ? <GraphicsWorkspaceHarness /> : <App />}
 	</StrictMode>,
 )

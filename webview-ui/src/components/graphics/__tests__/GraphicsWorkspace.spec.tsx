@@ -1,6 +1,12 @@
 import React from "react"
 import { act, fireEvent, render, screen } from "@/utils/test-utils"
 
+// Use the shared deterministic translation mock because the component is rendered
+// without the production TranslationProvider in these focused workspace tests.
+vi.mock("@src/i18n/TranslationContext", async () =>
+	await vi.importActual("@src/i18n/__mocks__/TranslationContext"),
+)
+
 import GraphicsWorkspace from "../GraphicsWorkspace"
 import { vscode } from "@src/utils/vscode"
 
@@ -34,6 +40,18 @@ vi.mock("@src/context/ExtensionStateContext", () => ({
 }))
 
 describe("GraphicsWorkspace", () => {
+	it("supports roving tab focus with arrow and Home/End navigation", () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+		const tabs = screen.getAllByRole("tab")
+		tabs[0].focus()
+		fireEvent.keyDown(tabs[0], { key: "ArrowRight" })
+		expect(tabs[1]).toHaveFocus()
+		expect(tabs[1]).toHaveAttribute("aria-selected", "true")
+		fireEvent.keyDown(tabs[1], { key: "End" })
+		expect(tabs[2]).toHaveFocus()
+		fireEvent.keyDown(tabs[2], { key: "Home" })
+		expect(tabs[0]).toHaveFocus()
+	})
 	beforeEach(() => {
 		webviewState.current = undefined
 		vi.clearAllMocks()
@@ -51,6 +69,13 @@ describe("GraphicsWorkspace", () => {
 		expect(screen.getByText("Inspecting project graphics architecture…")).toBeInTheDocument()
 		expect(vscode.postMessage).toHaveBeenCalledWith({ type: "requestGraphicsFeaturePlanRecovery" })
 		expect(vscode.postMessage).not.toHaveBeenCalledWith({ type: "requestGraphicsProviderStatus" })
+	})
+
+	it("announces a saved feature brief", () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+		fireEvent.change(screen.getByLabelText("Feature title"), { target: { value: "Accessible outline" } })
+		fireEvent.click(screen.getByRole("button", { name: "Save feature brief" }))
+		expect(screen.getByText("Feature brief saved.")).toBeInTheDocument()
 	})
 
 	it("edits and persists the feature brief without replacing unrelated webview state", () => {
@@ -157,6 +182,230 @@ describe("GraphicsWorkspace", () => {
 			type: "saveGraphicsFeatureBrief",
 			graphicsFeatureBrief: localBrief,
 		})
+	})
+
+	it("reloads the shared plan after an external project-file change notification", () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+		vi.clearAllMocks()
+
+		act(() => {
+			window.dispatchEvent(new MessageEvent("message", { data: { type: "graphicsFeaturePlanExternalChange" } }))
+		})
+
+		expect(vscode.postMessage).toHaveBeenCalledWith({ type: "requestGraphicsFeaturePlanRecovery" })
+	})
+
+	it("renders the latest plan received after external recovery", async () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanRecovered",
+						// Keep the fixture aligned with the production plan contract so this
+						// test verifies recovery rendering rather than malformed-plan handling.
+						graphicsFeaturePlan: {
+							version: 1,
+							revision: 7,
+							source: "generated",
+							updatedAt: "2026-07-31T00:00:00.000Z",
+							title: "Recovered shared plan",
+							briefSummary: "Recovered shared summary",
+							openQuestions: [],
+							projectContext: [],
+							decision: { recommendedLevel: "shader", rationale: [], alternatives: [] },
+							pipelineDesign: { summary: "", details: [] },
+							shaderDesign: { summary: "", details: [] },
+							clientDesign: { summary: "", details: [] },
+							assetContract: { requirements: [], validationRules: [] },
+							performanceBudget: { summary: "", details: [] },
+							compatibility: [],
+							risks: [],
+							tasks: [],
+							acceptancePlan: [],
+							generatedAt: "2026-07-31T00:00:00.000Z",
+						},
+					},
+				}),
+			)
+		})
+
+		// React state updates from the window message listener are observed after
+		// the event loop flushes, so wait for the recovered title to be committed.
+		expect(await screen.findByDisplayValue("Recovered shared plan")).toBeInTheDocument()
+	})
+
+	it("shows a shared-plan conflict and lets the user reload the shared version", async () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanRecovered",
+						graphicsFeaturePlan: {
+							version: 1,
+							revision: 2,
+							source: "generated",
+							updatedAt: "2026-07-31T00:00:00.000Z",
+							title: "Local draft",
+							briefSummary: "Local summary",
+							openQuestions: [],
+							projectContext: [],
+							decision: { recommendedLevel: "shader", rationale: [], alternatives: [] },
+							pipelineDesign: { summary: "", details: [] },
+							shaderDesign: { summary: "", details: [] },
+							clientDesign: { summary: "", details: [] },
+							assetContract: { requirements: [], validationRules: [] },
+							performanceBudget: { summary: "", details: [] },
+							compatibility: [],
+							risks: [],
+							tasks: [],
+							acceptancePlan: [],
+							generatedAt: "2026-07-31T00:00:00.000Z",
+						},
+					},
+				}),
+			)
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanConflict",
+						graphicsFeaturePlanError: "The shared plan changed before this edit was saved.",
+						graphicsFeaturePlanConflict: {
+							currentRevision: 3,
+							currentPlan: {
+								version: 1,
+								revision: 3,
+								source: "workspace",
+								updatedAt: "2026-07-31T00:00:01.000Z",
+								title: "Shared plan",
+								briefSummary: "Shared summary",
+								openQuestions: [],
+								projectContext: [],
+								decision: { recommendedLevel: "shader", rationale: [], alternatives: [] },
+								pipelineDesign: { summary: "", details: [] },
+								shaderDesign: { summary: "", details: [] },
+								clientDesign: { summary: "", details: [] },
+								assetContract: { requirements: [], validationRules: [] },
+								performanceBudget: { summary: "", details: [] },
+								compatibility: [],
+								risks: [],
+								tasks: [],
+								acceptancePlan: [],
+								generatedAt: "2026-07-31T00:00:01.000Z",
+							},
+						},
+					},
+				}),
+			)
+		})
+
+		expect(await screen.findByRole("alert")).toHaveTextContent("The shared plan changed before this edit was saved.")
+		expect(screen.getByText("The shared feature plan has changed. Review the conflict options.")).toBeInTheDocument()
+		expect(screen.getByDisplayValue("Local draft")).toBeInTheDocument()
+		fireEvent.click(screen.getByRole("button", { name: "Reload shared version" }))
+		expect(await screen.findByDisplayValue("Shared plan")).toBeInTheDocument()
+	})
+
+	it("previews a merge and accumulates local/shared field choices before saving", async () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+
+		const plan = {
+			version: 1 as const,
+			revision: 2,
+			source: "generated" as const,
+			updatedAt: "2026-07-31T00:00:00.000Z",
+			title: "Local draft",
+			briefSummary: "Local summary",
+			openQuestions: [],
+			projectContext: [],
+			decision: { recommendedLevel: "shader" as const, rationale: [], alternatives: [] },
+			pipelineDesign: { summary: "", details: [] },
+			shaderDesign: { summary: "", details: [] },
+			clientDesign: { summary: "", details: [] },
+			assetContract: { requirements: [], validationRules: [] },
+			performanceBudget: { summary: "", details: [] },
+			compatibility: [],
+			risks: [],
+			tasks: [],
+			acceptancePlan: [],
+			generatedAt: "2026-07-31T00:00:00.000Z",
+		}
+		const sharedPlan = { ...plan, revision: 3, source: "workspace" as const, title: "Shared title" }
+
+		act(() => {
+			window.dispatchEvent(new MessageEvent("message", { data: { type: "graphicsFeaturePlanRecovered", graphicsFeaturePlan: plan } }))
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanConflict",
+						graphicsFeaturePlanConflict: { currentPlan: sharedPlan },
+					},
+				}),
+			)
+		})
+
+		fireEvent.click(await screen.findByRole("button", { name: "Preview manual merge" }))
+		expect(vscode.postMessage).toHaveBeenCalledWith(
+			expect.objectContaining({
+			 type: "previewGraphicsFeaturePlanMerge",
+			 graphicsFeaturePlanBase: plan,
+			 graphicsFeaturePlanLocal: plan,
+			}),
+		)
+
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanMergePreview",
+						graphicsFeaturePlanMergePreview: {
+							baseRevision: 2,
+							currentRevision: 3,
+							mergedPlan: sharedPlan,
+							conflicts: [
+								{ path: "title", baseValue: "Base", localValue: "Local title", currentValue: "Shared title" },
+								{ path: "briefSummary", baseValue: "Base", localValue: "Local summary", currentValue: "Shared summary" },
+							],
+						},
+					},
+				}),
+			)
+		})
+
+		fireEvent.click((await screen.findAllByRole("button", { name: "Use local" }))[0])
+		fireEvent.click(screen.getAllByRole("button", { name: "Use shared" })[1])
+		fireEvent.click(screen.getByRole("button", { name: "Save merged plan" }))
+		expect(vscode.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				type: "mergeGraphicsFeaturePlan",
+				graphicsFeaturePlanBase: plan,
+				graphicsFeaturePlanLocal: plan,
+				graphicsFeaturePlanChoices: { title: "local", briefSummary: "shared" },
+			}),
+		)
+	})
+
+	it("keeps the local plan when dismissing a shared-plan conflict", async () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsFeaturePlanConflict",
+						graphicsFeaturePlanError: "Shared version available.",
+						graphicsFeaturePlanConflict: { currentPlan: undefined },
+					},
+				}),
+			)
+		})
+
+		expect(await screen.findByRole("alert")).toBeInTheDocument()
+		fireEvent.click(screen.getByRole("button", { name: "Keep local draft" }))
+		expect(screen.getByText("Continuing with the local draft.")).toBeInTheDocument()
+		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
 	})
 
 	it("requests and renders an explainable solution recommendation", () => {
@@ -479,6 +728,7 @@ describe("GraphicsWorkspace", () => {
 			graphicsFeatureTaskId: "T2",
 			graphicsFeatureTaskTitle: "Validate on Android",
 			graphicsFeatureTaskCompletionConditions: ["Passed"],
+			graphicsFeatureTaskOwner: "qa",
 			graphicsFeaturePlanRevision: 1,
 		})
 
@@ -490,6 +740,7 @@ describe("GraphicsWorkspace", () => {
 			graphicsFeatureTaskId: "T2",
 			graphicsFeatureTaskTitle: "Validate on Android",
 			graphicsFeatureTaskCompletionConditions: ["Capture frame", "Verify GPU timing"],
+			graphicsFeatureTaskOwner: "qa",
 			graphicsFeaturePlanRevision: 1,
 		})
 		expect(screen.getByText("Review pass ordering before merge.")).toBeInTheDocument()

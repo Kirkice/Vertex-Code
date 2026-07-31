@@ -561,7 +561,8 @@ export const webviewMessageHandler = async (
 		}
 	}
 
-	// Handle graphics agent messages before the main switch
+	// Handle graphics agent messages before the main switch, including the complete
+	// Feature Plan execution control surface.
 	const graphicsMessageTypes = [
 		"runGraphicsWorkflow",
 		"runGraphicsPlaybook",
@@ -570,6 +571,21 @@ export const webviewMessageHandler = async (
 		"requestGraphicsFeatureBrief",
 		"saveGraphicsFeatureBrief",
 		"requestGraphicsProjectProfile",
+		"requestGraphicsSolutionRecommendation",
+		"requestGraphicsFeaturePlan",
+		"requestGraphicsFeaturePlanRecovery",
+		"updateGraphicsFeatureTaskStatus",
+		"updateGraphicsFeatureTask",
+		"updateGraphicsFeaturePlan",
+		"updateGraphicsFeaturePlanSection",
+		"updateGraphicsFeatureAssetContract",
+		"updateGraphicsFeaturePerformanceBudget",
+		"updateGraphicsFeatureDecision",
+		"updateGraphicsFeatureCompatibility",
+		"updateGraphicsFeaturePlanContext",
+		"executeGraphicsFeatureTask",
+		"cancelGraphicsFeatureTaskExecution",
+		"retryGraphicsFeatureTaskExecution",
 	]
 	if (graphicsMessageTypes.includes(message.type)) {
 		await handleGraphicsMessage(provider, message)

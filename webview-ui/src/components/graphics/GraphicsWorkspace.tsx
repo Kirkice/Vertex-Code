@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, Box, Check, Cpu, FileCode2, Puzzle, Sparkles } from "lucide-react"
 
 import type {
 	GraphicsFeatureBrief,
 	GraphicsFeaturePlan,
+	GraphicsFeaturePlanMergeConflict,
+	GraphicsFeatureTaskOwner,
 	GraphicsFeatureTaskStatus,
 	GraphicsProjectProfile,
 	GraphicsProviderStatusPayload,
@@ -15,6 +17,7 @@ import type {
 
 import { vscode } from "@src/utils/vscode"
 import { Button, Input, Textarea } from "@src/components/ui"
+import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { Tab, TabContent, TabHeader, TabList, TabTrigger } from "@src/components/common/Tab"
 import { GraphicsFeaturePlanView } from "./GraphicsFeaturePlanView"
 import { GraphicsProjectProfileCard } from "./GraphicsProjectProfileCard"
@@ -27,14 +30,14 @@ interface GraphicsWorkspaceProps {
 const coreCapabilities: GraphicsWorkspaceCapability[] = [
 	{
 		id: "feature-planning",
-		label: "Feature planning",
-		description: "Structure requirements, compare implementation levels, and define acceptance criteria.",
+		label: "graphics:capabilities.featurePlanning",
+		description: "graphics:capabilities.featurePlanningDescription",
 		availability: "available",
 	},
 	{
 		id: "source-analysis",
-		label: "Project source analysis",
-		description: "Inspect rendering code, shaders, client integration, and asset contracts without a capture tool.",
+		label: "graphics:capabilities.sourceAnalysis",
+		description: "graphics:capabilities.sourceAnalysisDescription",
 		availability: "available",
 	},
 ]
@@ -46,22 +49,29 @@ const statusTone: Record<GraphicsWorkspaceCapability["availability"], string> = 
 	unknown: "text-vscode-descriptionForeground",
 }
 
-const CapabilityCard = ({ capability }: { capability: GraphicsWorkspaceCapability }) => (
-	<div className="rounded-lg border border-vscode-panel-border bg-vscode-editor-background p-4">
-		<div className="flex items-start justify-between gap-3">
-			<div>
-				<h3 className="text-sm font-semibold text-vscode-foreground">{capability.label}</h3>
-				<p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">
-					{capability.description}
-				</p>
+const CapabilityCard = ({ capability }: { capability: GraphicsWorkspaceCapability }) => {
+	const { t } = useAppTranslation()
+	const translated = (value: string | undefined) => (value?.includes(":") ? t(value) : value)
+
+	return (
+		<div className="rounded-lg border border-vscode-panel-border bg-vscode-editor-background p-4">
+			<div className="flex items-start justify-between gap-3">
+				<div>
+					<h3 className="text-sm font-semibold text-vscode-foreground">{translated(capability.label)}</h3>
+					<p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">
+						{translated(capability.description)}
+					</p>
+				</div>
+				<span className={`text-xs capitalize ${statusTone[capability.availability]}`}>
+					{t(`graphics:availability.${capability.availability}`)}
+				</span>
 			</div>
-			<span className={`text-xs capitalize ${statusTone[capability.availability]}`}>
-				{capability.availability}
-			</span>
+			{capability.reason && (
+				<p className="mt-3 text-xs text-vscode-descriptionForeground">{translated(capability.reason)}</p>
+			)}
 		</div>
-		{capability.reason && <p className="mt-3 text-xs text-vscode-descriptionForeground">{capability.reason}</p>}
-	</div>
-)
+	)
+}
 
 const emptyFeatureBrief: GraphicsFeatureBrief = {
 	version: 1,
@@ -98,37 +108,51 @@ const briefFields: Array<{
 	placeholder: string
 	singleLine?: boolean
 }> = [
-	{ key: "title", label: "Feature title", placeholder: "Stylized character outline", singleLine: true },
-	{ key: "visualGoal", label: "Visual goal", placeholder: "Describe the desired result and references." },
+	{
+		key: "title",
+		label: "graphics:brief.fields.title.label",
+		placeholder: "graphics:brief.fields.title.placeholder",
+		singleLine: true,
+	},
+	{
+		key: "visualGoal",
+		label: "graphics:brief.fields.visualGoal.label",
+		placeholder: "graphics:brief.fields.visualGoal.placeholder",
+	},
 	{
 		key: "lifecycle",
-		label: "Lifecycle and client integration",
-		placeholder: "When it appears, changes, and is removed.",
+		label: "graphics:brief.fields.lifecycle.label",
+		placeholder: "graphics:brief.fields.lifecycle.placeholder",
 	},
 	{
 		key: "artControls",
-		label: "Art controls and assets",
-		placeholder: "Required controls, source assets, and authoring rules.",
+		label: "graphics:brief.fields.artControls.label",
+		placeholder: "graphics:brief.fields.artControls.placeholder",
 	},
-	{ key: "targetPlatforms", label: "Target platforms", placeholder: "PC, console, mobile, XR, graphics APIs…" },
+	{
+		key: "targetPlatforms",
+		label: "graphics:brief.fields.targetPlatforms.label",
+		placeholder: "graphics:brief.fields.targetPlatforms.placeholder",
+	},
 	{
 		key: "performanceBudget",
-		label: "Performance budget",
-		placeholder: "Frame time, memory, bandwidth, or quality-tier limits.",
+		label: "graphics:brief.fields.performanceBudget.label",
+		placeholder: "graphics:brief.fields.performanceBudget.placeholder",
 	},
 	{
 		key: "compatibilityRequirements",
-		label: "Compatibility requirements",
-		placeholder: "Render pipelines, engine versions, hardware tiers, and fallbacks.",
+		label: "graphics:brief.fields.compatibilityRequirements.label",
+		placeholder: "graphics:brief.fields.compatibilityRequirements.placeholder",
 	},
 	{
 		key: "acceptanceCriteria",
-		label: "Acceptance criteria",
-		placeholder: "Observable conditions that define completion.",
+		label: "graphics:brief.fields.acceptanceCriteria.label",
+		placeholder: "graphics:brief.fields.acceptanceCriteria.placeholder",
 	},
 ]
 
 const FeatureHome = () => {
+	const { t } = useAppTranslation()
 	const [initialLocalBrief] = useState<GraphicsFeatureBrief>(loadFeatureBrief)
 	const [featureBrief, setFeatureBrief] = useState<GraphicsFeatureBrief>(initialLocalBrief)
 	const [projectProfile, setProjectProfile] = useState<GraphicsProjectProfile | null>(null)
@@ -138,6 +162,24 @@ const FeatureHome = () => {
 	const [featurePlan, setFeaturePlan] = useState<GraphicsFeaturePlan | null>(null)
 	const [planLoading, setPlanLoading] = useState(false)
 	const [saved, setSaved] = useState(false)
+	const [announcement, setAnnouncement] = useState("")
+	const lastFocusedElement = useRef<HTMLElement | null>(null)
+	const planRegionRef = useRef<HTMLDivElement | null>(null)
+	// Preserve base/local/shared versions so conflict resolution never discards unsaved work.
+	const [planBase, setPlanBase] = useState<GraphicsFeaturePlan | undefined>()
+	const [planConflict, setPlanConflict] = useState<{
+		currentPlan?: GraphicsFeaturePlan
+		error?: string
+	} | null>(null)
+	// Keep the complete preview separate from the banner so every field choice can
+	// accumulate without losing the merged candidate returned by the Extension Host.
+	const [mergePreview, setMergePreview] = useState<{
+		baseRevision: number
+		currentRevision: number
+		mergedPlan?: GraphicsFeaturePlan
+		conflicts: GraphicsFeaturePlanMergeConflict[]
+	} | null>(null)
+	const [mergeChoices, setMergeChoices] = useState<Record<string, "local" | "shared">>({})
 
 	const requestProjectProfile = () => {
 		setProfileLoading(true)
@@ -151,10 +193,55 @@ const FeatureHome = () => {
 				event.data?.type === "graphicsFeaturePlan" ||
 				event.data?.type === "graphicsFeaturePlanUpdated" ||
 				event.data?.type === "graphicsFeaturePlanRecovered" ||
-				event.data?.type === "graphicsFeaturePlanEdited"
+				event.data?.type === "graphicsFeaturePlanEdited" ||
+				event.data?.type === "graphicsFeatureTaskExecutionUpdated"
 			) {
-				setFeaturePlan(event.data.graphicsFeaturePlan as GraphicsFeaturePlan)
+				const nextPlan = event.data.graphicsFeaturePlan as GraphicsFeaturePlan
+				setFeaturePlan(nextPlan)
+				if (event.data?.type === "graphicsFeaturePlanRecovered") {
+					setAnnouncement(t("graphics:workspace.announcements.reloaded"))
+				}
+				// A functional update avoids a stale effect closure when recovery and
+				// execution updates arrive in the same event loop turn.
+				setPlanBase((current) => current ?? nextPlan)
+				setPlanConflict(null)
+				if (event.data?.type === "graphicsFeaturePlanEdited") {
+					setMergePreview(null)
+					setMergeChoices({})
+				}
 				setPlanLoading(false)
+				return
+			}
+			if (event.data?.type === "graphicsFeaturePlanConflict") {
+				// Do not replace the local draft here. Keeping both versions in state lets
+				// the conflict banner offer an explicit reload decision instead of silently
+				// discarding edits from this window.
+				setAnnouncement(t("graphics:workspace.announcements.conflict"))
+				setPlanConflict({
+					currentPlan: event.data.graphicsFeaturePlanConflict?.currentPlan ?? event.data.graphicsFeaturePlan,
+					error: event.data.graphicsFeaturePlanError,
+				})
+				setMergePreview(null)
+				setMergeChoices({})
+				return
+			}
+			if (event.data?.type === "graphicsFeaturePlanMergePreview") {
+				const preview = event.data.graphicsFeaturePlanMergePreview
+				setMergePreview(preview ?? null)
+				setPlanConflict((current) => ({
+					...current,
+					currentPlan: current?.currentPlan,
+				}))
+				setPlanLoading(false)
+				return
+			}
+			if (event.data?.type === "graphicsFeaturePlanExternalChange") {
+				// The extension watcher only signals that the file changed. Re-read the
+				// project snapshot through the normal recovery path instead of trusting a
+				// stale local plan or assuming the event contains the new payload.
+				setAnnouncement(t("graphics:workspace.announcements.reloading"))
+				setPlanLoading(true)
+				vscode.postMessage({ type: "requestGraphicsFeaturePlanRecovery" })
 				return
 			}
 			if (event.data?.type === "graphicsSolutionRecommendation") {
@@ -193,6 +280,12 @@ const FeatureHome = () => {
 		return () => window.removeEventListener("message", onMessage)
 	}, [initialLocalBrief])
 
+	useEffect(() => {
+		if (planConflict) {
+			planRegionRef.current?.focus()
+		}
+	}, [planConflict])
+
 	const updateField = (key: (typeof briefFields)[number]["key"], value: string) => {
 		setFeatureBrief((current) => ({ ...current, [key]: value }))
 		setSolutionRecommendation(null)
@@ -208,6 +301,37 @@ const FeatureHome = () => {
 		})
 	}
 
+	const executeTask = (taskId: string, executor: "agent" | "human", role: GraphicsFeatureTaskOwner) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "executeGraphicsFeatureTask",
+			graphicsFeatureTaskId: taskId,
+			graphicsFeatureTaskExecutor: executor,
+			graphicsFeatureTaskRole: role,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
+	/** Sends cancellation for a specific Graphics execution, never the active chat task. */
+	const cancelTaskExecution = (taskId: string, executionId?: string) => {
+		vscode.postMessage({
+			type: "cancelGraphicsFeatureTaskExecution",
+			graphicsFeatureTaskId: taskId,
+			graphicsFeatureExecutionId: executionId,
+		})
+	}
+
+	/** Requests a fresh attempt while keeping the previous attempt in execution history. */
+	const retryTaskExecution = (taskId: string, executionId?: string) => {
+		if (!featurePlan) return
+		vscode.postMessage({
+			type: "retryGraphicsFeatureTaskExecution",
+			graphicsFeatureTaskId: taskId,
+			graphicsFeatureExecutionId: executionId,
+			graphicsFeaturePlanRevision: featurePlan.revision,
+		})
+	}
+
 	const updateTaskStatus = (taskId: string, status: GraphicsFeatureTaskStatus, statusNote?: string) => {
 		if (!featurePlan) return
 		vscode.postMessage({
@@ -219,13 +343,19 @@ const FeatureHome = () => {
 		})
 	}
 
-	const updateTask = (taskId: string, title: string, completionConditions: string[]) => {
+	const updateTask = (
+		taskId: string,
+		title: string,
+		completionConditions: string[],
+		owner: GraphicsFeatureTaskOwner,
+	) => {
 		if (!featurePlan) return
 		vscode.postMessage({
 			type: "updateGraphicsFeatureTask",
 			graphicsFeatureTaskId: taskId,
 			graphicsFeatureTaskTitle: title,
 			graphicsFeatureTaskCompletionConditions: completionConditions,
+			graphicsFeatureTaskOwner: owner,
 			graphicsFeaturePlanRevision: featurePlan.revision,
 		})
 	}
@@ -314,6 +444,7 @@ const FeatureHome = () => {
 
 	const requestFeaturePlan = () => {
 		setPlanLoading(true)
+		setAnnouncement(t("graphics:workspace.announcements.loading"))
 		vscode.postMessage({
 			type: "requestGraphicsFeaturePlan",
 			graphicsFeatureBrief: featureBrief,
@@ -326,20 +457,23 @@ const FeatureHome = () => {
 		vscode.postMessage({ type: "saveGraphicsFeatureBrief", graphicsFeatureBrief: nextBrief })
 		setFeatureBrief(nextBrief)
 		setSaved(true)
+		setAnnouncement(t("graphics:workspace.announcements.saved"))
 	}
 
 	return (
 		<div className="space-y-5" data-testid="graphics-feature-home">
+			<div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+				{announcement}
+			</div>
 			<section className="rounded-xl border border-vscode-focusBorder/40 bg-vscode-editor-background p-5">
 				<div className="flex items-start gap-3">
 					<Sparkles className="mt-0.5 size-5 text-vscode-focusBorder" />
 					<div>
 						<h2 className="text-base font-semibold text-vscode-foreground">
-							Start from the graphics feature
+							{t("graphics:featureHome.title")}
 						</h2>
 						<p className="mt-1 text-sm leading-relaxed text-vscode-descriptionForeground">
-							Turn an art or design request into a project-aware rendering plan before choosing an
-							implementation level. The draft is saved for this workspace, with a local fallback.
+							{t("graphics:featureHome.description")}
 						</p>
 					</div>
 				</div>
@@ -353,12 +487,12 @@ const FeatureHome = () => {
 
 			<section
 				className="space-y-4 rounded-lg border border-vscode-panel-border p-4"
-				aria-label="Graphics Feature Brief">
+				aria-label={t("graphics:brief.title")}>
 				<div className="flex items-center justify-between gap-3">
 					<div>
-						<h3 className="text-sm font-semibold text-vscode-foreground">Graphics Feature Brief</h3>
+						<h3 className="text-sm font-semibold text-vscode-foreground">{t("graphics:brief.title")}</h3>
 						<p className="mt-1 text-xs text-vscode-descriptionForeground">
-							Record requirements before selecting tools or changing rendering code.
+							{t("graphics:brief.description")}
 						</p>
 					</div>
 					<div className="flex items-center gap-2">
@@ -367,30 +501,34 @@ const FeatureHome = () => {
 							size="sm"
 							onClick={requestSolutionRecommendation}
 							disabled={solutionLoading || !featureBrief.title.trim()}
-							aria-label="Generate solution recommendation">
-							Compare solutions
+							aria-label={t("graphics:brief.compareSolutionsAria")}>
+							{t("graphics:brief.compareSolutions")}
 						</Button>
-						<Button size="sm" onClick={saveFeatureBrief} aria-label="Save feature brief">
+						<Button
+							size="sm"
+							onClick={saveFeatureBrief}
+							aria-label={t("graphics:brief.saveAria")}
+							type="button">
 							{saved && <Check className="size-4" />}
-							{saved ? "Saved" : "Save draft"}
+							{saved ? t("graphics:brief.saved") : t("graphics:brief.saveDraft")}
 						</Button>
 					</div>
 				</div>
 				<div className="grid gap-4 md:grid-cols-2">
 					{briefFields.map((field) => (
 						<label key={field.key} className={field.key === "title" ? "md:col-span-2" : "space-y-1.5"}>
-							<span className="text-xs font-medium text-vscode-foreground">{field.label}</span>
+							<span className="text-xs font-medium text-vscode-foreground">{t(field.label)}</span>
 							{field.singleLine ? (
 								<Input
 									value={featureBrief[field.key]}
 									onChange={(event) => updateField(field.key, event.target.value)}
-									placeholder={field.placeholder}
+									placeholder={t(field.placeholder)}
 								/>
 							) : (
 								<Textarea
 									value={featureBrief[field.key]}
 									onChange={(event) => updateField(field.key, event.target.value)}
-									placeholder={field.placeholder}
+									placeholder={t(field.placeholder)}
 								/>
 							)}
 						</label>
@@ -406,14 +544,159 @@ const FeatureHome = () => {
 					size="sm"
 					onClick={requestFeaturePlan}
 					disabled={!solutionRecommendation || planLoading}
-					aria-label="Generate cross-module feature plan">
-					Create implementation plan
+					aria-label={t("graphics:brief.createPlanAria")}>
+					{t("graphics:brief.createPlan")}
 				</Button>
 			</div>
+			{planConflict ? (
+				<div
+					ref={planRegionRef}
+					tabIndex={-1}
+					className="rounded-md border border-vscode-editorWarning-foreground/60 bg-vscode-editorWarning-background/20 p-3 text-xs"
+					role="alert">
+					<p className="font-semibold text-vscode-editorWarning-foreground">
+						{t("graphics:plan.conflictTitle")}
+					</p>
+					<p className="mt-1 text-vscode-descriptionForeground">
+						{planConflict.error ?? t("graphics:plan.conflictDescription")}
+					</p>
+					<div className="mt-2 flex flex-wrap gap-2">
+						<Button
+							variant="secondary"
+							size="sm"
+							disabled={!planConflict.currentPlan}
+							onClick={() => {
+								lastFocusedElement.current = document.activeElement as HTMLElement | null
+								if (planConflict.currentPlan) {
+									setFeaturePlan(planConflict.currentPlan)
+									setPlanBase(planConflict.currentPlan)
+								}
+								setAnnouncement(t("graphics:workspace.announcements.reloaded"))
+								setPlanConflict(null)
+								requestAnimationFrame(() => {
+									lastFocusedElement.current?.focus()
+									lastFocusedElement.current = null
+								})
+								setMergePreview(null)
+								setMergeChoices({})
+							}}>
+							{t("graphics:plan.reloadShared")}
+						</Button>
+						<Button
+							variant="secondary"
+							size="sm"
+							disabled={!planBase || !featurePlan || !planConflict.currentPlan}
+							onClick={() => {
+								if (!planBase || !featurePlan || !planConflict.currentPlan) return
+								setMergePreview(null)
+								setMergeChoices({})
+								setPlanLoading(true)
+								vscode.postMessage({
+									type: "previewGraphicsFeaturePlanMerge",
+									graphicsFeaturePlanBase: planBase,
+									graphicsFeaturePlanLocal: featurePlan,
+								})
+							}}>
+							{t("graphics:plan.previewMerge")}
+						</Button>
+						{mergePreview?.conflicts.length ? (
+							<div
+								className="mt-2 w-full space-y-2"
+								role="group"
+								aria-label={t("graphics:plan.mergeConflicts", { count: mergePreview.conflicts.length })}>
+								<p className="text-vscode-editorWarning-foreground">
+									{t("graphics:plan.mergeConflicts", { count: mergePreview.conflicts.length })}
+								</p>
+								{mergePreview.conflicts.map((conflict) => (
+									<div key={conflict.path} className="rounded border border-vscode-panel-border p-2">
+										<code className="text-vscode-foreground">{conflict.path}</code>
+										<div className="mt-2 grid gap-2 text-xs md:grid-cols-3">
+											<div>
+												<span className="font-semibold">{t("graphics:plan.mergeBase")}</span>
+												<pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-vscode-descriptionForeground">
+													{JSON.stringify(conflict.baseValue, null, 2)}
+												</pre>
+											</div>
+											<div>
+												<span className="font-semibold">{t("graphics:plan.mergeLocal")}</span>
+												<pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-vscode-foreground">
+													{JSON.stringify(conflict.localValue, null, 2)}
+												</pre>
+											</div>
+											<div>
+												<span className="font-semibold">{t("graphics:plan.mergeShared")}</span>
+												<pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-vscode-foreground">
+													{JSON.stringify(conflict.currentValue, null, 2)}
+												</pre>
+											</div>
+										</div>
+										<div className="mt-2 flex flex-wrap items-center gap-2">
+											<Button
+												variant={mergeChoices[conflict.path] === "local" ? "secondary" : "ghost"}
+												size="sm"
+												onClick={() =>
+													setMergeChoices((current) => ({ ...current, [conflict.path]: "local" }))
+												}>
+												{t("graphics:plan.useLocal")}
+											</Button>
+											<Button
+												variant={mergeChoices[conflict.path] === "shared" ? "secondary" : "ghost"}
+												size="sm"
+												onClick={() =>
+													setMergeChoices((current) => ({ ...current, [conflict.path]: "shared" }))
+												}>
+												{t("graphics:plan.useShared")}
+											</Button>
+											{mergeChoices[conflict.path] ? (
+												<span className="text-vscode-descriptionForeground">
+													{t("graphics:plan.choiceSelected", { choice: mergeChoices[conflict.path] })}
+												</span>
+											) : null}
+										</div>
+									</div>
+								))}
+								<Button
+									variant="secondary"
+									size="sm"
+									disabled={!planBase || !featurePlan || Object.keys(mergeChoices).length < mergePreview.conflicts.length}
+									onClick={() => {
+										if (!planBase || !featurePlan) return
+										vscode.postMessage({
+											type: "mergeGraphicsFeaturePlan",
+											graphicsFeaturePlanBase: planBase,
+											graphicsFeaturePlanLocal: featurePlan,
+											graphicsFeaturePlanChoices: mergeChoices,
+										})
+									}}>
+									{t("graphics:plan.saveMerged")}
+								</Button>
+							</div>
+						) : null}
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								setAnnouncement(t("graphics:workspace.announcements.localDraft"))
+								setPlanConflict(null)
+								requestAnimationFrame(() => {
+									lastFocusedElement.current?.focus()
+									lastFocusedElement.current = null
+								})
+								setMergePreview(null)
+								setMergeChoices({})
+							}}>
+							{t("graphics:plan.keepLocalDraft")}
+						</Button>
+					</div>
+				</div>
+			) : null}
 			<GraphicsFeaturePlanView
 				plan={featurePlan}
 				loading={planLoading}
 				onTaskStatusChange={updateTaskStatus}
+				onTaskExecute={executeTask}
+				onTaskCancel={cancelTaskExecution}
+				onTaskRetry={retryTaskExecution}
 				onTaskEdit={updateTask}
 				onPlanEdit={updatePlan}
 				onPlanSectionEdit={updatePlanSection}
@@ -433,27 +716,30 @@ const FeatureHome = () => {
 	)
 }
 
-const AssetValidation = () => (
-	<div className="space-y-4" data-testid="graphics-asset-validation">
-		<CapabilityCard
-			capability={{
-				id: "asset-validation",
-				label: "Build artifact validation",
-				description:
-					"Inspect Unity bundles or APK assets through an AssetStudio capability when it is installed.",
-				availability: "unavailable",
-				reason: "AssetStudio is optional. Source-level asset contracts and feature planning remain available.",
-			}}
-		/>
-		<div className="rounded-lg border border-dashed border-vscode-panel-border p-5 text-sm text-vscode-descriptionForeground">
-			<Box className="mb-3 size-5" />
-			AssetStudio integration will progressively add texture, mesh, material, renderer, memory, and dependency
-			audits.
+const AssetValidation = () => {
+	const { t } = useAppTranslation()
+
+	return (
+		<div className="space-y-4" data-testid="graphics-asset-validation">
+			<CapabilityCard
+				capability={{
+					id: "asset-validation",
+					label: "graphics:capabilities.assetValidation",
+					description: "graphics:capabilities.assetValidationDescription",
+					availability: "unavailable",
+					reason: "graphics:capabilities.assetValidationReason",
+				}}
+			/>
+			<div className="rounded-lg border border-dashed border-vscode-panel-border p-5 text-sm text-vscode-descriptionForeground">
+				<Box className="mb-3 size-5" aria-hidden="true" />
+				{t("graphics:capabilities.assetRoadmap")}
+			</div>
 		</div>
-	</div>
-)
+	)
+}
 
 const RuntimeInvestigation = () => {
+	const { t } = useAppTranslation()
 	const [loading, setLoading] = useState(true)
 	const [status, setStatus] = useState<GraphicsProviderStatusPayload | null>(null)
 
@@ -476,17 +762,22 @@ const RuntimeInvestigation = () => {
 
 	const runtimeCapability: GraphicsWorkspaceCapability = {
 		id: "runtime-capture",
-		label: "Runtime GPU investigation",
-		description:
-			"Inspect captures, events, pipeline state, shaders, and resources through an optional runtime provider.",
+		label: "graphics:capabilities.runtimeGpu",
+		description: "graphics:capabilities.runtimeGpuDescription",
 		availability: loading ? "unknown" : runtimeAvailable ? "available" : "unavailable",
 		providerId: availableProvider?.providerId,
 		providerName: availableProvider?.providerName,
 		reason: loading
-			? "Checking optional runtime providers…"
+			? "graphics:capabilities.checkingProviders"
 			: runtimeAvailable
-				? `${availableProvider?.providerName ?? "Runtime provider"} is ready${availableProvider?.status === "no-capture" ? ", but no capture is open" : ""}.`
-				: "RenderDoc for VS Code is not required for Graphics Workspace. Install a runtime provider only when capture-level GPU evidence is needed.",
+				? t("graphics:capabilities.runtimeProviderReady", {
+						provider: availableProvider?.providerName ?? t("graphics:capabilities.runtimeProvider"),
+						suffix:
+							availableProvider?.status === "no-capture"
+								? t("graphics:capabilities.noCaptureSuffix")
+								: "",
+					})
+				: "graphics:capabilities.runtimeUnavailable",
 	}
 
 	return (
@@ -494,11 +785,12 @@ const RuntimeInvestigation = () => {
 			<CapabilityCard capability={runtimeCapability} />
 			{!loading && !runtimeAvailable && (
 				<div className="rounded-lg border border-dashed border-vscode-panel-border p-5">
-					<Cpu className="mb-3 size-5 text-vscode-descriptionForeground" />
-					<h3 className="text-sm font-semibold text-vscode-foreground">Runtime tools are optional</h3>
+					<Cpu className="mb-3 size-5 text-vscode-descriptionForeground" aria-hidden="true" />
+					<h3 className="text-sm font-semibold text-vscode-foreground">
+						{t("graphics:capabilities.runtimeOptional")}
+					</h3>
 					<p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">
-						Feature planning, source analysis, shader authoring, pipeline design, and asset contracts
-						continue to work. Capture actions appear only after a compatible provider is available.
+						{t("graphics:capabilities.runtimeOptionalDescription")}
 					</p>
 				</div>
 			)}
@@ -507,6 +799,7 @@ const RuntimeInvestigation = () => {
 }
 
 export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
+	const { t } = useAppTranslation()
 	const [section, setSection] = useState<GraphicsWorkspaceSection>("feature")
 	const sectionIcon = useMemo(() => ({ feature: FileCode2, assets: Box, runtime: Puzzle })[section], [section])
 	const SectionIcon = sectionIcon
@@ -518,15 +811,22 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					<div className="flex items-center gap-2">
 						<SectionIcon className="size-5" />
 						<div>
-							<h1 className="text-base font-semibold text-vscode-foreground">Graphics Workspace</h1>
+							<h1 className="text-base font-semibold text-vscode-foreground">
+								{t("graphics:workspace.title")}
+							</h1>
 							<p className="text-xs text-vscode-descriptionForeground">
-								Provider-independent feature engineering
+								{t("graphics:workspace.subtitle")}
 							</p>
 						</div>
 					</div>
-					<Button variant="ghost" size="sm" onClick={onDone} aria-label="Back to chat">
-						<ArrowLeft />
-						Chat
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onDone}
+						aria-label={t("graphics:workspace.backToChat")}
+						type="button">
+						<ArrowLeft aria-hidden="true" />
+						{t("graphics:workspace.backToChat")}
 					</Button>
 				</div>
 				<TabList
@@ -534,6 +834,7 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					onValueChange={(value) => setSection(value as GraphicsWorkspaceSection)}
 					className="gap-1">
 					<TabTrigger
+						id="tab-feature"
 						value="feature"
 						className="rounded-md px-3 py-1.5 text-xs"
 						style={
@@ -541,9 +842,10 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 								? { background: "var(--vscode-list-activeSelectionBackground)" }
 								: undefined
 						}>
-						Feature Plan
+						{t("graphics:workspace.tabs.feature")}
 					</TabTrigger>
 					<TabTrigger
+						id="tab-assets"
 						value="assets"
 						className="rounded-md px-3 py-1.5 text-xs"
 						style={
@@ -551,9 +853,10 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 								? { background: "var(--vscode-list-activeSelectionBackground)" }
 								: undefined
 						}>
-						Asset / Build
+						{t("graphics:workspace.tabs.assets")}
 					</TabTrigger>
 					<TabTrigger
+						id="tab-runtime"
 						value="runtime"
 						className="rounded-md px-3 py-1.5 text-xs"
 						style={
@@ -561,14 +864,36 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 								? { background: "var(--vscode-list-activeSelectionBackground)" }
 								: undefined
 						}>
-						Runtime
+						{t("graphics:workspace.tabs.runtime")}
 					</TabTrigger>
 				</TabList>
 			</TabHeader>
 			<TabContent>
-				{section === "feature" && <FeatureHome />}
-				{section === "assets" && <AssetValidation />}
-				{section === "runtime" && <RuntimeInvestigation />}
+				<div
+					id="tab-feature-panel"
+					role="tabpanel"
+					tabIndex={0}
+					aria-labelledby="tab-feature"
+					hidden={section !== "feature"}>
+					{section === "feature" && <FeatureHome />}
+				</div>
+				<div
+					id="tab-assets-panel"
+					role="tabpanel"
+					tabIndex={0}
+					aria-labelledby="tab-assets"
+					hidden={section !== "assets"}>
+					{section === "assets" && <AssetValidation />}
+				</div>
+				<div
+					id="tab-runtime-panel"
+					role="tabpanel"
+					tabIndex={0}
+					aria-labelledby="tab-runtime"
+					hidden={section !== "runtime"}>
+					{section === "runtime" && <RuntimeInvestigation />}
+				</div>
+				{false && section === "feature" && <FeatureHome />}
 			</TabContent>
 		</Tab>
 	)

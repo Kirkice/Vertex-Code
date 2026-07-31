@@ -10,6 +10,7 @@
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"format": "prettier --write src",
+		"test:visual": "playwright test --config playwright.config.ts",
 		"dev": "vite",
 		"build": "tsc -b && vite build",
 		"build:nightly": "tsc -b && vite build --mode nightly",
@@ -88,6 +89,7 @@
 		"zod": "^3.25.61"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.55.0",
 		"@roo-code/config-eslint": "workspace:^",
 		"@roo-code/config-typescript": "workspace:^",
 		"@testing-library/jest-dom": "^6.6.3",
