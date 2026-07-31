@@ -10,6 +10,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import type { GraphicsKnowledgeEntry } from "./types"
+import { KnowledgeRegistry, type KnowledgeRegistryEntry, type KnowledgeSource } from "./KnowledgeRegistry"
 
 /**
  * Path to the universal knowledge directory.
@@ -31,10 +32,25 @@ const KNOWLEDGE_DIR = path.join(
  */
 const INDEX_PATH = path.join(KNOWLEDGE_DIR, "index.json")
 
-/**
- * In-memory cache for the knowledge index.
- */
-let cachedIndex: GraphicsKnowledgeEntry[] | null = null
+const knowledgeRegistry = new KnowledgeRegistry()
+let builtinRegistered = false
+
+function ensureBuiltinSource(): void {
+	if (builtinRegistered) return
+	try {
+		const raw = fs.readFileSync(INDEX_PATH, "utf-8")
+		const allEntries = JSON.parse(raw) as GraphicsKnowledgeEntry[]
+		knowledgeRegistry.register({
+			kind: "built-in",
+			id: "vertex-graphics-knowledge",
+			root: KNOWLEDGE_DIR,
+			entries: allEntries.filter((entry) => entry.domain === "graphics"),
+		})
+		builtinRegistered = true
+	} catch {
+		// The registry remains usable when built-in assets are unavailable.
+	}
+}
 
 /**
  * In-memory cache for loaded knowledge document contents.
@@ -49,20 +65,16 @@ const contentCache = new Map<string, string>()
  * @returns Array of knowledge entries, or empty array if index cannot be loaded
  */
 export function loadKnowledgeIndex(): GraphicsKnowledgeEntry[] {
-	if (cachedIndex) {
-		return cachedIndex
-	}
+	ensureBuiltinSource()
+	return knowledgeRegistry.list()
+}
 
-	try {
-		const raw = fs.readFileSync(INDEX_PATH, "utf-8")
-		const allEntries = JSON.parse(raw) as GraphicsKnowledgeEntry[]
-		// Filter to only graphics-domain entries from the universal knowledge index
-		cachedIndex = allEntries.filter((entry) => entry.domain === "graphics")
-		return cachedIndex
-	} catch {
-		// Index file not found or invalid — return empty
-		return []
-	}
+export function registerKnowledgeSource(source: KnowledgeSource): void {
+	knowledgeRegistry.register(source)
+}
+
+export function unregisterKnowledgeSource(kind: KnowledgeSource["kind"], id: string): void {
+	knowledgeRegistry.unregister(kind, id)
 }
 
 /**
@@ -73,6 +85,11 @@ export function loadKnowledgeIndex(): GraphicsKnowledgeEntry[] {
  * @returns The document content, or empty string if file cannot be read
  */
 export function loadKnowledgeContent(entry: GraphicsKnowledgeEntry): string {
+	ensureBuiltinSource()
+	const registeredEntry = knowledgeRegistry.findById(entry.id)
+	if (registeredEntry) {
+		return knowledgeRegistry.loadContent(registeredEntry)
+	}
 	const cached = contentCache.get(entry.id)
 	if (cached !== undefined) {
 		return cached
@@ -150,8 +167,9 @@ export function extractKnowledgeSummary(entry: GraphicsKnowledgeEntry): string {
  * Clear all caches. Useful for testing or when knowledge files are updated.
  */
 export function clearKnowledgeCache(): void {
-	cachedIndex = null
 	contentCache.clear()
+	builtinRegistered = false
+	knowledgeRegistry.clear()
 }
 
 /**

@@ -175,6 +175,57 @@ export const marketplaceItemSchema = z.discriminatedUnion("type", [
 export type MarketplaceItem = z.infer<typeof marketplaceItemSchema>
 
 /**
+ * Schema for an explicit, publishable marketplace release manifest.
+ *
+ * Unlike the discovery catalogs, this manifest is intentionally strict: it
+ * describes the exact package contents and runtime requirements that may be
+ * published for a release.
+ */
+export const marketplaceReleaseItemTypeSchema = z.enum(["skill", "mcp"] as const)
+
+export const marketplaceToolContractSchema = z.object({
+	server: z.string().min(1).optional(),
+	tool: z.string().min(1),
+	requiredArguments: z.array(z.string().min(1)).optional(),
+	optionalArguments: z.array(z.string().min(1)).optional(),
+	platforms: z.array(z.string().min(1)).optional(),
+	deprecatedAliases: z.array(z.string().min(1)).optional(),
+})
+
+export type MarketplaceToolContract = z.infer<typeof marketplaceToolContractSchema>
+
+export const marketplaceRuntimeHealthCheckSchema = z.object({
+	executable: z.string().min(1),
+	requiredFiles: z.array(z.string().min(1)).min(1),
+})
+
+export const marketplaceReleaseItemSchema = z.object({
+	id: z.string().min(1),
+	type: marketplaceReleaseItemTypeSchema,
+	group: z.string().min(1),
+	version: z.string().regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/),
+	sourcePath: z.string().min(1),
+	modeSlugs: z.array(z.string().min(1)).min(1),
+	files: z.array(z.string().min(1)).min(1),
+	requiredCapabilities: z.array(z.string().regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/)).min(1),	requiredTools: z.array(marketplaceToolContractSchema).optional(),
+	platforms: z.array(z.string().min(1)).optional(),
+	prerequisites: z.array(z.string().min(1)).optional(),
+	executable: z.string().min(1).optional(),
+	healthCheck: marketplaceRuntimeHealthCheckSchema.optional(),
+})
+
+export const marketplaceReleaseManifestSchema = z.object({
+	manifestVersion: z.literal(1),
+	releaseVersion: z.string().regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/),
+	source: z.string().url(),
+	branch: z.string().min(1),
+	items: z.array(marketplaceReleaseItemSchema).min(1),
+})
+
+export type MarketplaceReleaseItem = z.infer<typeof marketplaceReleaseItemSchema>
+export type MarketplaceReleaseManifest = z.infer<typeof marketplaceReleaseManifestSchema>
+
+/**
  * Installation options for marketplace items
  */
 export const installMarketplaceItemOptionsSchema = z.object({

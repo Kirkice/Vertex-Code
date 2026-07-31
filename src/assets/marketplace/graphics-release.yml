@@ -1,0 +1,254 @@
+manifestVersion: 1
+releaseVersion: 1.0.0
+source: https://github.com/Kirkice/vertex-code-market
+branch: main
+items:
+  - id: write-shader
+    type: skill
+    group: graphics
+    version: 1.0.0
+    sourcePath: skills/graphics-base/write-shader
+    modeSlugs:
+      - graphics
+      - code
+    files:
+      - SKILL.md
+    requiredCapabilities:
+      - graphics.shader.authoring
+  - id: rendering-pipeline
+    type: skill
+    group: graphics
+    version: 1.0.0
+    sourcePath: skills/graphics-base/rendering-pipeline
+    modeSlugs:
+      - graphics
+      - code
+    files:
+      - SKILL.md
+    requiredCapabilities:
+      - graphics.pipeline.design
+  - id: graphics-debug
+    type: skill
+    group: graphics
+    version: 1.0.0
+    sourcePath: skills/graphics-base/graphics-debug
+    modeSlugs:
+      - graphics
+      - code
+    files:
+      - SKILL.md
+      - references/debug-playbook.md
+    requiredCapabilities:
+      - graphics.debug
+  - id: graphics-optimization
+    type: skill
+    group: graphics
+    version: 1.0.0
+    sourcePath: skills/graphics-base/graphics-optimization
+    modeSlugs:
+      - graphics
+      - code
+    files:
+      - SKILL.md
+    requiredCapabilities:
+      - graphics.performance
+  - id: unity-graphics
+    type: skill
+    group: graphics
+    version: 1.0.0
+    sourcePath: skills/graphics-base/unity-graphics
+    modeSlugs:
+      - graphics
+      - code
+    files:
+      - SKILL.md
+    requiredCapabilities:
+      - unity.graphics
+  - id: renderdoc-frame-overview
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-frame-overview
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+  - id: renderdoc-current-selection-explainer
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-current-selection-explainer
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.selection
+  - id: renderdoc-shader-review
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-shader-review
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.shader
+  - id: renderdoc-texture-trace
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-texture-trace
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.resource
+  - id: renderdoc-buffer-inspector
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-buffer-inspector
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.buffer
+  - id: renderdoc-performance-investigation
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-performance-investigation
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.timing
+  - id: renderdoc-pass-to-project-mapping
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-pass-to-project-mapping
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - project.mapping
+  - id: renderdoc-replay-recovery-helper
+    type: skill
+    group: renderdoc-for-vscode
+    version: 1.0.0
+    sourcePath: skills/renderdoc-for-vscode/renderdoc-replay-recovery-helper
+    modeSlugs:
+      - graphics
+    files:
+      - SKILL.md
+      - agents/openai.yaml
+    requiredCapabilities:
+      - runtime.capture
+      - runtime.replay
+  - id: asset-studio-mcp
+    type: mcp
+    group: graphics-mcp
+    version: 1.0.0
+    sourcePath: mcps/asset_studio_mcp
+    modeSlugs:
+      - graphics
+    executable: AssetStudio.McpServer.exe
+    files:
+      - AssetStudio.McpServer.exe
+      - AssetStudio.McpServer.dll
+      - AssetStudio.McpServer.deps.json
+      - AssetStudio.McpServer.runtimeconfig.json
+      - AssetStudio.dll
+      - AssetStudio.PInvoke.dll
+      - AssetStudioUtility.dll
+      - AssetStudioFBXNative.dll
+      - AssetStudioFBXWrapper.dll
+      - Texture2DDecoderNative.dll
+      - Texture2DDecoderWrapper.dll
+      - Microsoft.Extensions.Hosting.dll
+      - Microsoft.Extensions.Hosting.Abstractions.dll
+      - Microsoft.Extensions.DependencyInjection.dll
+      - Microsoft.Extensions.DependencyInjection.Abstractions.dll
+      - Microsoft.Extensions.Logging.dll
+      - Microsoft.Extensions.Logging.Abstractions.dll
+      - Microsoft.Extensions.Logging.Console.dll
+      - Microsoft.Extensions.Logging.Debug.dll
+      - Microsoft.Extensions.Logging.Configuration.dll
+      - Microsoft.Extensions.Logging.EventLog.dll
+      - Microsoft.Extensions.Logging.EventSource.dll
+      - Microsoft.Extensions.AI.Abstractions.dll
+      - Microsoft.Extensions.Configuration.dll
+      - Microsoft.Extensions.Configuration.Abstractions.dll
+      - Microsoft.Extensions.Configuration.Binder.dll
+      - Microsoft.Extensions.Configuration.CommandLine.dll
+      - Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+      - Microsoft.Extensions.Configuration.FileExtensions.dll
+      - Microsoft.Extensions.Configuration.Json.dll
+      - Microsoft.Extensions.Configuration.UserSecrets.dll
+      - Microsoft.Extensions.FileProviders.Abstractions.dll
+      - Microsoft.Extensions.FileProviders.Physical.dll
+      - Microsoft.Extensions.FileSystemGlobbing.dll
+      - Microsoft.Extensions.Options.dll
+      - Microsoft.Extensions.Options.ConfigurationExtensions.dll
+      - Microsoft.Extensions.Primitives.dll
+      - Microsoft.Extensions.Diagnostics.dll
+      - Microsoft.Extensions.Diagnostics.Abstractions.dll
+      - Microsoft.Bcl.AsyncInterfaces.dll
+      - Microsoft.Bcl.Memory.dll
+      - ModelContextProtocol.dll
+      - ModelContextProtocol.Core.dll
+      - Newtonsoft.Json.dll
+      - SixLabors.Fonts.dll
+      - SixLabors.ImageSharp.dll
+      - SixLabors.ImageSharp.Drawing.dll
+      - K4os.Compression.LZ4.dll
+      - Mono.Cecil.dll
+      - Mono.Cecil.Mdb.dll
+      - Mono.Cecil.Pdb.dll
+      - Mono.Cecil.Rocks.dll
+      - System.Diagnostics.DiagnosticSource.dll
+      - System.Diagnostics.EventLog.dll
+      - System.IO.Pipelines.dll
+      - System.Net.ServerSentEvents.dll
+      - System.Text.Encodings.Web.dll
+      - System.Text.Json.dll
+      - System.Threading.Channels.dll
+      - runtimes/win/lib/net6.0/System.Diagnostics.EventLog.dll
+      - runtimes/win/lib/net6.0/System.Diagnostics.EventLog.Messages.dll
+      - README.md
+    requiredCapabilities:
+      - asset.inventory
+      - asset.texture
+      - asset.mesh
+      - asset.material
+    platforms:
+      - win32-x64
+    prerequisites:
+      - .NET 6.0 Desktop Runtime
+    healthCheck:
+      executable: AssetStudio.McpServer.exe
+      requiredFiles:
+        - AssetStudio.McpServer.runtimeconfig.json
+        - AssetStudio.McpServer.deps.json

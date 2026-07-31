@@ -14,6 +14,7 @@ import {
 	skillMarketplaceItemSchema,
 	knowledgeMarketplaceItemSchema,
 } from "@roo-code/types"
+import { validateMarketplaceReleaseManifest } from "./validation/MarketplaceManifestValidator"
 
 const DEFAULT_MARKET_SOURCE = "https://github.com/Kirkice/vertex-code-market"
 const DEFAULT_MARKET_BRANCH = "main"
@@ -97,7 +98,27 @@ export class ConfigLoader {
 			this.fetchAggregateMarketplaceItems(),
 		])
 
-		return this.dedupeItems([...modes, ...mcps, ...skills, ...knowledge, ...aggregateItems])
+		const items = this.dedupeItems([...modes, ...mcps, ...skills, ...knowledge, ...aggregateItems])
+		await this.validateReleaseManifestIfPresent(items)
+		return items
+	}
+
+	private async validateReleaseManifestIfPresent(catalogItems: MarketplaceItem[]): Promise<void> {
+		for (const marketplacePath of this.marketplacePaths) {
+			const manifestPath = path.join(marketplacePath, "graphics-release.yml")
+			try {
+				const data = await fs.readFile(manifestPath, "utf-8")
+				const result = validateMarketplaceReleaseManifest(yaml.parse(data), { catalogItems })
+				if (!result.valid) {
+					throw new Error(`Invalid graphics marketplace release manifest: ${result.errors.join("; ")}`)
+				}
+				return
+			} catch (error) {
+				if (error instanceof Error && error.message.startsWith("Invalid graphics marketplace release manifest")) {
+					throw error
+				}
+			}
+		}
 	}
 
 	private async fetchModes(): Promise<MarketplaceItem[]> {

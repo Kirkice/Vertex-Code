@@ -1729,7 +1729,7 @@ Capture 对比前必须记录：
 
 > 最后更新：2026-07-31。该清单用于记录实际代码落地状态；完成项使用 `[x]`，未完成项使用 `[ ]`。路线图正文描述的是目标架构，本节描述当前仓库的真实进度。每完成一个可验证的开发步骤、测试步骤或路线图子目标，必须同步更新本节的完成状态、验证结果和剩余 TODO。
 >
-> 本批次完成：Marketplace Capability Registry 核心模型纵向切片。验证结果：`GraphicsCapabilityRegistry` focused tests 5/5、`src` typecheck 与 `git diff --check` 通过。正式市场仓库发布校验、Knowledge Registry、Skill-MCP/Provider 契约测试和 Capability 驱动 Quick Actions 仍保留在 TODO。
+> 本批次完成：正式 Graphics release manifest 与严格校验、Knowledge Registry 核心、Skill→MCP/Provider 工具契约校验、Capability 驱动 Quick Actions。验证结果：focused tests 13/13、`src` 与 `webview-ui` typecheck、`git diff --check` 通过。KnowledgeInstaller 的持久化 source metadata、AssetStudio Provider 实体接入和 Quick Actions Webview 渲染仍是后续 TODO。
 
 ## 8.1 Done：已完成
 
@@ -1825,10 +1825,10 @@ Capture 对比前必须记录：
 - [x] 建立可复用 Graphics Capability Registry 核心模型，统一归一化 Knowledge、Skill、MCP 和 Provider 的能力、依赖、版本、scope、availability 与 health；支持 source replacement、unregister、capability 查询、依赖解析、可用性聚合和稳定排序。
 - [x] 完成现有接入点盘点：Marketplace item schema、Skill/MCP runtime metadata、GraphicsProviderRegistry/runtime capabilities 与 Workspace capability cards 已明确职责边界；Capability Registry 不替代 Provider selection/preflight。
 - [x] 增加 `GraphicsCapabilityRegistry` focused suite 5/5；`src` typecheck 与 `git diff --check` 通过。
-- [ ] 显式发布并校验市场仓库中的正式 Graphics、Unity、RenderDoc Skills 和 AssetStudio MCP。
-- [ ] 建立 Knowledge Registry，合并内置、全局和项目级 Knowledge 索引，使市场安装的 Knowledge 能参与运行时路由与上下文注入。
-- [ ] 建立 Skill 到 MCP/Provider 的工具契约测试，防止 Skill 引用不存在或不兼容的工具。
-- [ ] 实现 Capability 驱动的 Quick Actions，只展示当前环境中实际可执行的操作。
+- [x] 显式发布并校验市场仓库中的正式 Graphics、Unity、RenderDoc Skills 和 AssetStudio MCP；release manifest 固定 14 个条目，严格校验 catalog parity、文件 allowlist、MCP runtime descriptors、executable containment 和健康检查。
+- [x] 建立 Knowledge Registry，合并内置、全局、项目和 marketplace source，执行确定性优先级、内容根路径边界校验，并让现有 Graphics Knowledge router 通过 loader 使用合并索引。
+- [x] 建立 Skill 到 MCP/Provider 的工具契约测试，支持 raw/dynamic MCP tool name、RenderDoc server aliases、参数和 capability 校验，并覆盖正向和负向 focused tests。
+- [x] 实现 Capability 驱动的 Quick Actions，只返回当前 capability registry 中可执行的 provider-independent、AssetStudio 和 RenderDoc 操作，并覆盖 unavailable/degraded/unknown 过滤测试。
 
 ### Asset / Build 能力
 
