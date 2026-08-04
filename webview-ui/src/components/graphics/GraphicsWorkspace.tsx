@@ -2,6 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, Box, Check, Cpu, FileCode2, Puzzle, Sparkles } from "lucide-react"
 
 import type {
+	EventDetailsResult,
+	FrameSummaryResult,
+	GraphicsAssetArtifactPayload,
+	GraphicsAssetInventoryPayload,
+	GraphicsAssetProviderStatusPayload,
+	GraphicsCaptureOperationPayload,
+	GraphicsCaptureStatusPayload,
 	GraphicsFeatureBrief,
 	GraphicsFeaturePlan,
 	GraphicsFeaturePlanMergeConflict,
@@ -9,6 +16,12 @@ import type {
 	GraphicsFeatureTaskStatus,
 	GraphicsProjectProfile,
 	GraphicsProviderStatusPayload,
+	GraphicsLaunchProfile,
+	GraphicsInvestigationSession,
+	GraphicsValidationReport,
+	PipelineStateResult,
+	SelectionContextResult,
+	ShaderInfoResult,
 	GraphicsSolutionRecommendation,
 	GraphicsWebviewPersistedState,
 	GraphicsWorkspaceCapability,
@@ -718,22 +731,80 @@ const FeatureHome = () => {
 
 const AssetValidation = () => {
 	const { t } = useAppTranslation()
+	const [loading, setLoading] = useState(true)
+	const [status, setStatus] = useState<GraphicsAssetProviderStatusPayload | null>(null)
+	const [path, setPath] = useState("")
+	const [artifact, setArtifact] = useState<GraphicsAssetArtifactPayload | null>(null)
+	const [inventory, setInventory] = useState<GraphicsAssetInventoryPayload | null>(null)
+	const [error, setError] = useState<string | null>(null)
+
+	useEffect(() => {
+		const onMessage = (event: MessageEvent) => {
+			const message = event.data
+			if (message?.type === "graphicsAssetProviderStatus") {
+				setStatus(message.graphicsAssetProviderStatus ?? null)
+				setLoading(false)
+			}
+			if (message?.type === "graphicsAssetArtifactLoaded") {
+				const result = message.graphicsAssetArtifactLoaded
+				if (result?.success && result.data) {
+					setArtifact(result.data)
+					setError(null)
+					vscode.postMessage({ type: "requestGraphicsAssetInventory", graphicsAssetArtifactId: result.data.artifactId })
+				} else setError(result?.error ?? t("graphics:capabilities.assetLoadFailed"))
+			}
+			if (message?.type === "graphicsAssetInventory") {
+				const result = message.graphicsAssetInventory
+				if (result?.success && result.data) setInventory(result.data)
+				else setError(result?.error ?? t("graphics:capabilities.assetInventoryFailed"))
+			}
+		}
+		window.addEventListener("message", onMessage)
+		vscode.postMessage({ type: "requestGraphicsAssetProviderStatus" })
+		return () => window.removeEventListener("message", onMessage)
+	}, [t])
+
+	const availability = loading ? "unknown" : status?.availability ?? "unavailable"
+	const providerCapability: GraphicsWorkspaceCapability = {
+		id: "asset-validation",
+		label: "graphics:capabilities.assetValidation",
+		description: "graphics:capabilities.assetValidationDescription",
+		availability,
+		providerId: status?.providerId,
+		providerName: status?.providerName,
+		reason: loading
+			? "graphics:capabilities.checkingAssetStudio"
+			: status?.message ?? "graphics:capabilities.assetValidationReason",
+	}
 
 	return (
 		<div className="space-y-4" data-testid="graphics-asset-validation">
-			<CapabilityCard
-				capability={{
-					id: "asset-validation",
-					label: "graphics:capabilities.assetValidation",
-					description: "graphics:capabilities.assetValidationDescription",
-					availability: "unavailable",
-					reason: "graphics:capabilities.assetValidationReason",
-				}}
-			/>
-			<div className="rounded-lg border border-dashed border-vscode-panel-border p-5 text-sm text-vscode-descriptionForeground">
-				<Box className="mb-3 size-5" aria-hidden="true" />
-				{t("graphics:capabilities.assetRoadmap")}
+			<CapabilityCard capability={providerCapability} />
+			<div className="rounded-lg border border-vscode-panel-border bg-vscode-editor-background p-4">
+				<div className="flex flex-col gap-2 md:flex-row md:items-end">
+					<label className="flex-1 text-xs text-vscode-descriptionForeground">
+						{t("graphics:capabilities.assetPath")}
+						<Input value={path} onChange={(event) => setPath(event.target.value)} placeholder="Build/game.bundle" />
+					</label>
+					<Button
+						type="button"
+						disabled={!path.trim() || availability === "unavailable"}
+						onClick={() => vscode.postMessage({ type: "loadGraphicsAssetArtifact", graphicsAssetPath: path.trim(), graphicsAssetKind: "unknown" })}>
+						{t("graphics:capabilities.loadAsset")}
+					</Button>
+				</div>
+				{status?.diagnostics.length ? <p className="mt-3 text-xs text-vscode-editorWarning-foreground">{status.diagnostics.join(" ")}</p> : null}
+				{error ? <p className="mt-3 text-xs text-vscode-editorError-foreground">{error}</p> : null}
 			</div>
+			{artifact && (
+				<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+					<div className="font-semibold text-vscode-foreground">{artifact.path}</div>
+					<div className="mt-1 text-vscode-descriptionForeground">{t("graphics:capabilities.assetCount")}: {inventory?.totals.assetCount ?? "—"}</div>
+					<div className="text-vscode-descriptionForeground">{t("graphics:capabilities.assetMemory")}: {inventory?.totals.memoryBytes ?? "—"}</div>
+					{inventory && <div className="mt-2 text-vscode-descriptionForeground">{Object.entries(inventory.totals.byKind).map(([kind, count]) => `${kind}: ${count}`).join(" · ")}</div>}
+				</div>
+			)}
+			{!artifact && !loading && <div className="rounded-lg border border-dashed border-vscode-panel-border p-5 text-sm text-vscode-descriptionForeground"><Box className="mb-3 size-5" aria-hidden="true" />{t("graphics:capabilities.assetRoadmap")}</div>}
 		</div>
 	)
 }
@@ -742,23 +813,98 @@ const RuntimeInvestigation = () => {
 	const { t } = useAppTranslation()
 	const [loading, setLoading] = useState(true)
 	const [status, setStatus] = useState<GraphicsProviderStatusPayload | null>(null)
+	const [captureStatus, setCaptureStatus] = useState<GraphicsCaptureStatusPayload | null>(null)
+	const [frameSummary, setFrameSummary] = useState<GraphicsCaptureOperationPayload<FrameSummaryResult> | null>(null)
+	const [selection, setSelection] = useState<GraphicsCaptureOperationPayload<SelectionContextResult> | null>(null)
+	const [eventDetails, setEventDetails] = useState<GraphicsCaptureOperationPayload<EventDetailsResult> | null>(null)
+	const [pipelineState, setPipelineState] = useState<GraphicsCaptureOperationPayload<PipelineStateResult> | null>(null)
+	const [shaderInfo, setShaderInfo] = useState<GraphicsCaptureOperationPayload<ShaderInfoResult> | null>(null)
+	const [eventId, setEventId] = useState("")
+	const [shaderStage, setShaderStage] = useState("pixel")
+	const [resourceId, setResourceId] = useState("")
+	const [compareEventIdA, setCompareEventIdA] = useState("")
+	const [compareEventIdB, setCompareEventIdB] = useState("")
+	const [selectedProviderId, setSelectedProviderId] = useState("")
+	const [mappingKind, setMappingKind] = useState<"shader" | "pass" | "draw" | "resource">("shader")
+	const [mappingIdentifier, setMappingIdentifier] = useState("")
+	const [diagnosticLoading, setDiagnosticLoading] = useState(false)
+	const [diagnosticResult, setDiagnosticResult] = useState<any>(null)
+	const [profiles, setProfiles] = useState<GraphicsLaunchProfile[]>([])
+	const [selectedProfileId, setSelectedProfileId] = useState("")
+	const [session, setSession] = useState<GraphicsInvestigationSession | null>(null)
+	const [validationReport, setValidationReport] = useState<GraphicsValidationReport | null>(null)
+	const [operationId, setOperationId] = useState("")
+	const [operationStage, setOperationStage] = useState("")
 
 	useEffect(() => {
 		const onMessage = (event: MessageEvent) => {
-			if (event.data?.type === "graphicsProviderStatus") {
-				setStatus(event.data.values as GraphicsProviderStatusPayload)
-				setLoading(false)
+			const message = event.data
+			switch (message?.type) {
+				case "graphicsProviderStatus":
+					setStatus(message.values as GraphicsProviderStatusPayload)
+					setLoading(false)
+					break
+				case "graphicsCaptureStatus":
+					setCaptureStatus(message.graphicsCaptureStatus as GraphicsCaptureStatusPayload)
+					break
+				case "graphicsFrameSummary":
+					setFrameSummary(message.graphicsFrameSummary as GraphicsCaptureOperationPayload<FrameSummaryResult>)
+					break
+				case "graphicsSelectionContext":
+					setSelection(message.graphicsSelectionContext as GraphicsCaptureOperationPayload<SelectionContextResult>)
+					break
+				case "graphicsEventDetails":
+					setEventDetails(message.graphicsEventDetails as GraphicsCaptureOperationPayload<EventDetailsResult>)
+					break
+				case "graphicsPipelineState":
+					setPipelineState(message.graphicsPipelineState as GraphicsCaptureOperationPayload<PipelineStateResult>)
+					break
+				case "graphicsShaderInfo":
+					setShaderInfo(message.graphicsShaderInfo as GraphicsCaptureOperationPayload<ShaderInfoResult>)
+					break
+				case "graphicsWorkflowStarted":
+					setDiagnosticLoading(true)
+					break
+				case "graphicsLaunchProfiles":
+					setProfiles(message.graphicsLaunchProfiles ?? [])
+					break
+				case "graphicsInvestigationSession":
+					setSession(message.graphicsInvestigationSession ?? null)
+					break
+				case "graphicsOperationProgress":
+					setOperationStage(message.values?.stage ?? "")
+					break
+				case "graphicsResult":
+					setDiagnosticLoading(false)
+					setDiagnosticResult(message.values ?? message.graphicsResult ?? null)
+					if (message.values?.result?.rawData?.report) setValidationReport(message.values.result.rawData.report as GraphicsValidationReport)
+					break
+				case "graphicsValidationReport":
+					setValidationReport(message.graphicsValidationReport ?? null)
+					break
+				case "graphicsProviderSelected":
+					setSelectedProviderId(message.values?.providerId ?? "")
+					vscode.postMessage({ type: "requestGraphicsProviderStatus" })
+					vscode.postMessage({ type: "requestGraphicsCaptureStatus" })
+					break
 			}
 		}
 
 		window.addEventListener("message", onMessage)
 		vscode.postMessage({ type: "requestGraphicsProviderStatus" })
+		vscode.postMessage({ type: "requestGraphicsCaptureStatus" })
+		vscode.postMessage({ type: "requestGraphicsLaunchProfiles" })
 		return () => window.removeEventListener("message", onMessage)
 	}, [])
 
-	const selectedProvider = status?.providers.find((provider) => provider.providerId === status.selectedProviderId)
-	const availableProvider = selectedProvider ?? status?.providers.find((provider) => provider.status === "available")
+	const selectedProviderIdFromStatus = status?.selectedProviderId ?? ""
+	const selectedProvider = status?.providers.find((provider) => provider.providerId === (selectedProviderId || selectedProviderIdFromStatus))
+	const availableProvider = selectedProvider ?? status?.providers.find((provider) => provider.status === "available" || provider.status === "no-capture")
 	const runtimeAvailable = availableProvider?.status === "available" || availableProvider?.status === "no-capture"
+	const frame = frameSummary?.data
+	const selectedEvent = selection?.data
+	const inspectedEvent = eventDetails?.data
+	const request = (type: "requestGraphicsFrameSummary" | "requestGraphicsSelectionContext") => vscode.postMessage({ type })
 
 	const runtimeCapability: GraphicsWorkspaceCapability = {
 		id: "runtime-capture",
@@ -767,33 +913,163 @@ const RuntimeInvestigation = () => {
 		availability: loading ? "unknown" : runtimeAvailable ? "available" : "unavailable",
 		providerId: availableProvider?.providerId,
 		providerName: availableProvider?.providerName,
-		reason: loading
-			? "graphics:capabilities.checkingProviders"
-			: runtimeAvailable
-				? t("graphics:capabilities.runtimeProviderReady", {
-						provider: availableProvider?.providerName ?? t("graphics:capabilities.runtimeProvider"),
-						suffix:
-							availableProvider?.status === "no-capture"
-								? t("graphics:capabilities.noCaptureSuffix")
-								: "",
-					})
-				: "graphics:capabilities.runtimeUnavailable",
+		reason: loading ? "graphics:capabilities.checkingProviders" : captureStatus?.message ?? "graphics:capabilities.runtimeUnavailable",
+	}
+
+	const runDiagnostic = (intent: string, extra: Record<string, unknown> = {}) => {
+		setDiagnosticLoading(true)
+		vscode.postMessage({
+			type: "runGraphicsWorkflow",
+			graphicsIntent: intent,
+			graphicsEventId: eventId || undefined,
+			graphicsShaderStage: shaderStage || undefined,
+			graphicsResourceId: resourceId || undefined,
+			graphicsEventIdA: compareEventIdA || undefined,
+			graphicsEventIdB: compareEventIdB || undefined,
+			graphicsMappingKind: mappingKind,
+			graphicsMappingIdentifier: mappingIdentifier || undefined,
+			...extra,
+		})
 	}
 
 	return (
 		<div className="space-y-4" data-testid="graphics-runtime-investigation">
 			<CapabilityCard capability={runtimeCapability} />
-			{!loading && !runtimeAvailable && (
-				<div className="rounded-lg border border-dashed border-vscode-panel-border p-5">
-					<Cpu className="mb-3 size-5 text-vscode-descriptionForeground" aria-hidden="true" />
-					<h3 className="text-sm font-semibold text-vscode-foreground">
-						{t("graphics:capabilities.runtimeOptional")}
-					</h3>
-					<p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">
-						{t("graphics:capabilities.runtimeOptionalDescription")}
-					</p>
-				</div>
+			{runtimeAvailable && (
+				<>
+					<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+						<div className="font-semibold text-vscode-foreground">Launch and capture</div>
+						<div className="mt-2 flex flex-wrap items-center gap-2">
+							<select aria-label="Launch profile" value={selectedProfileId} onChange={(event) => setSelectedProfileId(event.target.value)} className="min-w-48 rounded border border-vscode-input-border bg-vscode-input-background px-2 py-1 text-vscode-input-foreground">
+								<option value="">Select profile</option>
+								{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+							</select>
+							<Button type="button" size="sm" disabled={!selectedProfileId || diagnosticLoading} onClick={() => { const id = crypto.randomUUID(); setOperationId(id); setDiagnosticLoading(true); vscode.postMessage({ type: "runGraphicsLaunchAndCapture", graphicsProfileId: selectedProfileId, graphicsOperationId: id, graphicsSessionId: session?.id }) }}>{diagnosticLoading ? `Running${operationStage ? ` · ${operationStage}` : ""}` : "Launch and capture"}</Button>
+							<Button type="button" size="sm" variant="secondary" disabled={!operationId} onClick={() => vscode.postMessage({ type: "cancelGraphicsOperation", graphicsOperationId: operationId })}>Cancel</Button>
+							<Button type="button" size="sm" variant="secondary" onClick={() => vscode.postMessage({ type: "invalidateGraphicsCache" })}>Refresh cache</Button>
+						</div>
+						{session && <div className="mt-2 text-vscode-descriptionForeground">Session {session.id} · {session.status} · revision {session.revision}</div>}
+					</div>
+					<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+						<div className="font-semibold text-vscode-foreground">Re-capture validation</div>
+						<div className="mt-2 flex flex-wrap items-center gap-2">
+							<Button type="button" size="sm" disabled={!selectedProfileId || !session?.baselineCapture || diagnosticLoading} onClick={() => { const id = crypto.randomUUID(); setOperationId(id); setDiagnosticLoading(true); vscode.postMessage({ type: "runGraphicsRecaptureValidation", graphicsProfileId: selectedProfileId, graphicsOperationId: id, graphicsSessionId: session?.id, graphicsCaptureArtifact: session?.baselineCapture }) }}>Validate candidate capture</Button>
+							{validationReport && <span className="text-vscode-descriptionForeground">{validationReport.status} · confidence {validationReport.confidence} · {validationReport.summary}</span>}
+						</div>
+						{validationReport?.metrics.map((metric) => <div key={metric.name} className="mt-1 text-vscode-descriptionForeground">{metric.name}: {metric.before ?? "—"} → {metric.after ?? "—"}{metric.improved === undefined ? "" : metric.improved ? " · improved" : " · not improved"}</div>)}
+					</div>
+					<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+						<div className="font-semibold text-vscode-foreground">{t("graphics:capabilities.provider")}</div>
+						<div className="mt-2 flex flex-wrap items-center gap-2">
+							<select
+								aria-label={t("graphics:capabilities.selectProvider")}
+								value={selectedProviderId || selectedProviderIdFromStatus}
+								onChange={(event) => {
+									const providerId = event.target.value
+									setSelectedProviderId(providerId)
+									vscode.postMessage({ type: "selectGraphicsProvider", graphicsProviderId: providerId })
+								}}
+								className="min-w-48 rounded border border-vscode-input-border bg-vscode-input-background px-2 py-1 text-vscode-input-foreground">
+								<option value="">{t("graphics:capabilities.selectProvider")}</option>
+								{status?.providers.map((provider) => (
+									<option key={provider.providerId} value={provider.providerId}>
+										{provider.providerName} · {provider.status}
+									</option>
+								))}
+							</select>
+							{selectedProvider?.message && <span className="text-vscode-descriptionForeground">{selectedProvider.message}</span>}
+						</div>
+					</div>
+					<div className="grid gap-3 md:grid-cols-2">
+						<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+							<div className="font-semibold text-vscode-foreground">{t("graphics:capabilities.captureStatus")}</div>
+							<div className="mt-2 text-vscode-descriptionForeground">{captureStatus?.status ?? "—"} · {captureStatus?.api ?? "API —"}</div>
+							<div className="text-vscode-descriptionForeground">{captureStatus?.providerName ?? availableProvider?.providerName ?? "—"}</div>
+							<div className="text-vscode-descriptionForeground">{captureStatus?.capturePath ?? t("graphics:capabilities.noCapture")}</div>
+							<div className="text-vscode-descriptionForeground">{captureStatus?.gpu ?? "GPU —"} · {captureStatus?.width ?? "—"}×{captureStatus?.height ?? "—"} · frame {captureStatus?.frameNumber ?? "—"}</div>
+						</div>
+						<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+							<div className="font-semibold text-vscode-foreground">{t("graphics:capabilities.frameOverview")}</div>
+							<div className="mt-2 text-vscode-descriptionForeground">{frame?.totalDurationMs ?? "—"} ms · {frame?.passes?.length ?? 0} passes · {frame?.hotEvents?.length ?? 0} hot events</div>
+							{frame?.hotEvents?.slice(0, 3).map((hotEvent) => <div key={hotEvent.eventId} className="mt-1 text-vscode-descriptionForeground">#{hotEvent.eventId} {hotEvent.name ?? "Event"} · {hotEvent.durationMs ?? "—"} ms</div>)}
+							{frameSummary?.error && <div className="mt-2 text-vscode-errorForeground">{frameSummary.error}</div>}
+							<Button type="button" size="sm" className="mt-3" onClick={() => request("requestGraphicsFrameSummary")}>{t("graphics:capabilities.refreshFrame")}</Button>
+						</div>
+					</div>
+					<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+						<div className="font-semibold text-vscode-foreground">{t("graphics:capabilities.selectedEvent")}</div>
+						<div className="mt-2 flex flex-wrap gap-2">
+							<Input value={eventId} onChange={(event) => setEventId(event.target.value)} placeholder="Event ID" />
+							<Button type="button" size="sm" disabled={!eventId} onClick={() => vscode.postMessage({ type: "requestGraphicsEventDetails", graphicsEventId: eventId })}>{t("graphics:capabilities.inspectEvent")}</Button>
+							<Button type="button" size="sm" variant="secondary" onClick={() => request("requestGraphicsSelectionContext")}>{t("graphics:capabilities.refreshSelection")}</Button>
+						</div>
+						<div className="mt-2 text-vscode-descriptionForeground">{selectedEvent?.eventName ?? inspectedEvent?.name ?? "—"}</div>
+						<div className="text-vscode-descriptionForeground">{inspectedEvent?.durationMs ?? "—"} ms · {inspectedEvent?.drawCallCount ?? "—"} draw calls · {inspectedEvent?.primitiveCount ?? "—"} primitives</div>
+						{eventDetails?.error && <div className="mt-2 text-vscode-errorForeground">{eventDetails.error}</div>}
+						<div className="mt-3 grid gap-3 md:grid-cols-2">
+							<div className="rounded border border-vscode-panel-border p-3">
+								<div className="font-semibold">{t("graphics:capabilities.pipeline")}</div>
+								<Button type="button" size="sm" className="mt-2" disabled={!eventId} onClick={() => vscode.postMessage({ type: "requestGraphicsPipelineState", graphicsEventId: eventId })}>{t("graphics:capabilities.inspectPipeline")}</Button>
+								<div className="mt-2 text-vscode-descriptionForeground">{t("graphics:capabilities.renderTargets")}: {pipelineState?.data?.renderTargets?.length ?? 0} · {t("graphics:capabilities.vertexBuffers")}: {pipelineState?.data?.vertexBuffers?.length ?? 0}</div>
+								{pipelineState?.data?.renderTargets?.map((binding) => <div key={`rt-${binding.slot}`} className="mt-1 text-vscode-descriptionForeground">RT {binding.slot}: {binding.name ?? binding.format ?? binding.type ?? "—"}{binding.dimensions ? ` · ${binding.dimensions}` : ""}</div>)}
+								{pipelineState?.data?.depthStencil && <div className="mt-1 text-vscode-descriptionForeground">{t("graphics:capabilities.depthStencil")}: {pipelineState.data.depthStencil.name ?? pipelineState.data.depthStencil.format ?? "—"}</div>}
+								{pipelineState?.error && <div className="mt-1 text-vscode-errorForeground">{pipelineState.error}</div>}
+							</div>
+							<div className="rounded border border-vscode-panel-border p-3">
+								<div className="font-semibold">{t("graphics:capabilities.shader")}</div>
+								<div className="mt-2 flex gap-2"><Input value={shaderStage} onChange={(event) => setShaderStage(event.target.value)} placeholder={t("graphics:capabilities.shaderStage")} /><Button type="button" size="sm" disabled={!eventId} onClick={() => vscode.postMessage({ type: "requestGraphicsShaderInfo", graphicsEventId: eventId, graphicsShaderStage: shaderStage })}>{t("graphics:capabilities.inspectShader")}</Button></div>
+								<div className="mt-2 text-vscode-descriptionForeground">{shaderInfo?.data?.stage ?? "—"} · {shaderInfo?.data?.entryPoint ?? "—"} · {shaderInfo?.data?.language ?? "—"} · {shaderInfo?.data?.instructionCount ?? "—"}</div>
+								{shaderInfo?.data?.inputs?.length ? <div className="mt-1 text-vscode-descriptionForeground">Inputs: {shaderInfo.data.inputs.map((input) => input.name ?? input.type ?? "variable").join(", ")}</div> : null}
+								{shaderInfo?.data?.outputs?.length ? <div className="mt-1 text-vscode-descriptionForeground">Outputs: {shaderInfo.data.outputs.map((output) => output.name ?? output.type ?? "variable").join(", ")}</div> : null}
+								{shaderInfo?.data?.constantBuffers?.length ? <div className="mt-1 text-vscode-descriptionForeground">{t("graphics:capabilities.constantBuffers")}: {shaderInfo.data.constantBuffers.join(", ")}</div> : null}
+								{shaderInfo?.error && <div className="mt-1 text-vscode-errorForeground">{shaderInfo.error}</div>}
+							</div>
+						</div>
+					<div className="mt-3 rounded border border-vscode-panel-border p-3">
+						<div className="font-semibold">{t("graphics:capabilities.resources")}</div>
+						<div className="mt-2 grid gap-1 text-vscode-descriptionForeground md:grid-cols-2">
+							<div>{t("graphics:capabilities.renderTargets")}: {pipelineState?.data?.renderTargets?.length ?? 0}</div>
+							<div>{t("graphics:capabilities.vertexBuffers")}: {pipelineState?.data?.vertexBuffers?.length ?? 0}</div>
+							<div>{t("graphics:capabilities.samplers")}: {pipelineState?.data?.samplers?.length ?? 0}</div>
+							<div>{t("graphics:capabilities.constantBuffers")}: {pipelineState?.data?.constantBuffers?.length ?? 0}</div>
+						</div>
+						{pipelineState?.data?.vertexBuffers?.map((binding) => <div key={`vb-${binding.slot}`} className="mt-1 text-vscode-descriptionForeground">VB {binding.slot}: {binding.name ?? binding.type ?? "—"}{binding.format ? ` · ${binding.format}` : ""}</div>)}
+					</div>
+					<div className="mt-3 rounded border border-vscode-panel-border p-3">
+						<div className="font-semibold">{t("graphics:capabilities.resource")}</div>
+						<div className="mt-2 text-vscode-descriptionForeground">{pipelineState?.data?.depthStencil?.name ?? pipelineState?.data?.depthStencil?.format ?? t("graphics:capabilities.noResource")}</div>
+					</div>
+					</div>
+					<div className="rounded-lg border border-vscode-panel-border p-4 text-xs">
+						<div className="font-semibold text-vscode-foreground">{t("graphics:capabilities.diagnostics")}</div>
+						<div className="mt-2 flex flex-wrap gap-2">
+							<Input value={resourceId} onChange={(event) => setResourceId(event.target.value)} placeholder={t("graphics:capabilities.resourceId")} />
+							<Input value={compareEventIdA} onChange={(event) => setCompareEventIdA(event.target.value)} placeholder={t("graphics:capabilities.eventIdA")} />
+							<Input value={compareEventIdB} onChange={(event) => setCompareEventIdB(event.target.value)} placeholder={t("graphics:capabilities.eventIdB")} />
+						</div>
+						<div className="mt-2 flex flex-wrap gap-2">
+							{(["frame_performance", "shader_analysis", "pipeline_analysis", "resource_trace"] as const).map((intent) => <Button key={intent} type="button" size="sm" disabled={diagnosticLoading || (intent !== "frame_performance" && !eventId)} onClick={() => runDiagnostic(intent)}>{t(`graphics:capabilities.${intent}`)}</Button>)}
+							<Button type="button" size="sm" disabled={diagnosticLoading || !compareEventIdA || !compareEventIdB} onClick={() => runDiagnostic("regression_compare")}>{t("graphics:capabilities.captureCompare")}</Button>
+						</div>
+						<div className="mt-3 rounded border border-vscode-panel-border p-3">
+							<div className="font-semibold">{t("graphics:capabilities.projectMapping")}</div>
+							<div className="mt-2 flex flex-wrap gap-2">
+								<select aria-label={t("graphics:capabilities.mappingKind")} value={mappingKind} onChange={(event) => setMappingKind(event.target.value as typeof mappingKind)} className="rounded border border-vscode-input-border bg-vscode-input-background px-2 py-1 text-vscode-input-foreground">
+									<option value="shader">{t("graphics:capabilities.shader")}</option>
+									<option value="pass">Pass</option>
+									<option value="draw">Draw</option>
+									<option value="resource">{t("graphics:capabilities.resource")}</option>
+								</select>
+								<Input value={mappingIdentifier} onChange={(event) => setMappingIdentifier(event.target.value)} placeholder={t("graphics:capabilities.mappingIdentifier")} />
+								<Button type="button" size="sm" disabled={diagnosticLoading || !mappingIdentifier} onClick={() => runDiagnostic("project_mapping")}>{t("graphics:capabilities.findOwner")}</Button>
+							</div>
+						</div>
+						{diagnosticLoading && <div className="mt-2 text-vscode-descriptionForeground">{t("graphics:capabilities.workflowRunning")}</div>}
+						{diagnosticResult?.result && <div className="mt-2 space-y-2"><div className="text-vscode-foreground">{diagnosticResult.result.summary}</div>{diagnosticResult.result.evidence?.map((item: any, index: number) => <div key={index} className="text-vscode-descriptionForeground">{item.source ? `${item.source}: ` : ""}{item.description}</div>)}{diagnosticResult.result.rawData?.shaderSource?.success && <div className="rounded border border-vscode-panel-border p-2 text-vscode-descriptionForeground"><div className="font-semibold">Shader identity</div><div>{diagnosticResult.result.rawData.shader?.shaderId ?? diagnosticResult.result.rawData.shaderSource.shaderId ?? "—"} · {diagnosticResult.result.rawData.shader?.debugName ?? diagnosticResult.result.rawData.shaderSource.debugName ?? "—"}</div>{diagnosticResult.result.rawData.shaderSource.filePath && <div>{diagnosticResult.result.rawData.shaderSource.filePath}</div>}</div>}{diagnosticResult.result.rawData?.resourceHistory?.success && <div className="rounded border border-vscode-panel-border p-2 text-vscode-descriptionForeground"><div className="font-semibold">Resource lifecycle</div><div>{diagnosticResult.result.rawData.resourceHistory.history?.length ?? 0} event(s)</div>{diagnosticResult.result.rawData.resourceHistory.history?.slice(0, 5).map((entry: any, index: number) => <div key={index}>{entry.eventId}: {entry.action}{entry.description ? ` · ${entry.description}` : ""}</div>)}</div>}{diagnosticResult.result.rawData?.pipelineDiff?.success && <div className="rounded border border-vscode-panel-border p-2 text-vscode-descriptionForeground"><div className="font-semibold">Pipeline diff</div><div>{diagnosticResult.result.rawData.pipelineDiff.differences?.length ?? 0} changed field(s)</div>{diagnosticResult.result.rawData.pipelineDiff.differences?.slice(0, 5).map((difference: any, index: number) => <div key={index}>{difference.path}: {String(difference.before ?? "—")} → {String(difference.after ?? "—")}</div>)}</div>}{diagnosticResult.result.projectMapping?.map((candidate: any, index: number) => <div key={`${candidate.filePath}-${index}`} className="text-vscode-descriptionForeground">{candidate.filePath}{candidate.line ? `:${candidate.line}` : ""}{candidate.functionName ? ` · ${candidate.functionName}` : ""} · {candidate.confidence}</div>)}{diagnosticResult.result.error && <div className="text-vscode-errorForeground">{diagnosticResult.result.error}</div>}</div>}
+					</div>
+				</>
 			)}
+			{!loading && !runtimeAvailable && <div className="rounded-lg border border-dashed border-vscode-panel-border p-5"><Cpu className="mb-3 size-5 text-vscode-descriptionForeground" aria-hidden="true" /><h3 className="text-sm font-semibold text-vscode-foreground">{t("graphics:capabilities.runtimeOptional")}</h3><p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">{t("graphics:capabilities.runtimeOptionalDescription")}</p></div>}
 		</div>
 	)
 }

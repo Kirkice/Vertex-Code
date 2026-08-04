@@ -37,6 +37,9 @@ const createMockProvider = (): GraphicsCaptureProvider => ({
 		passGraph: true,
 		projectMapping: true,
 		captureDiff: true,
+		resourceHistory: true,
+		pipelineDiff: true,
+		eventDiagnostics: true,
 	}),
 	openCurrentCapture: vi.fn().mockResolvedValue({ success: true, capturePath: "/test/capture.rdc" }),
 	getFrameSummary: vi.fn().mockResolvedValue({
@@ -74,6 +77,9 @@ const createMockProvider = (): GraphicsCaptureProvider => ({
 		language: "HLSL",
 		instructionCount: 150,
 	}),
+	getShaderSource: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
+	getResourceHistory: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
+	diffPipelineState: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
 	findProjectImplementation: vi.fn().mockResolvedValue({
 		success: true,
 		candidates: [

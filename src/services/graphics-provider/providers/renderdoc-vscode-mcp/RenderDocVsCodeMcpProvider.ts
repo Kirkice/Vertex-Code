@@ -23,8 +23,20 @@ import type {
 	PipelineStateResult,
 	ShaderInfoRequest,
 	ShaderInfoResult,
+	ShaderSourceRequest,
+	ShaderSourceResult,
+	ResourceHistoryRequest,
+	ResourceHistoryResult,
+	PipelineDiffRequest,
+	PipelineDiffResult,
 	ProjectMappingRequest,
 	ProjectMappingResult,
+	GraphicsLaunchProfile,
+	GraphicsOperationContext,
+	LaunchTargetResult,
+	LiveTargetResult,
+	CaptureTriggerResult,
+	CaptureCompletionResult,
 } from "../../GraphicsProviderTypes"
 import { emptyCapabilities } from "../../GraphicsProviderTypes"
 import { GraphicsProviderError } from "../../GraphicsProviderError"
@@ -65,11 +77,16 @@ const TOOL_NAMES = {
 	getPipelineState: "renderdoc_getPipelineState",
 	getShaderInfo: "renderdoc_getShaderInfo",
 	getShaderSource: "renderdoc_getShaderSource",
+	getResourceHistory: "renderdoc_getResourceHistory",
 	getMeshData: "renderdoc_getMeshData",
 	findProjectImplementation: "renderdoc_findProjectImplementation",
 	getDrawCalls: "renderdoc_getDrawCalls",
 	analyzeHotEvent: "renderdoc_analyzeHotEvent",
 	diffPipelineState: "renderdoc_diffPipelineState",
+	launchTarget: "renderdoc_launchTarget",
+	waitForLiveTarget: "renderdoc_waitForLiveTarget",
+	triggerCapture: "renderdoc_triggerCapture",
+	waitForCapture: "renderdoc_waitForCapture",
 } as const
 
 /**
@@ -220,6 +237,10 @@ export class RenderDocVsCodeMcpProvider extends BaseGraphicsCaptureProvider {
 		// RenderDoc for VS Code supports a comprehensive set of capabilities
 		return {
 			...emptyCapabilities(),
+			launchTarget: true,
+			liveTarget: true,
+			captureTrigger: true,
+			capturePolling: true,
 			frameSummary: true,
 			selectionContext: true,
 			eventDetails: true,
@@ -228,11 +249,76 @@ export class RenderDocVsCodeMcpProvider extends BaseGraphicsCaptureProvider {
 			shaderSource: true,
 			meshData: true,
 			resourceDetail: true,
+			resourceHistory: true,
 			textureData: true,
 			bufferData: true,
 			passGraph: true,
 			projectMapping: true,
 			captureDiff: true,
+			pipelineDiff: true,
+			eventDiagnostics: true,
+		}
+	}
+
+	private operationContext(context?: GraphicsOperationContext): Record<string, unknown> {
+		return {
+			requestId: context?.requestId,
+			sessionId: context?.sessionId,
+			operationId: context?.requestId,
+			timeoutMs: context?.timeoutMs,
+		}
+	}
+
+	async launchTarget(profile: GraphicsLaunchProfile, context?: GraphicsOperationContext): Promise<LaunchTargetResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.launchTarget, {
+				profile,
+				...this.operationContext(context),
+			})
+			return { success: data?.success !== false, targetId: data?.targetId ?? data?.id }
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) }
+		}
+	}
+
+	async waitForLiveTarget(targetId: string, context?: GraphicsOperationContext): Promise<LiveTargetResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.waitForLiveTarget, { targetId, ...this.operationContext(context) })
+			return { success: data?.success !== false, ready: data?.ready ?? data?.live ?? true, targetId: data?.targetId ?? targetId }
+		} catch (error) {
+			return { success: false, ready: false, error: error instanceof Error ? error.message : String(error) }
+		}
+	}
+
+	async triggerCapture(targetId: string, profile: GraphicsLaunchProfile, context?: GraphicsOperationContext): Promise<CaptureTriggerResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.triggerCapture, { targetId, profile, ...this.operationContext(context) })
+			return { success: data?.success !== false, operationId: data?.operationId ?? data?.id }
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) }
+		}
+	}
+
+	async cancelCapture(operationId: string, context?: GraphicsOperationContext): Promise<void> {
+		await this.callRenderDocTool("renderdoc_cancelCapture", {
+			operationId,
+			...this.operationContext(context),
+		})
+	}
+
+	async stopTarget(targetId: string, context?: GraphicsOperationContext): Promise<void> {
+		await this.callRenderDocTool("renderdoc_stopTarget", {
+			targetId,
+			...this.operationContext(context),
+		})
+	}
+
+	async waitForCapture(operationId: string, context?: GraphicsOperationContext): Promise<CaptureCompletionResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.waitForCapture, { operationId, ...this.operationContext(context) })
+			return { success: data?.success !== false, completed: data?.completed ?? data?.ready ?? true, capturePath: data?.capturePath ?? data?.path }
+		} catch (error) {
+			return { success: false, completed: false, error: error instanceof Error ? error.message : String(error) }
 		}
 	}
 
@@ -340,6 +426,8 @@ export class RenderDocVsCodeMcpProvider extends BaseGraphicsCaptureProvider {
 				stage: data?.stage ?? input.stage,
 				entryPoint: data?.entryPoint,
 				language: data?.language,
+				shaderId: data?.shaderId ?? data?.id ?? data?.hash,
+				debugName: data?.debugName ?? data?.name,
 				instructionCount: data?.instructionCount,
 				inputs: data?.inputs,
 				outputs: data?.outputs,
@@ -350,6 +438,65 @@ export class RenderDocVsCodeMcpProvider extends BaseGraphicsCaptureProvider {
 				success: false,
 				error: error instanceof Error ? error.message : String(error),
 			}
+		}
+	}
+
+	override async getShaderSource(input: ShaderSourceRequest): Promise<ShaderSourceResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.getShaderSource, {
+				eventId: input.eventId,
+				stage: input.stage,
+				shaderId: input.shaderId,
+			})
+			return {
+				success: true,
+				eventId: data?.eventId ?? Number(input.eventId),
+				stage: data?.stage ?? input.stage,
+				shaderId: data?.shaderId ?? data?.id ?? data?.hash ?? input.shaderId,
+				entryPoint: data?.entryPoint,
+				language: data?.language,
+				source: data?.source ?? data?.code,
+				filePath: data?.filePath ?? data?.path,
+				debugName: data?.debugName ?? data?.name,
+			}
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) }
+		}
+	}
+
+	override async getResourceHistory(input: ResourceHistoryRequest): Promise<ResourceHistoryResult> {
+		try {
+			const data = await this.callRenderDocTool("renderdoc_getResourceHistory", {
+				resourceId: input.resourceId,
+				eventId: input.eventId,
+			})
+			return {
+				success: true,
+				resourceId: data?.resourceId ?? input.resourceId,
+				name: data?.name,
+				format: data?.format,
+				dimensions: data?.dimensions,
+				history: data?.history ?? data?.events,
+			}
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) }
+		}
+	}
+
+	override async diffPipelineState(input: PipelineDiffRequest): Promise<PipelineDiffResult> {
+		try {
+			const data = await this.callRenderDocTool(TOOL_NAMES.diffPipelineState, {
+				eventIdA: input.eventIdA,
+				eventIdB: input.eventIdB,
+			})
+			return {
+				success: true,
+				eventIdA: data?.eventIdA ?? Number(input.eventIdA),
+				eventIdB: data?.eventIdB ?? Number(input.eventIdB),
+				differences: data?.differences ?? data?.diffs ?? data?.changes,
+			}
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) }
 		}
 	}
 

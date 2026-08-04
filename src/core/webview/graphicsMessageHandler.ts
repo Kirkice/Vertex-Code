@@ -24,11 +24,26 @@ import type {
 } from "@roo-code/types"
 import type { ClineProvider } from "./ClineProvider"
 import { GraphicsProviderRegistry } from "../../services/graphics-provider/GraphicsProviderRegistry"
+import { GraphicsAssetProviderRegistry } from "../../services/graphics-provider/GraphicsAssetProviderRegistry"
+import { GraphicsCapabilityRegistry } from "../../services/graphics-agent/capabilities/GraphicsCapabilityRegistry"
+import { ASSET_STUDIO_CAPABILITIES } from "../../services/graphics-provider/providers/asset-studio-mcp/AssetStudioMcpProvider"
 import { GraphicsWorkflowOrchestrator } from "../../services/graphics-agent/GraphicsWorkflowOrchestrator"
 import { RenderDocVsCodeMcpProvider } from "../../services/graphics-provider/providers/renderdoc-vscode-mcp/RenderDocVsCodeMcpProvider"
+import { AssetStudioMcpProvider } from "../../services/graphics-provider/providers/asset-studio-mcp/AssetStudioMcpProvider"
 import { AnalyzeCurrentFrameWorkflow } from "../../services/graphics-agent/workflows/analyzeCurrentFrame"
+import { LaunchAndCaptureWorkflow } from "../../services/graphics-agent/workflows/launchAndCapture"
+import { ValidateGraphicsFixWorkflow } from "../../services/graphics-agent/workflows/validateGraphicsFix"
 import { ExplainSelectedDrawWorkflow } from "../../services/graphics-agent/workflows/explainSelectedDraw"
 import { FindOwnerInProjectWorkflow } from "../../services/graphics-agent/workflows/findOwnerInProject"
+import {
+	FramePerformanceWorkflow,
+	ShaderAnalysisWorkflow,
+	PipelineAnalysisWorkflow,
+	ResourceTraceWorkflow,
+	CaptureCompareWorkflow,
+} from "../../services/graphics-agent/workflows/runtimeDiagnostics"
+import { GraphicsLaunchProfileStore } from "../../services/graphics-agent/persistence/GraphicsLaunchProfileStore"
+import { GraphicsRuntimeCache } from "../../services/graphics-agent/GraphicsRuntimeCache"
 import {
 	runPlaybook,
 	detectPlaybookFromMessage,
@@ -56,23 +71,34 @@ import {
  * These are lazily initialized on first use.
  */
 let graphicsRegistry: GraphicsProviderRegistry | null = null
+let graphicsAssetRegistry: GraphicsAssetProviderRegistry | null = null
+let graphicsAssetCapabilities: GraphicsCapabilityRegistry | null = null
 let graphicsOrchestrator: GraphicsWorkflowOrchestrator | null = null
+const graphicsRuntimeCache = new GraphicsRuntimeCache()
 const GRAPHICS_FEATURE_BRIEF_WORKSPACE_KEY = "graphicsFeatureBrief"
 const GRAPHICS_FEATURE_PLAN_WORKSPACE_KEY = "graphicsFeaturePlan"
 
 /** Keeps the concrete Agent Task available for targeted cancellation without touching the foreground task API. */
 const graphicsExecutionTasks = new Map<string, TaskLike>()
+/** Tracks cancellable graphics workflow operations by their stable operation/request identity. */
+const graphicsOperationControllers = new Map<string, AbortController>()
 /** Carries an explicit user cancellation reason into the asynchronous TaskAborted callback. */
 const graphicsExecutionCancellationReasons = new Map<string, string>()
 /** Serializes asynchronous execution writes so output, logs, and terminal state cannot overwrite each other. */
 const graphicsExecutionUpdateQueues = new Map<string, Promise<void>>()
 
-/** Releases all in-memory execution resources owned by a provider instance. */
+/** Releases all in-memory graphics execution and provider resources. */
 export function disposeGraphicsExecutionRuntime(): void {
 	for (const task of graphicsExecutionTasks.values()) task.abortTask()
+	for (const controller of graphicsOperationControllers.values()) controller.abort()
 	graphicsExecutionTasks.clear()
+	graphicsOperationControllers.clear()
 	graphicsExecutionCancellationReasons.clear()
 	graphicsExecutionUpdateQueues.clear()
+	graphicsRegistry = null
+	graphicsAssetRegistry = null
+	graphicsAssetCapabilities = null
+	graphicsOrchestrator = null
 }
 
 /** Creates the project-file store per request so tests and multiple workspaces never share path state. */
@@ -180,14 +206,60 @@ function getGraphicsRegistry(provider: ClineProvider): GraphicsProviderRegistry 
 	if (!graphicsRegistry) {
 		graphicsRegistry = new GraphicsProviderRegistry()
 
-		// Register the RenderDoc VS Code MCP provider if McpHub is available
-		const mcpHub = (provider as any).mcpHub
+		// Register MCP providers from the host hub. Asset analysis remains separate
+		// from capture selection, but shares the same lifecycle and MCP discovery.
+		const mcpHub = provider.getMcpHub()
 		if (mcpHub) {
-			const renderDocProvider = new RenderDocVsCodeMcpProvider(mcpHub)
-			graphicsRegistry.registerProvider(renderDocProvider)
-		}
+				graphicsRegistry.registerProvider(new RenderDocVsCodeMcpProvider(mcpHub))
+				// AssetStudio is an asset provider, not a capture provider. Its lifecycle
+				// is exposed through the Asset/Build protocol rather than capture selection.
+			}
 	}
 	return graphicsRegistry
+}
+
+function getGraphicsAssetRegistry(provider: ClineProvider): GraphicsAssetProviderRegistry {
+	if (!graphicsAssetRegistry) {
+		graphicsAssetRegistry = new GraphicsAssetProviderRegistry()
+		const mcpHub = provider.getMcpHub()
+		if (mcpHub) graphicsAssetRegistry.registerProvider(new AssetStudioMcpProvider(mcpHub))
+	}
+	return graphicsAssetRegistry
+}
+
+async function getGraphicsAssetCapabilities(provider: ClineProvider): Promise<GraphicsCapabilityRegistry> {
+	if (!graphicsAssetCapabilities) graphicsAssetCapabilities = new GraphicsCapabilityRegistry()
+	const assetRegistry = getGraphicsAssetRegistry(provider)
+	const providers = assetRegistry.listProviders()
+	const activeProviderIds = new Set(providers.map((assetProvider) => assetProvider.id))
+
+	for (const entry of graphicsAssetCapabilities.list()) {
+		if (
+			entry.descriptor.sourceKind === "provider" &&
+			!activeProviderIds.has(entry.descriptor.sourceId)
+		) {
+			graphicsAssetCapabilities.unregister("provider", entry.descriptor.sourceId)
+		}
+	}
+
+	for (const assetProvider of providers) {
+		const status = await assetProvider.getStatus()
+		graphicsAssetCapabilities.register({
+			descriptor: {
+				id: assetProvider.id,
+				label: assetProvider.displayName,
+				sourceKind: "provider",
+				sourceId: assetProvider.id,
+				providedCapabilities: [...ASSET_STUDIO_CAPABILITIES],
+				availability: status.availability,
+				health: status.health,
+				reason: status.message,
+				diagnostics: status.diagnostics,
+			},
+			registeredAt: status.checkedAt,
+		})
+	}
+	return graphicsAssetCapabilities
 }
 
 /**
@@ -202,6 +274,11 @@ function getGraphicsOrchestrator(provider: ClineProvider): GraphicsWorkflowOrche
 		graphicsOrchestrator.registerWorkflow(new AnalyzeCurrentFrameWorkflow())
 		graphicsOrchestrator.registerWorkflow(new ExplainSelectedDrawWorkflow())
 		graphicsOrchestrator.registerWorkflow(new FindOwnerInProjectWorkflow())
+		graphicsOrchestrator.registerWorkflow(new FramePerformanceWorkflow(graphicsRuntimeCache))
+		graphicsOrchestrator.registerWorkflow(new ShaderAnalysisWorkflow(graphicsRuntimeCache))
+		graphicsOrchestrator.registerWorkflow(new PipelineAnalysisWorkflow(graphicsRuntimeCache))
+		graphicsOrchestrator.registerWorkflow(new ResourceTraceWorkflow(graphicsRuntimeCache))
+		graphicsOrchestrator.registerWorkflow(new CaptureCompareWorkflow())
 	}
 	return graphicsOrchestrator
 }
@@ -557,6 +634,78 @@ export async function handleGraphicsMessage(provider: ClineProvider, message: We
 			await handleRunGraphicsWorkflow(provider, message)
 			return true
 
+		case "runGraphicsLaunchAndCapture":
+			await handleRunGraphicsWorkflow(provider, {
+				...message,
+				type: "runGraphicsWorkflow",
+				graphicsIntent: "launch_and_capture",
+			})
+			return true
+
+		case "runGraphicsRecaptureValidation":
+			await handleRunGraphicsWorkflow(provider, {
+				...message,
+				type: "runGraphicsWorkflow",
+				graphicsIntent: "recapture_validation",
+			})
+			return true
+
+		case "requestGraphicsLaunchProfiles": {
+			const store = new GraphicsLaunchProfileStore(provider.cwd, (entry) => provider.log(entry))
+			await provider.postMessageToWebview({ type: "graphicsLaunchProfiles", graphicsLaunchProfiles: await store.listProfiles() })
+			return true
+		}
+
+		case "saveGraphicsLaunchProfile": {
+			const store = new GraphicsLaunchProfileStore(provider.cwd, (entry) => provider.log(entry))
+			if (message.graphicsProfile) await store.saveProfile(message.graphicsProfile)
+			await provider.postMessageToWebview({ type: "graphicsLaunchProfiles", graphicsLaunchProfiles: await store.listProfiles() })
+			return true
+		}
+
+		case "deleteGraphicsLaunchProfile": {
+			const store = new GraphicsLaunchProfileStore(provider.cwd, (entry) => provider.log(entry))
+			if (message.graphicsProfileId) await store.deleteProfile(message.graphicsProfileId)
+			await provider.postMessageToWebview({ type: "graphicsLaunchProfiles", graphicsLaunchProfiles: await store.listProfiles() })
+			return true
+		}
+
+		case "requestGraphicsInvestigationSession": {
+			const store = new GraphicsLaunchProfileStore(provider.cwd, (entry) => provider.log(entry))
+			const session = message.graphicsSessionId ? await store.loadSession(message.graphicsSessionId) : undefined
+			await provider.postMessageToWebview({ type: "graphicsInvestigationSession", graphicsInvestigationSession: session })
+			return true
+		}
+
+		case "cancelGraphicsOperation": {
+			const operationId = message.graphicsOperationId ?? message.requestId
+			const controller = operationId ? graphicsOperationControllers.get(operationId) : undefined
+			if (controller) controller.abort()
+			await provider.postMessageToWebview({
+				type: "graphicsResult",
+				requestId: message.requestId,
+				values: {
+					result: {
+						success: false,
+						summary: controller ? "Graphics operation cancellation requested." : "Graphics operation is not running.",
+						evidence: [],
+						suspectedIssues: [],
+						suggestions: controller ? ["The provider is stopping the active operation."] : ["Start a new graphics operation."],
+						error: "CANCELLED",
+					},
+					providerId: "unknown",
+					providerName: "Unknown",
+					timestamp: Date.now(),
+				},
+			} as any)
+			return true
+		}
+
+		case "invalidateGraphicsCache":
+			graphicsRuntimeCache.invalidate()
+			await provider.postMessageToWebview({ type: "graphicsResult", requestId: message.requestId, values: { cacheRevision: graphicsRuntimeCache.currentRevision, cacheInvalidated: true } } as any)
+			return true
+
 		case "runGraphicsPlaybook":
 			await handleRunGraphicsPlaybook(provider, message)
 			return true
@@ -567,6 +716,42 @@ export async function handleGraphicsMessage(provider: ClineProvider, message: We
 
 		case "requestGraphicsProviderStatus":
 			await handleRequestGraphicsProviderStatus(provider)
+			return true
+
+		case "requestGraphicsCaptureStatus":
+			await handleRequestGraphicsCaptureStatus(provider)
+			return true
+
+		case "requestGraphicsFrameSummary":
+			await handleRequestGraphicsFrameSummary(provider, message)
+			return true
+
+		case "requestGraphicsSelectionContext":
+			await handleRequestGraphicsSelectionContext(provider, message)
+			return true
+
+		case "requestGraphicsEventDetails":
+			await handleRequestGraphicsEventDetails(provider, message)
+			return true
+
+		case "requestGraphicsPipelineState":
+			await handleRequestGraphicsPipelineState(provider, message)
+			return true
+
+		case "requestGraphicsShaderInfo":
+			await handleRequestGraphicsShaderInfo(provider, message)
+			return true
+
+		case "requestGraphicsAssetProviderStatus":
+			await handleRequestGraphicsAssetProviderStatus(provider)
+			return true
+
+		case "loadGraphicsAssetArtifact":
+			await handleLoadGraphicsAssetArtifact(provider, message)
+			return true
+
+		case "requestGraphicsAssetInventory":
+			await handleRequestGraphicsAssetInventory(provider, message)
 			return true
 
 		case "requestGraphicsFeatureBrief":
@@ -1260,22 +1445,81 @@ async function handleRunGraphicsWorkflow(provider: ClineProvider, message: Webvi
 	await provider.postMessageToWebview({
 		type: "graphicsWorkflowStarted",
 		graphicsIntent: intent,
-	} as any)
+		requestId: message.requestId,
+	})
+
+	const operationId = message.graphicsOperationId ?? message.requestId
+	const controller = new AbortController()
+	if (operationId) graphicsOperationControllers.set(operationId, controller)
+	const postOperationProgress = (stage: string, completedStages: string[]) => {
+		void provider.postMessageToWebview({
+			type: "graphicsOperationProgress",
+			requestId: message.requestId,
+			values: { operationId, stage, completedStages },
+		} as any)
+	}
 
 	try {
 		const orchestrator = getGraphicsOrchestrator(provider)
+		const workspacePath = provider.cwd
+		const profileStore = new GraphicsLaunchProfileStore(workspacePath, (entry) => provider.log(entry))
+		const profile = message.graphicsProfileId
+			? (await profileStore.listProfiles()).find((candidate) => candidate.id === message.graphicsProfileId)
+			: message.graphicsProfile
+		const session = message.graphicsSessionId ? await profileStore.loadSession(message.graphicsSessionId) : undefined
+		const workflow = intent === "launch_and_capture"
+			? new LaunchAndCaptureWorkflow(profile, profileStore)
+			: intent === "recapture_validation"
+				? new ValidateGraphicsFixWorkflow(
+					message.graphicsCaptureArtifact ?? session?.baselineCapture,
+					undefined,
+					profile,
+					profileStore,
+				)
+				: undefined
+		if (workflow) orchestrator.registerWorkflow(workflow)
+		postOperationProgress("started", [])
 		const result = await orchestrator.execute({
 			intent,
 			userMessage: enrichedUserMessage,
+			eventId: message.graphicsEventId === undefined ? undefined : Number(message.graphicsEventId),
+			eventIdA: message.graphicsEventIdA === undefined ? undefined : Number(message.graphicsEventIdA),
+			eventIdB: message.graphicsEventIdB === undefined ? undefined : Number(message.graphicsEventIdB),
+			resourceId: message.graphicsResourceId,
+			shaderStage: message.graphicsShaderStage,
+			mappingKind: message.graphicsMappingKind,
+			mappingIdentifier: message.graphicsMappingIdentifier,
+			graphicsProfileId: message.graphicsProfileId,
+			graphicsSessionId: message.graphicsSessionId,
+			graphicsOperationId: message.graphicsOperationId ?? operationId,
+			timeoutMs: message.graphicsTimeoutMs,
+			signal: controller.signal,
+			requestId: message.requestId,
 		})
 
 		// Get provider info for the result
 		const registry = getGraphicsRegistry(provider)
 		const selectedProvider = await registry.getSelectedProvider()
 
+		result.intent = intent
+		result.providerId = selectedProvider?.id
+		if (result.success && (intent === "launch_and_capture" || intent === "recapture_validation")) {
+			const invalidated = graphicsRuntimeCache.invalidate((key) =>
+				key.includes("captureIdentity=") ||
+				(message.graphicsSessionId ? key.includes(`sessionId=${message.graphicsSessionId}`) : false),
+			)
+			if (invalidated > 0) {
+				result.evidence.push({
+					source: "cacheInvalidation",
+					description: `Invalidated ${invalidated} cached graphics diagnostic result(s) after capture state changed.`,
+					value: { invalidated, revision: graphicsRuntimeCache.currentRevision },
+				})
+			}
+		}
 		await provider.postMessageToWebview({
 			type: "graphicsResult",
 			graphicsIntent: intent,
+			requestId: message.requestId,
 			values: {
 				result,
 				knowledge: {
@@ -1318,6 +1562,7 @@ async function handleRunGraphicsWorkflow(provider: ClineProvider, message: Webvi
 		await provider.postMessageToWebview({
 			type: "graphicsResult",
 			graphicsIntent: intent,
+			requestId: message.requestId,
 			values: {
 				result: {
 					success: false,
@@ -1332,6 +1577,10 @@ async function handleRunGraphicsWorkflow(provider: ClineProvider, message: Webvi
 				timestamp: Date.now(),
 			},
 		} as any)
+	} finally {
+		if (operationId && graphicsOperationControllers.get(operationId) === controller) {
+			graphicsOperationControllers.delete(operationId)
+		}
 	}
 }
 
@@ -1481,6 +1730,184 @@ async function handleSelectGraphicsProvider(provider: ClineProvider, message: We
 		const errorMessage = error instanceof Error ? error.message : String(error)
 		provider.log(`[Graphics] Provider selection error: ${errorMessage}`)
 	}
+}
+
+async function handleRequestGraphicsCaptureStatus(provider: ClineProvider): Promise<void> {
+	try {
+		const registry = getGraphicsRegistry(provider)
+		const selected = await registry.getSelectedProvider()
+		const statuses = await registry.getAllStatuses()
+		const status = selected
+			? statuses.find((candidate) => candidate.providerId === selected.id)
+			: statuses[0]
+
+		await provider.postMessageToWebview({
+			type: "graphicsCaptureStatus",
+			graphicsCaptureStatus: {
+				status: status?.status ?? "unavailable",
+				providerId: status?.providerId,
+				providerName: status?.providerName,
+				message: status?.message ?? "No runtime capture provider is available.",
+				refreshedAt: new Date().toISOString(),
+			},
+		} as any)
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		await provider.postMessageToWebview({
+			type: "graphicsCaptureStatus",
+			graphicsCaptureStatus: {
+				status: "error",
+				message,
+				refreshedAt: new Date().toISOString(),
+			},
+		} as any)
+	}
+}
+
+async function handleRequestGraphicsFrameSummary(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const selected = await getGraphicsCaptureProvider(provider)
+	const result = selected
+		? await selected.getFrameSummary()
+		: { success: false, error: "No runtime capture provider is available." }
+	await provider.postMessageToWebview({
+		type: "graphicsFrameSummary",
+		graphicsFrameSummary: {
+			success: result.success,
+			data: result,
+			error: result.error,
+		},
+		requestId: message.requestId,
+	} as any)
+}
+
+async function handleRequestGraphicsSelectionContext(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const selected = await getGraphicsCaptureProvider(provider)
+	const result = selected
+		? await selected.getSelectionContext()
+		: { success: false, error: "No runtime capture provider is available." }
+	await provider.postMessageToWebview({
+		type: "graphicsSelectionContext",
+		graphicsSelectionContext: {
+			success: result.success,
+			data: result,
+			error: result.error,
+		},
+		requestId: message.requestId,
+	} as any)
+}
+
+async function handleRequestGraphicsEventDetails(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const selected = await getGraphicsCaptureProvider(provider)
+	const eventId = message.graphicsEventId
+	const result = selected && eventId !== undefined
+		? await selected.getEventDetails(eventId)
+		: { success: false, error: eventId === undefined ? "Event ID is required." : "No runtime capture provider is available." }
+	await provider.postMessageToWebview({
+		type: "graphicsEventDetails",
+		graphicsEventDetails: {
+			success: result.success,
+			data: result,
+			error: result.error,
+		},
+		requestId: message.requestId,
+	} as any)
+}
+
+async function handleRequestGraphicsPipelineState(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const selected = await getGraphicsCaptureProvider(provider)
+	const eventId = message.graphicsEventId
+	const result = selected && eventId !== undefined
+		? await selected.getPipelineState(eventId)
+		: { success: false, error: eventId === undefined ? "Event ID is required." : "No runtime capture provider is available." }
+	await provider.postMessageToWebview({
+		type: "graphicsPipelineState",
+		graphicsPipelineState: {
+			success: result.success,
+			data: result,
+			error: result.error,
+		},
+		requestId: message.requestId,
+	} as any)
+}
+
+async function handleRequestGraphicsShaderInfo(
+	provider: ClineProvider,
+	message: WebviewMessage,
+): Promise<void> {
+	const selected = await getGraphicsCaptureProvider(provider)
+	const eventId = message.graphicsEventId
+	const result = selected && eventId !== undefined
+		? await selected.getShaderInfo({ eventId, stage: message.graphicsShaderStage })
+		: { success: false, error: eventId === undefined ? "Event ID is required." : "No runtime capture provider is available." }
+	await provider.postMessageToWebview({
+		type: "graphicsShaderInfo",
+		graphicsShaderInfo: {
+			success: result.success,
+			data: result,
+			error: result.error,
+		},
+		requestId: message.requestId,
+	} as any)
+}
+
+async function getGraphicsCaptureProvider(provider: ClineProvider) {
+	const registry = getGraphicsRegistry(provider)
+	return (await registry.getSelectedProvider()) ?? (await registry.getAvailableProviders())[0] ?? null
+}
+
+async function handleRequestGraphicsAssetProviderStatus(provider: ClineProvider): Promise<void> {
+	const registry = getGraphicsAssetRegistry(provider)
+	const statuses = await registry.getAllStatuses()
+	const status = statuses[0]
+	const capabilities = status ? await registry.getCapabilities(status.providerId) : null
+	await getGraphicsAssetCapabilities(provider)
+	await provider.postMessageToWebview({
+		type: "graphicsAssetProviderStatus",
+		graphicsAssetProviderStatus: status
+			? {
+					...status,
+					capabilities: capabilities
+						? Object.fromEntries(Object.entries(capabilities))
+						: {},
+				}
+			: undefined,
+	} as any)
+}
+
+async function handleLoadGraphicsAssetArtifact(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const assetProvider = getGraphicsAssetRegistry(provider).getProvider()
+	const result = assetProvider
+		? await assetProvider.loadArtifact(message.graphicsAssetPath ?? "", message.graphicsAssetKind)
+		: { success: false, error: "AssetStudio provider is unavailable." }
+	await provider.postMessageToWebview({
+		type: "graphicsAssetArtifactLoaded",
+		graphicsAssetArtifactLoaded: result,
+		requestId: message.requestId,
+	} as any)
+}
+
+async function handleRequestGraphicsAssetInventory(provider: ClineProvider, message: WebviewMessage): Promise<void> {
+	const assetProvider = getGraphicsAssetRegistry(provider).getProvider()
+	const result = assetProvider
+		? await assetProvider.getAssetInventory(message.graphicsAssetArtifactId)
+		: { success: false, error: "AssetStudio provider is unavailable." }
+	await provider.postMessageToWebview({
+		type: "graphicsAssetInventory",
+		graphicsAssetInventory: result,
+		requestId: message.requestId,
+	} as any)
 }
 
 /**

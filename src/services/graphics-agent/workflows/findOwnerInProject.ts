@@ -48,8 +48,10 @@ export class FindOwnerInProjectWorkflow implements GraphicsWorkflow {
 		const suggestions: string[] = []
 		const candidates: ProjectMappingCandidate[] = []
 
-		// Parse the user message to determine what to map
-		const mappingTarget = this.parseMappingTarget(request.userMessage)
+		// Prefer an explicit Runtime target; fall back to natural-language parsing.
+		const mappingTarget = request.mappingKind && request.mappingIdentifier
+			? { kind: request.mappingKind, identifier: request.mappingIdentifier }
+			: this.parseMappingTarget(request.userMessage)
 
 		if (!mappingTarget) {
 			return {
@@ -174,6 +176,7 @@ export class FindOwnerInProjectWorkflow implements GraphicsWorkflow {
 			suspectedIssues,
 			suggestions,
 			projectMapping: candidates,
+			mappingTarget: { ...mappingTarget, eventId },
 			rawData: {
 				mappingTarget,
 				mappingResult,

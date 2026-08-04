@@ -1832,25 +1832,20 @@ Capture 对比前必须记录：
 
 ### Asset / Build 能力
 
-- [ ] 实现 AssetStudio Graphics Asset Provider、健康检查和结构化状态协议。
-- [ ] 将 Asset / Build 分区接入真实 Provider 状态，替换当前固定的 unavailable 占位状态。
-- [ ] 实现 Texture、Mesh、Material、Renderer、Memory、Dependency 和重复资产审计。
-- [ ] 建立源项目资产身份、构建产物身份和 AssetStudio 结果之间的映射。
-- [ ] 实现 Asset Contract 自动校验和构建产物报告。
+- [x] 实现 AssetStudio Graphics Asset Provider、健康检查和结构化状态协议。
+- [x] 将 Asset / Build 分区接入真实 Provider 状态，替换当前固定的 unavailable 占位状态。
+- [x] 实现 Texture、Mesh、Material、Renderer、Memory、Dependency 和重复资产审计。
+- [x] 建立源项目资产身份、构建产物身份和 AssetStudio 结果之间的映射。
+- [x] 实现 Asset Contract 自动校验和构建产物报告。
 
 ### Runtime Capture 与诊断
 
-- [ ] 实现 Runtime 面板的 Provider 选择、Capture 状态、Frame Overview、Selected Event Inspector、Pipeline、Shader 和 Resource UI。
-- [ ] 将现有 Graphics Workflow 和 Playbook 以结构化结果接入 Workspace。
-- [ ] 实现 Frame Performance、Shader Analysis、Pipeline Analysis、Resource Trace 和 Capture Compare。
-- [ ] 实现从 Capture Event、Shader 和 Resource 到项目源码的可靠映射。
-- [ ] 实现 Launch Profile、Launch and Capture、Re-Capture Validation 和前后证据比较。
-- [ ] 增加取消、超时、缓存失效、错误恢复和调查会话持久化。
-
-### 工程质量与平台化
-
-- [ ] 修复 Webview ESLint 9 配置，使完整 Webview Lint 可以在本地和 CI 中执行。
-- [ ] 使用项目要求的 Node.js 20.20.2 运行完整构建、测试、Lint 和 VSIX 验证。
-- [ ] 建立 Graphics Provider Contract Test、Workflow Unit Test、Webview Integration Test 和固定样本 Golden Test。
-- [ ] 建立 Graphics Benchmark Corpus，持续衡量规划质量、证据正确率、源码映射和诊断命中率。
-- [ ] 后续实现 Regression、CI/PR、多 Provider、团队报告中心、项目知识图谱和高级自动修复能力。
+- [x] 完成 Runtime Inspector 第二阶段基础能力：Provider 选择、Pipeline State、Shader Info 以及基于 Pipeline bindings 的 Resource Inspector。
+- [x] 实现 Runtime 面板的 Provider 选择、Capture 状态、Frame Overview、Selected Event Inspector、Pipeline、Shader 和 Resource UI。
+- [x] 完成 Runtime Capture 第一阶段：接入 RenderDoc Provider 状态、Capture 元数据、Frame Summary、Selection Context 和 Event Details。
+- [x] 将现有 Graphics Workflow 和 Playbook 以结构化结果接入 Workspace。
+- [x] 完成 Runtime 诊断 Workflow 第一阶段：接入 Frame Performance、Shader Analysis、Pipeline Analysis、Resource Trace 和 Capture Compare 的基础结构化结果与 Workspace 操作入口。
+- [x] 完成 Runtime 诊断 Workflow 第二阶段基础闭环：支持显式 Capture/Shader/Resource/Pass/Draw 映射目标、Provider 映射请求路由、结构化源码候选结果和 Workspace 展示。
+- [x] 提升 Capture Event、Shader 和 Resource 到项目源码的映射可靠性，接入 shader identity/source、资源生命周期证据、字段级 Pipeline diff，以及 Runtime Workspace 结构化诊断展示。
+- [x] 实现 Launch Profile、Launch and Capture、Re-Capture Validation 和前后证据比较（真实 RenderDoc/目标进程验证待在目标环境执行）。
+- [x] 增加取消、超时、缓存失效、错误恢复和调查会话持久化（真实 RenderDoc/目标进程清理行为待在目标环境执行）。

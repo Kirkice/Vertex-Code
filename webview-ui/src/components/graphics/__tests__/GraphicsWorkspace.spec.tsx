@@ -853,13 +853,57 @@ describe("GraphicsWorkspace", () => {
 		expect(vscode.postMessage).toHaveBeenLastCalledWith({ type: "requestGraphicsProjectProfile" })
 	})
 
-	it("requests runtime provider status only after opening the Runtime section", () => {
+	it("requests runtime provider status only after opening the Runtime section", async () => {
 		render(<GraphicsWorkspace onDone={vi.fn()} />)
 
 		fireEvent.click(screen.getByRole("tab", { name: "Runtime" }))
 
 		expect(screen.getByTestId("graphics-runtime-investigation")).toBeInTheDocument()
 		expect(vscode.postMessage).toHaveBeenCalledWith({ type: "requestGraphicsProviderStatus" })
+
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "graphicsProviderStatus",
+						values: {
+							selectedProviderId: "renderdoc-vscode-mcp",
+							providers: [
+								{
+									providerId: "renderdoc-vscode-mcp",
+									providerName: "RenderDoc",
+									status: "available",
+								},
+							],
+							capabilitiesByProviderId: {},
+						},
+					},
+				}),
+			)
+		})
+
+		expect(await screen.findByText("Diagnostics")).toBeInTheDocument()
+		expect(screen.getByText("Frame performance")).toBeInTheDocument()
+	})
+
+	it("posts an explicit project mapping request from Runtime diagnostics", async () => {
+		render(<GraphicsWorkspace onDone={vi.fn()} />)
+		fireEvent.click(screen.getByRole("tab", { name: "Runtime" }))
+
+		act(() => {
+			window.dispatchEvent(new MessageEvent("message", { data: { type: "graphicsProviderStatus", values: { providers: [{ providerId: "renderdoc-vscode-mcp", providerName: "RenderDoc", status: "available" }], capabilitiesByProviderId: {} } } }))
+		})
+
+		const identifier = await screen.findByPlaceholderText("Shader, pass, draw, or resource identifier")
+		fireEvent.change(identifier, { target: { value: "OutlineShader" } })
+		fireEvent.click(screen.getByRole("button", { name: "Find source owner" }))
+
+		expect(vscode.postMessage).toHaveBeenCalledWith(expect.objectContaining({
+			type: "runGraphicsWorkflow",
+			graphicsIntent: "project_mapping",
+			graphicsMappingKind: "shader",
+			graphicsMappingIdentifier: "OutlineShader",
+		}))
 	})
 
 	it("keeps the workspace usable when no runtime provider is installed", () => {

@@ -88,6 +88,17 @@ export class GraphicsWorkflowOrchestrator {
 	 * @throws GraphicsProviderError if no suitable provider or workflow is found
 	 */
 	async execute(request: GraphicsWorkflowRequest): Promise<GraphicsWorkflowResult> {
+		if (request.signal?.aborted) {
+			return {
+				success: false,
+				intent: request.intent,
+				summary: "Graphics operation was cancelled.",
+				evidence: [],
+				suspectedIssues: [],
+				suggestions: ["Retry the operation when the target is ready."],
+				error: "CANCELLED",
+			}
+		}
 		// Find workflow for this intent
 		const workflow = this.workflows.get(request.intent)
 		if (!workflow) {

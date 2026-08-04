@@ -23,6 +23,18 @@ import type {
 	PipelineStateResult,
 	ShaderInfoRequest,
 	ShaderInfoResult,
+	ShaderSourceRequest,
+	ShaderSourceResult,
+	ResourceHistoryRequest,
+	ResourceHistoryResult,
+	PipelineDiffRequest,
+	PipelineDiffResult,
+	LaunchTargetResult,
+	LiveTargetResult,
+	CaptureTriggerResult,
+	CaptureCompletionResult,
+	GraphicsLaunchProfile,
+	GraphicsOperationContext,
 	ProjectMappingRequest,
 	ProjectMappingResult,
 } from "./GraphicsProviderTypes"
@@ -74,6 +86,22 @@ export interface GraphicsCaptureProvider {
 	 * @returns The capabilities supported by this provider
 	 */
 	getCapabilities(): Promise<GraphicsProviderCapabilities>
+
+	/** Launch and capture lifecycle operations are optional provider capabilities. */
+	launchTarget?(profile: GraphicsLaunchProfile, context?: GraphicsOperationContext): Promise<LaunchTargetResult>
+	waitForLiveTarget?(
+		targetId: string,
+		context?: GraphicsOperationContext,
+	): Promise<LiveTargetResult>
+	triggerCapture?(
+		targetId: string,
+		profile: GraphicsLaunchProfile,
+		context?: GraphicsOperationContext,
+	): Promise<CaptureTriggerResult>
+	waitForCapture?(
+		operationId: string,
+		context?: GraphicsOperationContext,
+	): Promise<CaptureCompletionResult>
 
 	/**
 	 * Open the current capture (if not already open).
@@ -131,6 +159,15 @@ export interface GraphicsCaptureProvider {
 	 */
 	getShaderInfo(input: ShaderInfoRequest): Promise<ShaderInfoResult>
 
+	/** Retrieve stable shader identity and source for a capture event. */
+	getShaderSource(input: ShaderSourceRequest): Promise<ShaderSourceResult>
+
+	/** Retrieve resource lifecycle evidence across capture events. */
+	getResourceHistory(input: ResourceHistoryRequest): Promise<ResourceHistoryResult>
+
+	/** Compare pipeline state fields between two events. */
+	diffPipelineState(input: PipelineDiffRequest): Promise<PipelineDiffResult>
+
 	/**
 	 * Map a capture object back to project source code.
 	 *
@@ -162,6 +199,19 @@ export abstract class BaseGraphicsCaptureProvider implements GraphicsCaptureProv
 	abstract getEventDetails(eventId: string | number): Promise<EventDetailsResult>
 	abstract getPipelineState(eventId: string | number): Promise<PipelineStateResult>
 	abstract getShaderInfo(input: ShaderInfoRequest): Promise<ShaderInfoResult>
+
+	async getShaderSource(_input: ShaderSourceRequest): Promise<ShaderSourceResult> {
+		return { success: false, error: "Shader source is not supported by this provider." }
+	}
+
+	async getResourceHistory(_input: ResourceHistoryRequest): Promise<ResourceHistoryResult> {
+		return { success: false, error: "Resource history is not supported by this provider." }
+	}
+
+	async diffPipelineState(_input: PipelineDiffRequest): Promise<PipelineDiffResult> {
+		return { success: false, error: "Pipeline diff is not supported by this provider." }
+	}
+
 	abstract findProjectImplementation(input: ProjectMappingRequest): Promise<ProjectMappingResult>
 
 	/**

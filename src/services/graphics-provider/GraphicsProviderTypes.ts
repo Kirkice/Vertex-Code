@@ -33,6 +33,14 @@ export type GraphicsProviderId = string
 export interface GraphicsProviderCapabilities {
 	/** Can retrieve frame-level summary (pass list, timings overview) */
 	frameSummary: boolean
+	/** Can launch a configured Windows or Android target. */
+	launchTarget?: boolean
+	/** Can observe a launched target becoming available for capture. */
+	liveTarget?: boolean
+	/** Can trigger a capture according to a launch profile policy. */
+	captureTrigger?: boolean
+	/** Can poll for capture completion. */
+	capturePolling?: boolean
 	/** Can retrieve the currently selected draw/event context */
 	selectionContext: boolean
 	/** Can retrieve detailed event information */
@@ -41,12 +49,14 @@ export interface GraphicsProviderCapabilities {
 	pipelineState: boolean
 	/** Can retrieve shader metadata (stage, entry point, reflection) */
 	shaderInfo: boolean
-	/** Can retrieve shader source code */
+	/** Can retrieve a stable shader identity and source code */
 	shaderSource: boolean
 	/** Can retrieve mesh/geometry data */
 	meshData: boolean
 	/** Can retrieve resource (buffer/texture) details */
 	resourceDetail: boolean
+	/** Can retrieve resource lifecycle/history across events */
+	resourceHistory: boolean
 	/** Can retrieve raw texture data */
 	textureData: boolean
 	/** Can retrieve raw buffer data */
@@ -57,6 +67,10 @@ export interface GraphicsProviderCapabilities {
 	projectMapping: boolean
 	/** Can compare two captures or events for regression analysis */
 	captureDiff: boolean
+	/** Can produce field-level pipeline differences */
+	pipelineDiff: boolean
+	/** Can enumerate draw calls and analyze a hot event */
+	eventDiagnostics: boolean
 }
 
 /**
@@ -66,6 +80,10 @@ export interface GraphicsProviderCapabilities {
 export function emptyCapabilities(): GraphicsProviderCapabilities {
 	return {
 		frameSummary: false,
+		launchTarget: false,
+		liveTarget: false,
+		captureTrigger: false,
+		capturePolling: false,
 		selectionContext: false,
 		eventDetails: false,
 		pipelineState: false,
@@ -73,11 +91,14 @@ export function emptyCapabilities(): GraphicsProviderCapabilities {
 		shaderSource: false,
 		meshData: false,
 		resourceDetail: false,
+		resourceHistory: false,
 		textureData: false,
 		bufferData: false,
 		passGraph: false,
 		projectMapping: false,
 		captureDiff: false,
+		pipelineDiff: false,
+		eventDiagnostics: false,
 	}
 }
 
@@ -121,6 +142,32 @@ export interface GraphicsProviderStatusInfo {
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────
+
+export interface LaunchTargetResult {
+	success: boolean
+	targetId?: string
+	error?: string
+}
+
+export interface LiveTargetResult {
+	success: boolean
+	targetId?: string
+	ready?: boolean
+	error?: string
+}
+
+export interface CaptureTriggerResult {
+	success: boolean
+	operationId?: string
+	error?: string
+}
+
+export interface CaptureCompletionResult {
+	success: boolean
+	completed?: boolean
+	capturePath?: string
+	error?: string
+}
 
 /**
  * Result from opening the current capture.
@@ -232,10 +279,72 @@ export interface ShaderInfoResult {
 	stage?: string
 	entryPoint?: string
 	language?: string // e.g. "HLSL", "GLSL", "SPIR-V"
+	shaderId?: string
+	debugName?: string
 	instructionCount?: number
 	inputs?: ShaderVariable[]
 	outputs?: ShaderVariable[]
 	constantBuffers?: string[]
+	error?: string
+}
+
+export interface ShaderSourceRequest extends ShaderInfoRequest {
+	shaderId?: string
+}
+
+export interface ShaderSourceResult {
+	success: boolean
+	eventId?: number
+	stage?: string
+	shaderId?: string
+	entryPoint?: string
+	language?: string
+	source?: string
+	filePath?: string
+	debugName?: string
+	error?: string
+}
+
+export interface ResourceHistoryRequest {
+	resourceId: string
+	eventId?: number
+}
+
+export interface ResourceHistoryEntry {
+	eventId: number
+	action: "create" | "read" | "write" | "bind" | "destroy" | string
+	stage?: string
+	binding?: string | number
+	description?: string
+}
+
+export interface ResourceHistoryResult {
+	success: boolean
+	resourceId?: string
+	name?: string
+	format?: string
+	dimensions?: string
+	history?: ResourceHistoryEntry[]
+	error?: string
+}
+
+export interface PipelineDiffRequest {
+	eventIdA: string | number
+	eventIdB: string | number
+}
+
+export interface PipelineDiffEntry {
+	path: string
+	before?: unknown
+	after?: unknown
+	category?: "binding" | "shader" | "resource" | "configuration" | string
+}
+
+export interface PipelineDiffResult {
+	success: boolean
+	eventIdA?: number
+	eventIdB?: number
+	differences?: PipelineDiffEntry[]
 	error?: string
 }
 
@@ -295,6 +404,8 @@ export type GraphicsIntent =
 	| "resource_trace" // "资源追踪", "这个纹理从哪来"
 	| "project_mapping" // "对应哪段代码", "owner 在哪"
 	| "regression_compare" // "对比", "回归分析"
+	| "launch_and_capture" // 启动目标并采集 Capture
+	| "recapture_validation" // 重新采集并验证修复
 	| "graphics_playbook" // "黑屏排查", "GPU 慢排查"
 
 // ─── Graphics Playbook ───────────────────────────────────────────────────────
@@ -316,6 +427,31 @@ export interface GraphicsWorkflowRequest {
 	playbookId?: GraphicsPlaybookId
 	/** Optional explicit event ID */
 	eventId?: number
+	/** Optional shader stage for shader-focused diagnostics. */
+	shaderStage?: string
+	/** Optional resource identifier for resource tracing. */
+	resourceId?: string
+	/** Optional event pair for comparison diagnostics. */
+	eventIdA?: number
+	eventIdB?: number
+	/** Explicit project mapping target from Runtime UI. */
+	mappingKind?: ProjectMappingRequest["kind"]
+	mappingIdentifier?: string
+	/** Launch Profile used by launch/capture workflows. */
+	graphicsProfileId?: string
+	/** Investigation session used to persist intermediate and final evidence. */
+	graphicsSessionId?: string
+	/** Provider-side capture operation associated with this request. */
+	graphicsOperationId?: string
+	/** Baseline and candidate artifact identifiers for validation. */
+	baselineCaptureId?: string
+	candidateCaptureId?: string
+	/** Total operation timeout in milliseconds. */
+	timeoutMs?: number
+	/** Optional cancellation signal for host-side workflow execution. */
+	signal?: AbortSignal
+	/** Correlates the workflow with a webview request. */
+	requestId?: string
 }
 
 /**
@@ -324,6 +460,10 @@ export interface GraphicsWorkflowRequest {
 export interface GraphicsWorkflowResult {
 	/** High-level summary / conclusion */
 	summary: string
+	/** Intent that produced this result. */
+	intent?: GraphicsIntent
+	/** Provider selected after capability preflight. */
+	providerId?: string
 	/** Evidence items supporting the conclusion */
 	evidence: EvidenceItem[]
 	/** Suspected bottleneck or risk areas */
@@ -332,6 +472,8 @@ export interface GraphicsWorkflowResult {
 	suggestions: string[]
 	/** Project code mapping candidates, if available */
 	projectMapping?: ProjectMappingCandidate[]
+	/** Mapping target used to produce projectMapping. */
+	mappingTarget?: Pick<ProjectMappingRequest, "kind" | "identifier" | "eventId">
 	/** Raw data from provider calls, for debugging */
 	rawData?: Record<string, unknown>
 	/** Whether the workflow completed successfully */
@@ -362,6 +504,126 @@ export interface SuspectedIssue {
 	description: string
 	/** Confidence level */
 	confidence: "high" | "medium" | "low"
+}
+
+// ─── Launch, Validation, and Investigation Types ─────────────────────────────
+
+export type GraphicsLaunchPlatform = "windows" | "android"
+export type GraphicsCaptureTrigger = "immediate" | "frame" | "delay"
+
+export interface GraphicsCaptureTriggerPolicy {
+	mode: GraphicsCaptureTrigger
+	frameNumber?: number
+	delayMs?: number
+}
+
+export interface GraphicsLaunchProfile {
+	version: 1
+	id: string
+	name: string
+	platform: GraphicsLaunchPlatform
+	executable?: string
+	packageName?: string
+	activityName?: string
+	workingDirectory?: string
+	commandLine?: string
+	environmentVariables?: Record<string, string>
+	captureTrigger: GraphicsCaptureTriggerPolicy
+	startupWaitMs: number
+	expectedGraphicsApi?: string
+	performanceBudgetMs?: number
+	buildCommand?: string
+	updatedAt: string
+}
+
+export interface GraphicsReproducibilityMetadata {
+	profileId?: string
+	gitCommit?: string
+	workspaceDirty?: boolean
+	resolution?: { width: number; height: number }
+	qualityLevel?: string
+	scene?: string
+	camera?: string
+	graphicsApi?: string
+	gpu?: string
+	driver?: string
+	performanceBudgetMs?: number
+	captureTrigger?: GraphicsCaptureTriggerPolicy
+	capturedAt: string
+}
+
+export interface GraphicsCaptureArtifact {
+	id: string
+	capturePath?: string
+	providerId: string
+	frameSummary?: FrameSummaryResult
+	metadata: GraphicsReproducibilityMetadata
+	createdAt: string
+	cacheRevision: number
+}
+
+export type GraphicsValidationStatus = "passed" | "failed" | "insufficient-data" | "incomparable"
+
+export interface GraphicsValidationReport {
+	status: GraphicsValidationStatus
+	confidence: "high" | "medium" | "low"
+	summary: string
+	environmentMatches: boolean
+	mismatches: string[]
+	metrics: Array<{
+		name: string
+		before?: number
+		after?: number
+		deltaPercent?: number
+		improved?: boolean
+		withinBudget?: boolean
+	}>
+	evidence: EvidenceItem[]
+	generatedAt: string
+}
+
+export type GraphicsInvestigationSessionStatus = "idle" | "running" | "completed" | "failed" | "cancelled"
+
+export interface GraphicsInvestigationSession {
+	version: 1
+	id: string
+	status: GraphicsInvestigationSessionStatus
+	profileId?: string
+	baselineCapture?: GraphicsCaptureArtifact
+	candidateCapture?: GraphicsCaptureArtifact
+	evidence: EvidenceItem[]
+	validation?: GraphicsValidationReport
+	environment?: GraphicsReproducibilityMetadata
+	createdAt: string
+	updatedAt: string
+	revision: number
+}
+
+export interface GraphicsOperationContext {
+	requestId?: string
+	sessionId?: string
+	timeoutMs?: number
+	signal?: AbortSignal
+}
+
+export type GraphicsOperationErrorCode =
+	| "PROFILE_INVALID"
+	| "PROVIDER_UNAVAILABLE"
+	| "TARGET_LAUNCH_FAILED"
+	| "LIVE_TARGET_TIMEOUT"
+	| "CAPTURE_TRIGGER_FAILED"
+	| "CAPTURE_TIMEOUT"
+	| "CAPTURE_LOAD_FAILED"
+	| "FRAME_SUMMARY_FAILED"
+	| "CANCELLED"
+	| "CACHE_STALE"
+
+export interface GraphicsOperationError {
+	code: GraphicsOperationErrorCode
+	message: string
+	recoverable: boolean
+	completedStages?: string[]
+	recoveryActions?: string[]
 }
 
 // ─── UI Action Types ─────────────────────────────────────────────────────────

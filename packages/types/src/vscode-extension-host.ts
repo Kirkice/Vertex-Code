@@ -10,6 +10,13 @@ import type { ModeConfig, PromptComponent } from "./mode.js";
 import type { Experiments } from "./experiment.js";
 import type { ClineMessage, QueuedMessage } from "./message.js";
 import type {
+  EventDetailsResult,
+  FrameSummaryResult,
+  PipelineStateResult,
+  SelectionContextResult,
+  ShaderInfoResult,
+} from "./graphics.js";
+import type {
   MarketplaceItem,
   MarketplaceInstalledMetadata,
   InstallMarketplaceItemOptions,
@@ -30,12 +37,22 @@ import type { SkillMetadata } from "./skills.js";
 import type { TelemetrySetting } from "./telemetry.js";
 import type { WorktreeIncludeStatus } from "./worktree.js";
 import type {
+  GraphicsAssetArtifactPayload,
+  GraphicsAssetInventoryPayload,
+  GraphicsAssetOperationPayload,
+  GraphicsAssetProviderStatusPayload,
+  GraphicsCaptureOperationPayload,
+  GraphicsCaptureStatusPayload,
   GraphicsFeatureBrief,
   GraphicsFeaturePlan,
   GraphicsFeaturePlanArtifacts,
   GraphicsFeatureTaskStatus,
   GraphicsProjectProfile,
   GraphicsSolutionRecommendation,
+  GraphicsCaptureArtifact,
+  GraphicsInvestigationSession,
+  GraphicsLaunchProfile,
+  GraphicsValidationReport,
 } from "./graphics.js";
 
 /**
@@ -130,6 +147,21 @@ export interface ExtensionMessage {
     | "graphicsFeaturePlanExternalChange"
     | "graphicsFeaturePlanEdited"
     | "graphicsFeatureTaskExecutionUpdated"
+    | "graphicsAssetProviderStatus"
+    | "graphicsAssetArtifactLoaded"
+    | "graphicsAssetInventory"
+    | "graphicsCaptureStatus"
+    | "graphicsFrameSummary"
+    | "graphicsSelectionContext"
+    | "graphicsEventDetails"
+    | "graphicsPipelineState"
+    | "graphicsShaderInfo"
+    | "graphicsWorkflowStarted"
+    | "graphicsResult"
+    | "graphicsProviderSelected"
+    | "graphicsLaunchProfiles"
+    | "graphicsInvestigationSession"
+    | "graphicsValidationReport"
     | "fileContent";
   // Orchestrator message types (legacy — most removed after refactor into Task)
   // orchestratorSessionUpdate, orchestratorTaskUpdate, orchestratorReviewResult,
@@ -235,6 +267,29 @@ export interface ExtensionMessage {
   /** Independently persisted sections restored with the feature plan. */
   graphicsFeaturePlanArtifacts?: GraphicsFeaturePlanArtifacts;
   graphicsFeaturePlanError?: string;
+  graphicsAssetProviderStatus?: GraphicsAssetProviderStatusPayload;
+  graphicsAssetArtifactLoaded?: GraphicsAssetOperationPayload<GraphicsAssetArtifactPayload>;
+  graphicsAssetInventory?: GraphicsAssetOperationPayload<GraphicsAssetInventoryPayload>;
+  graphicsCaptureStatus?: GraphicsCaptureStatusPayload;
+  graphicsFrameSummary?: GraphicsCaptureOperationPayload<FrameSummaryResult>;
+  graphicsSelectionContext?: GraphicsCaptureOperationPayload<SelectionContextResult>;
+  graphicsEventDetails?: GraphicsCaptureOperationPayload<EventDetailsResult>;
+  graphicsPipelineState?: GraphicsCaptureOperationPayload<PipelineStateResult>;
+  graphicsShaderInfo?: GraphicsCaptureOperationPayload<ShaderInfoResult>;
+  graphicsIntent?: string;
+  graphicsWorkflowStarted?: { intent: string; requestId?: string };
+  graphicsLaunchProfiles?: GraphicsLaunchProfile[];
+  graphicsInvestigationSession?: GraphicsInvestigationSession;
+  graphicsValidationReport?: GraphicsValidationReport;
+  graphicsCaptureArtifact?: GraphicsCaptureArtifact;
+  graphicsResult?: {
+    result: import("./graphics.js").GraphicsWorkflowResult;
+    graphicsIntent?: string;
+    providerId: string;
+    providerName: string;
+    timestamp: number;
+    requestId?: string;
+  };
   /** Three-way merge preview returned before a shared plan is overwritten. */
   graphicsFeaturePlanMergePreview?: {
     baseRevision: number;
@@ -694,6 +749,23 @@ export interface WebviewMessage {
     // Graphics agent messages
     | "runGraphicsWorkflow"
     | "runGraphicsPlaybook"
+    | "requestGraphicsLaunchProfiles"
+    | "saveGraphicsLaunchProfile"
+    | "deleteGraphicsLaunchProfile"
+    | "requestGraphicsInvestigationSession"
+    | "runGraphicsLaunchAndCapture"
+    | "runGraphicsRecaptureValidation"
+    | "cancelGraphicsOperation"
+    | "invalidateGraphicsCache"
+    | "requestGraphicsCaptureStatus"
+    | "requestGraphicsFrameSummary"
+    | "requestGraphicsSelectionContext"
+    | "requestGraphicsEventDetails"
+    | "requestGraphicsPipelineState"
+    | "requestGraphicsShaderInfo"
+    | "requestGraphicsAssetProviderStatus"
+    | "loadGraphicsAssetArtifact"
+    | "requestGraphicsAssetInventory"
     | "selectGraphicsProvider"
     | "requestGraphicsProviderStatus"
     | "requestGraphicsFeatureBrief"
@@ -792,8 +864,26 @@ export interface WebviewMessage {
   organizationId?: string | null; // For organization switching
   // Graphics agent fields
   graphicsIntent?: string; // For runGraphicsWorkflow
+  graphicsProfileId?: string;
+  graphicsSessionId?: string;
+  graphicsOperationId?: string;
+  graphicsTimeoutMs?: number;
+  graphicsProfile?: GraphicsLaunchProfile;
+  graphicsCaptureArtifact?: GraphicsCaptureArtifact;
+  graphicsBaselineCaptureId?: string;
+  graphicsCandidateCaptureId?: string;
+  graphicsEventId?: string | number;
+  graphicsEventIdA?: string | number;
+  graphicsEventIdB?: string | number;
+  graphicsResourceId?: string;
+  graphicsShaderStage?: string;
+  graphicsMappingKind?: "shader" | "pass" | "draw" | "resource";
+  graphicsMappingIdentifier?: string;
   graphicsPlaybookId?: string; // For runGraphicsPlaybook
   graphicsProviderId?: string; // For selectGraphicsProvider
+  graphicsAssetPath?: string;
+  graphicsAssetKind?: "unity-project" | "asset-bundle" | "apk" | "addressables" | "unknown";
+  graphicsAssetArtifactId?: string;
   graphicsFeatureBrief?: GraphicsFeatureBrief;
   graphicsFeatureTaskId?: string;
   /** Stable attempt identity used by cancel/retry commands. */

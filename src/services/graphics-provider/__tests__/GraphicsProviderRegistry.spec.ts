@@ -38,6 +38,9 @@ const createMockProvider = (
 		passGraph: capabilities.passGraph ?? true,
 		projectMapping: capabilities.projectMapping ?? true,
 		captureDiff: capabilities.captureDiff ?? true,
+		resourceHistory: capabilities.resourceHistory ?? true,
+		pipelineDiff: capabilities.pipelineDiff ?? true,
+		eventDiagnostics: capabilities.eventDiagnostics ?? true,
 	}),
 	openCurrentCapture: vi.fn().mockResolvedValue({ success: true }),
 	getFrameSummary: vi.fn().mockResolvedValue({ success: true }),
@@ -45,6 +48,9 @@ const createMockProvider = (
 	getEventDetails: vi.fn().mockResolvedValue({ success: true }),
 	getPipelineState: vi.fn().mockResolvedValue({ success: true }),
 	getShaderInfo: vi.fn().mockResolvedValue({ success: true }),
+	getShaderSource: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
+	getResourceHistory: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
+	diffPipelineState: vi.fn().mockResolvedValue({ success: false, error: "not configured" }),
 	findProjectImplementation: vi.fn().mockResolvedValue({ success: true }),
 })
 
