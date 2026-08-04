@@ -23,10 +23,21 @@ class VSCodeAPIWrapper {
 	}
 
 	/**
+	 * True when this page is running inside a real VS Code webview.
+	 *
+	 * A normal browser (or a host that does not implement the VS Code webview
+	 * bridge) cannot deliver messages back to the extension. Exposing this
+	 * explicitly lets the UI report that condition instead of staying blank.
+	 */
+	public get isExtensionHostAvailable(): boolean {
+		return this.vsCodeApi !== undefined
+	}
+
+	/**
 	 * Post a message (i.e. send arbitrary data) to the owner of the webview.
 	 *
-	 * @remarks When running webview code inside a web browser, postMessage will instead
-	 * log the given message to the console.
+	 * @remarks When running webview code outside a VS Code webview, the message is
+	 * logged because there is no extension host to receive it.
 	 *
 	 * @param message Arbitrary data (must be JSON serializable) to send to the extension context.
 	 */
@@ -34,7 +45,7 @@ class VSCodeAPIWrapper {
 		if (this.vsCodeApi) {
 			this.vsCodeApi.postMessage(message)
 		} else {
-			console.log(message)
+			console.warn("[VSCodeAPI] Extension host bridge unavailable", message)
 		}
 	}
 

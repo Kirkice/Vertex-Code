@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowLeft, Box, Check, Cpu, FileCode2, Puzzle, Sparkles } from "lucide-react"
+import { Activity, ArrowLeft, Box, Check, ChevronDown, Cpu, FileCode2, Minus, Puzzle, Sparkles, X } from "lucide-react"
 
 import type {
 	EventDetailsResult,
@@ -29,7 +29,7 @@ import type {
 } from "@roo-code/types"
 
 import { vscode } from "@src/utils/vscode"
-import { Button, Input, Textarea } from "@src/components/ui"
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Input, Textarea } from "@src/components/ui"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { Tab, TabContent, TabHeader, TabList, TabTrigger } from "@src/components/common/Tab"
 import { GraphicsFeaturePlanView } from "./GraphicsFeaturePlanView"
@@ -474,18 +474,18 @@ const FeatureHome = () => {
 	}
 
 	return (
-		<div className="space-y-5" data-testid="graphics-feature-home">
+		<div className="space-y-3" data-testid="graphics-feature-home">
 			<div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
 				{announcement}
 			</div>
-			<section className="rounded-xl border border-vscode-focusBorder/40 bg-vscode-editor-background p-5">
-				<div className="flex items-start gap-3">
-					<Sparkles className="mt-0.5 size-5 text-vscode-focusBorder" />
-					<div>
-						<h2 className="text-base font-semibold text-vscode-foreground">
+			<section className="rounded-xl border border-vscode-focusBorder/35 bg-vscode-editor-background/70 px-3 py-2.5">
+				<div className="flex items-center gap-2.5">
+					<Sparkles className="size-4 shrink-0 text-vscode-focusBorder" />
+					<div className="min-w-0">
+						<h2 className="truncate text-sm font-semibold text-vscode-foreground">
 							{t("graphics:featureHome.title")}
 						</h2>
-						<p className="mt-1 text-sm leading-relaxed text-vscode-descriptionForeground">
+						<p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-vscode-descriptionForeground">
 							{t("graphics:featureHome.description")}
 						</p>
 					</div>
@@ -810,6 +810,7 @@ const AssetValidation = () => {
 }
 
 const RuntimeInvestigation = () => {
+	const [isExpanded, setIsExpanded] = useState(true)
 	const { t } = useAppTranslation()
 	const [loading, setLoading] = useState(true)
 	const [status, setStatus] = useState<GraphicsProviderStatusPayload | null>(null)
@@ -933,7 +934,15 @@ const RuntimeInvestigation = () => {
 	}
 
 	return (
-		<div className="space-y-4" data-testid="graphics-runtime-investigation">
+		<Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="space-y-3" data-testid="graphics-runtime-investigation">
+			<CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-vscode-panel-border bg-vscode-editor-background px-4 py-3 text-left text-sm font-semibold text-vscode-foreground hover:bg-vscode-list-hoverBackground">
+				<span className="flex items-center gap-2">
+					<Cpu className="size-4" aria-hidden="true" />
+					Runtime Capture investigation
+				</span>
+				<ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden="true" />
+			</CollapsibleTrigger>
+			<CollapsibleContent className="space-y-4">
 			<CapabilityCard capability={runtimeCapability} />
 			{runtimeAvailable && (
 				<>
@@ -1070,40 +1079,101 @@ const RuntimeInvestigation = () => {
 				</>
 			)}
 			{!loading && !runtimeAvailable && <div className="rounded-lg border border-dashed border-vscode-panel-border p-5"><Cpu className="mb-3 size-5 text-vscode-descriptionForeground" aria-hidden="true" /><h3 className="text-sm font-semibold text-vscode-foreground">{t("graphics:capabilities.runtimeOptional")}</h3><p className="mt-1 text-xs leading-relaxed text-vscode-descriptionForeground">{t("graphics:capabilities.runtimeOptionalDescription")}</p></div>}
-		</div>
+			</CollapsibleContent>
+		</Collapsible>
 	)
 }
 
 export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 	const { t } = useAppTranslation()
 	const [section, setSection] = useState<GraphicsWorkspaceSection>("feature")
+	const [runtimeEnabled, setRuntimeEnabled] = useState(false)
+	const [isMinimized, setIsMinimized] = useState(false)
+	const [providerSummary, setProviderSummary] = useState<GraphicsProviderStatusPayload | null>(null)
+
+	useEffect(() => {
+		const onMessage = (event: MessageEvent) => {
+			if (event.data?.type !== "graphicsProviderStatus") return
+			const payload = event.data.values as GraphicsProviderStatusPayload | undefined
+			if (!payload) return
+			setProviderSummary(payload)
+			const enabled = payload.providers.some((provider) => provider.status === "available" || provider.status === "no-capture")
+			setRuntimeEnabled(enabled)
+			if (!enabled) setSection((current) => (current === "runtime" ? "feature" : current))
+		}
+
+		window.addEventListener("message", onMessage)
+		vscode.postMessage({ type: "requestGraphicsProviderStatus" })
+		return () => window.removeEventListener("message", onMessage)
+	}, [])
 	const sectionIcon = useMemo(() => ({ feature: FileCode2, assets: Box, runtime: Puzzle })[section], [section])
 	const SectionIcon = sectionIcon
+	const selectedProvider = providerSummary?.providers.find((provider) => provider.providerId === providerSummary.selectedProviderId)
+	const activeProvider = selectedProvider ?? providerSummary?.providers.find((provider) => provider.status === "available" || provider.status === "no-capture")
+	const providerReady = activeProvider?.status === "available" || activeProvider?.status === "no-capture"
+	const providerStatusLabel = activeProvider?.status === "available" ? "MCP Ready" : activeProvider?.status === "no-capture" ? "No Capture" : "MCP Offline"
+
+	if (isMinimized) {
+		return (
+			<div
+				data-testid="graphics-workspace"
+				className="fixed right-4 top-3 z-40 flex items-center gap-2 rounded-full border border-vscode-focusBorder/50 bg-vscode-editor-background/90 px-3 py-2 text-xs text-vscode-foreground shadow-xl shadow-black/30 backdrop-blur-xl">
+				<span className={`size-2 rounded-full ${providerReady ? "bg-vscode-testing-iconPassed shadow-[0_0_8px_var(--vscode-testing-iconPassed)]" : "bg-vscode-descriptionForeground"}`} />
+				<Activity className="size-3.5 text-vscode-focusBorder" aria-hidden="true" />
+				<span className="font-medium">Graphics</span>
+				<span className="text-vscode-descriptionForeground">{providerStatusLabel}</span>
+				<Button variant="ghost" size="sm" className="ml-1 size-6 rounded-full p-0" onClick={() => setIsMinimized(false)} aria-label="Expand Graphics HUD" type="button">
+					<ChevronDown className="size-3.5 rotate-180" aria-hidden="true" />
+				</Button>
+				<Button variant="ghost" size="sm" className="size-6 rounded-full p-0" onClick={onDone} aria-label="Close Graphics HUD" type="button">
+					<X className="size-3.5" aria-hidden="true" />
+				</Button>
+			</div>
+		)
+	}
 
 	return (
-		<Tab data-testid="graphics-workspace">
-			<TabHeader className="space-y-3 bg-vscode-sideBar-background">
+		<Tab
+			data-testid="graphics-workspace"
+			className="z-30 overflow-hidden border border-vscode-focusBorder/35 bg-vscode-sideBar-background/95 shadow-2xl shadow-black/35 backdrop-blur-xl"
+			style={{
+				left: "auto",
+				top: "4.5rem",
+				right: "1rem",
+				bottom: "9.5rem",
+				// Give the HUD enough horizontal space for readable cards while
+				// reserving the lower composer area for the conversation.
+				width: "min(800px, calc(100vw - 2rem))",
+				borderRadius: "18px",
+			}}>
+			<TabHeader className="space-y-2 rounded-t-[18px] bg-vscode-sideBar-background/80 px-1 pb-2 backdrop-blur-md">
 				<div className="flex items-center justify-between gap-3">
-					<div className="flex items-center gap-2">
-						<SectionIcon className="size-5" />
-						<div>
-							<h1 className="text-base font-semibold text-vscode-foreground">
+					<div className="flex min-w-0 items-center gap-2">
+						<SectionIcon className="size-4 shrink-0" />
+						<div className="min-w-0">
+							<h1 className="truncate text-sm font-semibold text-vscode-foreground">
 								{t("graphics:workspace.title")}
 							</h1>
-							<p className="text-xs text-vscode-descriptionForeground">
+							<p className="truncate text-[10px] text-vscode-descriptionForeground">
 								{t("graphics:workspace.subtitle")}
 							</p>
 						</div>
 					</div>
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={onDone}
-						aria-label={t("graphics:workspace.backToChat")}
-						type="button">
-						<ArrowLeft aria-hidden="true" />
-						{t("graphics:workspace.backToChat")}
-					</Button>
+					<div className="flex items-center gap-1">
+						<Button variant="ghost" size="sm" className="size-7 rounded-full p-0 text-vscode-descriptionForeground hover:bg-vscode-list-hoverBackground hover:text-vscode-foreground" onClick={() => setIsMinimized(true)} aria-label="Minimize Graphics HUD" type="button">
+							<Minus className="size-4" aria-hidden="true" />
+						</Button>
+						<Button variant="ghost" size="sm" className="size-7 rounded-full p-0 text-vscode-descriptionForeground hover:bg-vscode-list-hoverBackground hover:text-vscode-foreground" onClick={onDone} aria-label="Close Graphics HUD" type="button">
+							<X className="size-4" aria-hidden="true" />
+						</Button>
+					</div>
+				</div>
+				<div
+					className="flex items-center gap-2 rounded-lg border border-vscode-panel-border/70 bg-vscode-editor-background/45 px-2.5 py-1.5 text-[11px]"
+					title={!providerReady ? "Enable RenderDoc MCP to use runtime capture" : undefined}>
+					<span className={`size-1.5 shrink-0 rounded-full ${providerReady ? "bg-vscode-testing-iconPassed shadow-[0_0_8px_var(--vscode-testing-iconPassed)]" : "bg-vscode-editorWarning-foreground"}`} />
+					<span className="min-w-0 truncate font-medium text-vscode-foreground">{activeProvider?.providerName ?? "Graphics Provider"}</span>
+					<span className="shrink-0 text-vscode-descriptionForeground">{providerStatusLabel}</span>
 				</div>
 				<TabList
 					value={section}
@@ -1112,7 +1182,7 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					<TabTrigger
 						id="tab-feature"
 						value="feature"
-						className="rounded-md px-3 py-1.5 text-xs"
+						className="rounded-md px-2.5 py-1 text-[11px]"
 						style={
 							section === "feature"
 								? { background: "var(--vscode-list-activeSelectionBackground)" }
@@ -1123,7 +1193,7 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					<TabTrigger
 						id="tab-assets"
 						value="assets"
-						className="rounded-md px-3 py-1.5 text-xs"
+						className="rounded-md px-2.5 py-1 text-[11px]"
 						style={
 							section === "assets"
 								? { background: "var(--vscode-list-activeSelectionBackground)" }
@@ -1131,17 +1201,19 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 						}>
 						{t("graphics:workspace.tabs.assets")}
 					</TabTrigger>
-					<TabTrigger
-						id="tab-runtime"
-						value="runtime"
-						className="rounded-md px-3 py-1.5 text-xs"
-						style={
-							section === "runtime"
-								? { background: "var(--vscode-list-activeSelectionBackground)" }
-								: undefined
-						}>
-						{t("graphics:workspace.tabs.runtime")}
-					</TabTrigger>
+					{runtimeEnabled && (
+						<TabTrigger
+							id="tab-runtime"
+							value="runtime"
+							className="rounded-md px-2.5 py-1 text-[11px]"
+							style={
+								section === "runtime"
+									? { background: "var(--vscode-list-activeSelectionBackground)" }
+									: undefined
+							}>
+							{t("graphics:workspace.tabs.runtime")}
+						</TabTrigger>
+					)}
 				</TabList>
 			</TabHeader>
 			<TabContent>
@@ -1161,15 +1233,16 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					hidden={section !== "assets"}>
 					{section === "assets" && <AssetValidation />}
 				</div>
-				<div
-					id="tab-runtime-panel"
-					role="tabpanel"
-					tabIndex={0}
-					aria-labelledby="tab-runtime"
-					hidden={section !== "runtime"}>
-					{section === "runtime" && <RuntimeInvestigation />}
-				</div>
-				{false && section === "feature" && <FeatureHome />}
+				{runtimeEnabled && (
+					<div
+						id="tab-runtime-panel"
+						role="tabpanel"
+						tabIndex={0}
+						aria-labelledby="tab-runtime"
+						hidden={section !== "runtime"}>
+						{section === "runtime" && <RuntimeInvestigation />}
+					</div>
+				)}
 			</TabContent>
 		</Tab>
 	)

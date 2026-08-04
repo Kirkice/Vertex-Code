@@ -184,11 +184,12 @@ describe("App", () => {
 		window.removeEventListener("message", () => {})
 	})
 
-	const triggerMessage = (action: string) => {
+	const triggerMessage = (action: string, tab?: string) => {
 		const messageEvent = new MessageEvent("message", {
 			data: {
 				type: "action",
 				action,
+				tab,
 			},
 		})
 		window.dispatchEvent(messageEvent)
@@ -211,7 +212,7 @@ describe("App", () => {
 		expect(chatView.getAttribute("data-hidden")).toBe("false")
 	}, 10000)
 
-	it("opens the provider-independent workspace by default in graphics mode and allows returning to chat", () => {
+	it("keeps the Graphics HUD closed when entering graphics mode", () => {
 		mockUseExtensionState.mockReturnValue({
 			didHydrateState: true,
 			showWelcome: false,
@@ -225,23 +226,44 @@ describe("App", () => {
 		render(<AppWithProviders />)
 
 		const chatView = screen.getByTestId("chat-view")
-		expect(screen.getByTestId("graphics-workspace")).toBeInTheDocument()
-		expect(screen.getByTestId("graphics-feature-home")).toBeInTheDocument()
-		expect(chatView.getAttribute("data-hidden")).toBe("true")
-
-		act(() => {
-			screen.getByRole("button", { name: "Back to chat" }).click()
-		})
-
 		expect(screen.queryByTestId("graphics-workspace")).not.toBeInTheDocument()
 		expect(chatView.getAttribute("data-hidden")).toBe("false")
-		expect(screen.getByRole("button", { name: "Graphics Workspace" })).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: "Graphics HUD" })).toBeInTheDocument()
+
+		act(() => {
+			screen.getByRole("button", { name: "Graphics HUD" }).click()
+		})
+
+		expect(screen.getByTestId("graphics-workspace")).toBeInTheDocument()
+		expect(screen.getByTestId("graphics-feature-home")).toBeInTheDocument()
+	})
+
+	it("migrates a legacy graphics tab action to visible chat without opening the HUD", () => {
+		mockUseExtensionState.mockReturnValue({
+			didHydrateState: true,
+			showWelcome: false,
+			shouldShowAnnouncement: false,
+			experiments: {},
+			language: "en",
+			telemetrySetting: "enabled",
+			mode: "graphics",
+		})
+
+		render(<AppWithProviders />)
+
+		act(() => {
+			triggerMessage("switchTab", "graphics")
+		})
+
+		expect(screen.getByTestId("chat-view").getAttribute("data-hidden")).toBe("false")
+		expect(screen.queryByTestId("graphics-workspace")).not.toBeInTheDocument()
+		expect(screen.getByRole("button", { name: "Graphics HUD" })).toBeInTheDocument()
 	})
 
 	it("does not expose the workspace entry outside graphics mode", () => {
 		render(<AppWithProviders />)
 
-		expect(screen.queryByRole("button", { name: "Graphics Workspace" })).not.toBeInTheDocument()
+		expect(screen.queryByRole("button", { name: "Graphics HUD" })).not.toBeInTheDocument()
 	})
 
 	it("shows welcome view when setup is incomplete", () => {

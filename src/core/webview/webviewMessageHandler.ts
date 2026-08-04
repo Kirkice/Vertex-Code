@@ -621,12 +621,23 @@ export const webviewMessageHandler = async (
 	}
 
 	switch (message.type) {
-		case "webviewDidLaunch":
-			// Load custom modes first
-			const customModes = await provider.customModesManager.getCustomModes()
-			await updateGlobalState("customModes", customModes)
+		case "webviewDidLaunch": {
+			// Load custom modes first, but do not let a malformed mode prevent the
+			// initial state from reaching the webview.
+			try {
+				const customModes = await provider.customModesManager.getCustomModes()
+				await updateGlobalState("customModes", customModes)
+			} catch (error) {
+				provider.log(`Error loading custom modes during webview launch: ${JSON.stringify(error)}`)
+			}
 
-			provider.postStateToWebview()
+			// Await this call so initialization failures are observable and do not
+			// leave the frontend waiting forever for its first state message.
+			try {
+				await provider.postStateToWebview()
+			} catch (error) {
+				provider.log(`Error posting initial webview state: ${JSON.stringify(error)}`)
+			}
 			provider.workspaceTracker?.initializeFilePaths() // Don't await.
 
 			getTheme().then((theme) => provider.postMessageToWebview({ type: "theme", text: JSON.stringify(theme) }))
@@ -696,10 +707,13 @@ export const webviewMessageHandler = async (
 			provider.getStateToPostToWebview().then((state) => {
 				const { telemetrySetting } = state
 				const isOptedIn = telemetrySetting !== "disabled"
+			}).catch((error) => {
+				provider.log(`Error reading telemetry state during webview launch: ${JSON.stringify(error)}`)
 			})
 
 			provider.isViewLaunched = true
 			break
+		}
 		case "newTask": {
 			// Analyze message for graphics intent and potentially switch mode
 			if (message.text) {

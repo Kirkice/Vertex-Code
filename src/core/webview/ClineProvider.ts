@@ -1298,7 +1298,15 @@ export class ClineProvider
 					<title>Vertex Code</title>
 				</head>
 				<body>
-					<div id="root"></div>
+					<div id="root">
+						<div style="min-height:100vh;box-sizing:border-box;padding:32px 24px;background:#000;color:#f3edf7;font:14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+							<div style="max-width:560px;margin:12vh auto 0">
+								<div style="color:#f29bd7;font-weight:700;letter-spacing:1px">VERTEX</div>
+								<div style="margin-top:16px;font-size:24px">正在加载 Vertex…</div>
+								<div style="margin-top:10px;color:#c9c0ce;line-height:1.6">正在初始化界面，请稍候。</div>
+							</div>
+						</div>
+					</div>
 					${reactRefresh}
 					<script type="module" src="${scriptUri}"></script>
 				</body>
@@ -1378,7 +1386,15 @@ export class ClineProvider
           </head>
           <body>
             <noscript>You need to enable JavaScript to run this app.</noscript>
-            <div id="root"></div>
+            <div id="root">
+              <div style="min-height:100vh;box-sizing:border-box;padding:32px 24px;background:#000;color:#f3edf7;font:14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+                <div style="max-width:560px;margin:12vh auto 0">
+                  <div style="color:#f29bd7;font-weight:700;letter-spacing:1px">VERTEX</div>
+                  <div style="margin-top:16px;font-size:24px">正在加载 Vertex…</div>
+                  <div style="margin-top:10px;color:#c9c0ce;line-height:1.6">正在初始化界面，请稍候。</div>
+                </div>
+              </div>
+            </div>
             <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
           </body>
         </html>

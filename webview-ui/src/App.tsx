@@ -26,7 +26,16 @@ import { STANDARD_TOOLTIP_DELAY } from "./components/ui/standard-tooltip"
 import { Button } from "./components/ui"
 import { ThemeProvider } from "./themes"
 
-type Tab = "settings" | "history" | "chat" | "marketplace" | "graphics"
+type Tab = "settings" | "history" | "chat" | "marketplace"
+
+const normalizeTab = (tab: string): Tab => {
+	// The former full-screen Graphics tab was replaced by an overlay HUD.
+	// Extension actions from an older bundle may still target it, so keep Chat
+	// visible instead of entering a tab state with no corresponding view.
+	if (tab === "graphics") return "chat"
+
+	return tab === "settings" || tab === "history" || tab === "marketplace" ? tab : "chat"
+}
 
 interface DeleteMessageDialogState {
 	isOpen: boolean
@@ -53,6 +62,52 @@ const tabsByMessageAction: Partial<Record<NonNullable<ExtensionMessage["action"]
 	marketplaceButtonClicked: "marketplace",
 }
 
+const StartupScreen = ({ timedOut }: { timedOut: boolean }) => {
+	const hasExtensionHost = vscode.isExtensionHostAvailable
+	const title = timedOut ? "Vertex 启动失败" : "Vertex 正在启动…"
+	const message = timedOut
+		? hasExtensionHost
+			? "扩展宿主没有返回初始状态。请重新加载 Webview；如果仍然失败，请打开扩展开发者工具查看错误。"
+			: "当前页面没有 VS Code Webview API，无法连接到扩展宿主。请在 VS Code 的扩展开发主机中打开此插件。"
+		: "正在连接扩展宿主，请稍候…"
+
+	return (
+		<div
+			style={{
+				minHeight: "100vh",
+				boxSizing: "border-box",
+				padding: "32px 24px",
+				background: "#000000",
+				color: "#f3edf7",
+				fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+			}}
+		>
+			<div style={{ maxWidth: 560, margin: "12vh auto 0" }}>
+				<div style={{ color: "#f29bd7", fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>VERTEX</div>
+				<h1 style={{ margin: "16px 0 10px", fontSize: 24, fontWeight: 600 }}>{title}</h1>
+				<p style={{ margin: 0, color: "#c9c0ce", lineHeight: 1.6 }}>{message}</p>
+				{timedOut && (
+					<button
+						type="button"
+						onClick={() => window.location.reload()}
+						style={{
+							marginTop: 24,
+							padding: "8px 14px",
+							border: "1px solid #f29bd7",
+							borderRadius: 6,
+							background: "transparent",
+							color: "#f3edf7",
+							cursor: "pointer",
+						}}
+					>
+						重新加载
+					</button>
+				)}
+			</div>
+		</div>
+	)
+}
+
 const App = () => {
 	const {
 		didHydrateState,
@@ -69,10 +124,21 @@ const App = () => {
 
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [tab, setTab] = useState<Tab>("chat")
+	const [graphicsWorkspaceOpen, setGraphicsWorkspaceOpen] = useState(false)
 	const [currentSection, setCurrentSection] = useState<string | undefined>(undefined)
 	const [currentMarketplaceTab, setCurrentMarketplaceTab] = useState<string | undefined>(undefined)
+	const [startupTimedOut, setStartupTimedOut] = useState(false)
 	const handledImportRef = useRef<number | undefined>(undefined)
 	const previousModeRef = useRef<string | undefined>(undefined)
+
+	useEffect(() => {
+		if (didHydrateState) {
+			return
+		}
+
+		const timeout = window.setTimeout(() => setStartupTimedOut(true), 5000)
+		return () => window.clearTimeout(timeout)
+	}, [didHydrateState])
 
 	// Graphics mode suggestion state
 	const [graphicsModeSuggestion, setGraphicsModeSuggestion] = useState<{ text: string; targetMode: string } | null>(
@@ -123,10 +189,15 @@ const App = () => {
 			const message: ExtensionMessage = e.data
 
 			if (message.type === "action" && message.action) {
-				// Handle switchTab action with tab parameter
+				// Handle switchTab action with tab parameter. Legacy extension
+				// bundles can still request the removed full-screen Graphics tab.
 				if (message.action === "switchTab" && message.tab) {
-					const targetTab = message.tab as Tab
+					const requestedTab = message.tab
+					const targetTab = normalizeTab(requestedTab)
 					switchTab(targetTab)
+					if (requestedTab === "graphics") {
+						setGraphicsWorkspaceOpen(false)
+					}
 					// Extract targetSection from values if provided
 					const targetSection = message.values?.section as string | undefined
 					setCurrentSection(targetSection)
@@ -202,9 +273,10 @@ const App = () => {
 
 		if (enteredGraphicsMode) {
 			setCurrentSection(undefined)
-			setTab("graphics")
+			setTab("chat")
+			setGraphicsWorkspaceOpen(false)
 		} else if (leftGraphicsMode) {
-			setTab((currentTab) => (currentTab === "graphics" ? "chat" : currentTab))
+			setGraphicsWorkspaceOpen(false)
 		}
 	}, [didHydrateState, mdmCompliant, mode, showWelcome])
 
@@ -261,7 +333,7 @@ const App = () => {
 	)
 
 	if (!didHydrateState) {
-		return null
+		return <StartupScreen timedOut={startupTimedOut} />
 	}
 
 	// Do not conditionally load ChatView, it's expensive and there's state we
@@ -280,19 +352,21 @@ const App = () => {
 					targetTab={currentMarketplaceTab as "mcp" | "mode" | "skill" | "knowledge" | undefined}
 				/>
 			)}
-			{tab === "graphics" && <GraphicsWorkspace onDone={() => switchTab("chat")} />}
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
 			)}
-			{mode === "graphics" && tab === "chat" && (
+			{mode === "graphics" && tab === "chat" && !graphicsWorkspaceOpen && (
 				<Button
 					variant="secondary"
 					size="sm"
-					className="fixed right-4 top-3 z-40 shadow-lg"
-					onClick={() => switchTab("graphics")}>
-					<span className="codicon codicon-dashboard" />
-					Graphics Workspace
+					className="fixed right-4 top-3 z-40 rounded-full border border-vscode-focusBorder/50 bg-vscode-editor-background/90 px-3 shadow-xl shadow-black/25 backdrop-blur-xl"
+					onClick={() => setGraphicsWorkspaceOpen(true)}>
+					<span className="codicon codicon-dashboard text-vscode-focusBorder" />
+					<span className="ml-1">Graphics HUD</span>
 				</Button>
+			)}
+			{mode === "graphics" && tab === "chat" && graphicsWorkspaceOpen && (
+				<GraphicsWorkspace onDone={() => setGraphicsWorkspaceOpen(false)} />
 			)}
 			{graphicsModeSuggestion && (
 				<div className="fixed bottom-4 right-4 z-50 max-w-sm bg-vscode-editor-background border border-vscode-panel-border rounded-lg shadow-lg p-4">

@@ -1,0 +1,1507 @@
+{
+  "version": 1,
+  "workspaceName": "AgentProject",
+  "engine": "unknown",
+  "renderPipelines": [],
+  "graphicsApis": [],
+  "targetPlatforms": [],
+  "shaderLanguages": [],
+  "architectureSignals": [],
+  "architectureIndex": {
+    "version": 1,
+    "findings": [
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "client",
+        "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+        "kind": "unity-component",
+        "symbol": "CreateShadowControllerEditor",
+        "detail": "Unity client entry point CreateShadowControllerEditor."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "client",
+        "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+        "kind": "unity-component",
+        "symbol": "CreateShadowControllerV2Editor",
+        "detail": "Unity client entry point CreateShadowControllerV2Editor."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/LightEditor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "client",
+        "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+        "kind": "lifecycle",
+        "symbol": "OnEnable",
+        "detail": "Implements Unity lifecycle method OnEnable()."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "client",
+        "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+        "kind": "lifecycle",
+        "symbol": "OnEnable",
+        "detail": "Implements Unity lifecycle method OnEnable()."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "client",
+        "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+        "kind": "lifecycle",
+        "symbol": "OnEnable",
+        "detail": "Implements Unity lifecycle method OnEnable()."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Runtime.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      },
+      {
+        "category": "asset",
+        "path": "docs/CustomShadow/Runtime/Scripts.meta",
+        "kind": "asset-importer",
+        "detail": "Contains Unity importer metadata or importer-specific asset settings."
+      }
+    ],
+    "analyzedFileCount": 73,
+    "truncated": false,
+    "graph": {
+      "nodes": [
+        {
+          "id": "file:.claude/settings.local.json",
+          "kind": "file",
+          "label": "settings.local.json",
+          "path": ".claude/settings.local.json"
+        },
+        {
+          "id": "file:.prettierrc.json",
+          "kind": "file",
+          "label": ".prettierrc.json",
+          "path": ".prettierrc.json"
+        },
+        {
+          "id": "file:.roo/mcp.json",
+          "kind": "file",
+          "label": "mcp.json",
+          "path": ".roo/mcp.json"
+        },
+        {
+          "id": "file:docs/archive/old_version.txt",
+          "kind": "file",
+          "label": "old_version.txt",
+          "path": "docs/archive/old_version.txt"
+        },
+        {
+          "id": "symbol:type:docs/archive/old_version.txt:SyncCloudProfilesResult",
+          "kind": "symbol",
+          "label": "SyncCloudProfilesResult"
+        },
+        {
+          "id": "symbol:type:docs/archive/old_version.txt:ProviderSettingsManager",
+          "kind": "symbol",
+          "label": "ProviderSettingsManager"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor.meta",
+          "kind": "file",
+          "label": "Editor.meta",
+          "path": "docs/CustomShadow/Editor.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor",
+          "kind": "asset",
+          "label": "Editor",
+          "path": "docs/CustomShadow/Editor",
+          "guid": "cd22921ed83696b468337af411a90a1d"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs",
+          "kind": "file",
+          "label": "CreateProjectorShadow.cs",
+          "path": "docs/CustomShadow/Editor/CreateProjectorShadow.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/CreateProjectorShadow.cs:Create",
+          "kind": "symbol",
+          "label": "Create"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/CreateProjectorShadow.cs:CreateProjectorShadow",
+          "kind": "symbol",
+          "label": "CreateProjectorShadow"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta",
+          "kind": "file",
+          "label": "CreateProjectorShadow.cs.meta",
+          "path": "docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+          "kind": "file",
+          "label": "CreateShadowControllerEditor.cs",
+          "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:LauchShadowController",
+          "kind": "symbol",
+          "label": "LauchShadowController"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:InitController",
+          "kind": "symbol",
+          "label": "InitController"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:CreateShadowControllerEditor",
+          "kind": "symbol",
+          "label": "CreateShadowControllerEditor"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta",
+          "kind": "file",
+          "label": "CreateShadowControllerEditor.cs.meta",
+          "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+          "kind": "file",
+          "label": "CreateShadowControllerV2Editor.cs",
+          "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:LauchShadowControllerV2",
+          "kind": "symbol",
+          "label": "LauchShadowControllerV2"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:InitController",
+          "kind": "symbol",
+          "label": "InitController"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:CreateShadowControllerV2Editor",
+          "kind": "symbol",
+          "label": "CreateShadowControllerV2Editor"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta",
+          "kind": "file",
+          "label": "CreateShadowControllerV2Editor.cs.meta",
+          "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "kind": "file",
+          "label": "LightEditor.cs",
+          "path": "docs/CustomShadow/Editor/LightEditor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:OnInspectorGUI",
+          "kind": "symbol",
+          "label": "OnInspectorGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawCustomInspector",
+          "kind": "symbol",
+          "label": "DrawCustomInspector"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawCommandBuffers",
+          "kind": "symbol",
+          "label": "DrawCommandBuffers"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawShadows",
+          "kind": "symbol",
+          "label": "DrawShadows"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawAdditionalLightDataGUI",
+          "kind": "symbol",
+          "label": "DrawAdditionalLightDataGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawShadowControllerGUI",
+          "kind": "symbol",
+          "label": "DrawShadowControllerGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawSpotLightRange",
+          "kind": "symbol",
+          "label": "DrawSpotLightRange"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:OnSceneGUI",
+          "kind": "symbol",
+          "label": "OnSceneGUI"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/LightEditor.cs:LightAdvanceEditor",
+          "kind": "symbol",
+          "label": "LightAdvanceEditor"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/LightEditor.cs.meta",
+          "kind": "file",
+          "label": "LightEditor.cs.meta",
+          "path": "docs/CustomShadow/Editor/LightEditor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "kind": "file",
+          "label": "ProjectorShadowEditor.cs",
+          "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:OnEnable",
+          "kind": "symbol",
+          "label": "OnEnable"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:CacheSerializedProperties",
+          "kind": "symbol",
+          "label": "CacheSerializedProperties"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:OnInspectorGUI",
+          "kind": "symbol",
+          "label": "OnInspectorGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawShadowSettings",
+          "kind": "symbol",
+          "label": "DrawShadowSettings"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawCasterSettings",
+          "kind": "symbol",
+          "label": "DrawCasterSettings"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawLightSettings",
+          "kind": "symbol",
+          "label": "DrawLightSettings"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:AddSelectedRenderers",
+          "kind": "symbol",
+          "label": "AddSelectedRenderers"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:AddRendererIfMissing",
+          "kind": "symbol",
+          "label": "AddRendererIfMissing"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:RemoveNullRenderers",
+          "kind": "symbol",
+          "label": "RemoveNullRenderers"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:GenerateListTitleStyle",
+          "kind": "symbol",
+          "label": "GenerateListTitleStyle"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:GenerateTopHintStyles",
+          "kind": "symbol",
+          "label": "GenerateTopHintStyles"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawTopHintBanner",
+          "kind": "symbol",
+          "label": "DrawTopHintBanner"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawTopWarningBanner",
+          "kind": "symbol",
+          "label": "DrawTopWarningBanner"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawShadowSoftnessLinkSettings",
+          "kind": "symbol",
+          "label": "DrawShadowSoftnessLinkSettings"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawMinMaxFloat",
+          "kind": "symbol",
+          "label": "DrawMinMaxFloat"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawMinMaxInt",
+          "kind": "symbol",
+          "label": "DrawMinMaxInt"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:BoxGUI",
+          "kind": "symbol",
+          "label": "BoxGUI"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:ProjectorShadowEditor",
+          "kind": "symbol",
+          "label": "ProjectorShadowEditor"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:Styles",
+          "kind": "symbol",
+          "label": "Styles"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta",
+          "kind": "file",
+          "label": "ProjectorShadowEditor.cs.meta",
+          "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "kind": "file",
+          "label": "ShadowControllerEditor.cs",
+          "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:OnEnable",
+          "kind": "symbol",
+          "label": "OnEnable"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:GenerateListTitleStyle",
+          "kind": "symbol",
+          "label": "GenerateListTitleStyle"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:OnInspectorGUI",
+          "kind": "symbol",
+          "label": "OnInspectorGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:BoxGUI",
+          "kind": "symbol",
+          "label": "BoxGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawTargetLightGUI",
+          "kind": "symbol",
+          "label": "DrawTargetLightGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawShadowSphereGUI",
+          "kind": "symbol",
+          "label": "DrawShadowSphereGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawShadowBiasGUI",
+          "kind": "symbol",
+          "label": "DrawShadowBiasGUI"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ShadowControllerEditor.cs:ShadowControllerEditor",
+          "kind": "symbol",
+          "label": "ShadowControllerEditor"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ShadowControllerEditor.cs:Styles",
+          "kind": "symbol",
+          "label": "Styles"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta",
+          "kind": "file",
+          "label": "ShadowControllerEditor.cs.meta",
+          "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "kind": "file",
+          "label": "ShadowControllerV2Editor.cs",
+          "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:OnEnable",
+          "kind": "symbol",
+          "label": "OnEnable"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:GenerateListTitleStyle",
+          "kind": "symbol",
+          "label": "GenerateListTitleStyle"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:OnInspectorGUI",
+          "kind": "symbol",
+          "label": "OnInspectorGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:BoxGUI",
+          "kind": "symbol",
+          "label": "BoxGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawTargetLightGUI",
+          "kind": "symbol",
+          "label": "DrawTargetLightGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawShadowSphereGUI",
+          "kind": "symbol",
+          "label": "DrawShadowSphereGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawShadowBiasGUI",
+          "kind": "symbol",
+          "label": "DrawShadowBiasGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawPCSSGUI",
+          "kind": "symbol",
+          "label": "DrawPCSSGUI"
+        },
+        {
+          "id": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawProjectorShadowGUI",
+          "kind": "symbol",
+          "label": "DrawProjectorShadowGUI"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:ShadowControllerV2Editor",
+          "kind": "symbol",
+          "label": "ShadowControllerV2Editor"
+        },
+        {
+          "id": "symbol:type:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:Styles",
+          "kind": "symbol",
+          "label": "Styles"
+        },
+        {
+          "id": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta",
+          "kind": "file",
+          "label": "ShadowControllerV2Editor.cs.meta",
+          "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Runtime.meta",
+          "kind": "file",
+          "label": "Runtime.meta",
+          "path": "docs/CustomShadow/Runtime.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Runtime",
+          "kind": "asset",
+          "label": "Runtime",
+          "path": "docs/CustomShadow/Runtime",
+          "guid": "00ba92d6fc4ce4144893fcee28ee3a0b"
+        },
+        {
+          "id": "file:docs/CustomShadow/Runtime/Scripts.meta",
+          "kind": "file",
+          "label": "Scripts.meta",
+          "path": "docs/CustomShadow/Runtime/Scripts.meta"
+        },
+        {
+          "id": "file:docs/CustomShadow/Runtime/Scripts",
+          "kind": "asset",
+          "label": "Scripts",
+          "path": "docs/CustomShadow/Runtime/Scripts",
+          "guid": "1932664eea4d960499bcf44cc1072ea7"
+        },
+        {
+          "id": "file:package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "package.json"
+        },
+        {
+          "id": "file:packages/config-eslint/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/config-eslint/package.json"
+        },
+        {
+          "id": "file:packages/config-typescript/base.json",
+          "kind": "file",
+          "label": "base.json",
+          "path": "packages/config-typescript/base.json"
+        },
+        {
+          "id": "file:packages/config-typescript/cjs.json",
+          "kind": "file",
+          "label": "cjs.json",
+          "path": "packages/config-typescript/cjs.json"
+        },
+        {
+          "id": "file:packages/config-typescript/nextjs.json",
+          "kind": "file",
+          "label": "nextjs.json",
+          "path": "packages/config-typescript/nextjs.json"
+        },
+        {
+          "id": "file:packages/config-typescript/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/config-typescript/package.json"
+        },
+        {
+          "id": "file:packages/config-typescript/vscode-library.json",
+          "kind": "file",
+          "label": "vscode-library.json",
+          "path": "packages/config-typescript/vscode-library.json"
+        },
+        {
+          "id": "file:packages/core/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/core/package.json"
+        },
+        {
+          "id": "file:packages/core/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "packages/core/tsconfig.json"
+        },
+        {
+          "id": "file:packages/core/turbo.json",
+          "kind": "file",
+          "label": "turbo.json",
+          "path": "packages/core/turbo.json"
+        },
+        {
+          "id": "file:packages/ipc/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/ipc/package.json"
+        },
+        {
+          "id": "file:packages/ipc/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "packages/ipc/tsconfig.json"
+        },
+        {
+          "id": "file:packages/types/npm/package.metadata.json",
+          "kind": "file",
+          "label": "package.metadata.json",
+          "path": "packages/types/npm/package.metadata.json"
+        },
+        {
+          "id": "file:packages/types/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/types/package.json"
+        },
+        {
+          "id": "file:packages/types/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "packages/types/tsconfig.json"
+        },
+        {
+          "id": "file:packages/vscode-shim/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "packages/vscode-shim/package.json"
+        },
+        {
+          "id": "file:packages/vscode-shim/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "packages/vscode-shim/tsconfig.json"
+        },
+        {
+          "id": "file:pnpm-workspace.yaml",
+          "kind": "file",
+          "label": "pnpm-workspace.yaml",
+          "path": "pnpm-workspace.yaml"
+        },
+        {
+          "id": "file:schemas/roomodes.json",
+          "kind": "file",
+          "label": "roomodes.json",
+          "path": "schemas/roomodes.json"
+        },
+        {
+          "id": "file:src/assets/marketplace/graphics-release.yml",
+          "kind": "file",
+          "label": "graphics-release.yml",
+          "path": "src/assets/marketplace/graphics-release.yml"
+        },
+        {
+          "id": "file:src/assets/marketplace/knowledge.yml",
+          "kind": "file",
+          "label": "knowledge.yml",
+          "path": "src/assets/marketplace/knowledge.yml"
+        },
+        {
+          "id": "file:src/assets/marketplace/mcps.yml",
+          "kind": "file",
+          "label": "mcps.yml",
+          "path": "src/assets/marketplace/mcps.yml"
+        },
+        {
+          "id": "file:src/assets/marketplace/modes.yml",
+          "kind": "file",
+          "label": "modes.yml",
+          "path": "src/assets/marketplace/modes.yml"
+        },
+        {
+          "id": "symbol:type:src/assets/marketplace/modes.yml:DataProcessor",
+          "kind": "symbol",
+          "label": "DataProcessor"
+        },
+        {
+          "id": "symbol:type:src/assets/marketplace/modes.yml:Recipe",
+          "kind": "symbol",
+          "label": "Recipe"
+        },
+        {
+          "id": "file:src/assets/marketplace/skills.yml",
+          "kind": "file",
+          "label": "skills.yml",
+          "path": "src/assets/marketplace/skills.yml"
+        },
+        {
+          "id": "file:src/assets/vscode-material-icons/icon-map.json",
+          "kind": "file",
+          "label": "icon-map.json",
+          "path": "src/assets/vscode-material-icons/icon-map.json"
+        },
+        {
+          "id": "file:src/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "src/package.json"
+        },
+        {
+          "id": "file:src/package.nls.ca.json",
+          "kind": "file",
+          "label": "package.nls.ca.json",
+          "path": "src/package.nls.ca.json"
+        },
+        {
+          "id": "file:src/package.nls.de.json",
+          "kind": "file",
+          "label": "package.nls.de.json",
+          "path": "src/package.nls.de.json"
+        },
+        {
+          "id": "file:src/package.nls.es.json",
+          "kind": "file",
+          "label": "package.nls.es.json",
+          "path": "src/package.nls.es.json"
+        },
+        {
+          "id": "file:src/package.nls.fr.json",
+          "kind": "file",
+          "label": "package.nls.fr.json",
+          "path": "src/package.nls.fr.json"
+        },
+        {
+          "id": "symbol:type:src/package.nls.fr.json:utilisateur",
+          "kind": "symbol",
+          "label": "utilisateur"
+        },
+        {
+          "id": "file:src/package.nls.hi.json",
+          "kind": "file",
+          "label": "package.nls.hi.json",
+          "path": "src/package.nls.hi.json"
+        },
+        {
+          "id": "file:src/package.nls.id.json",
+          "kind": "file",
+          "label": "package.nls.id.json",
+          "path": "src/package.nls.id.json"
+        },
+        {
+          "id": "file:src/package.nls.it.json",
+          "kind": "file",
+          "label": "package.nls.it.json",
+          "path": "src/package.nls.it.json"
+        },
+        {
+          "id": "file:src/package.nls.ja.json",
+          "kind": "file",
+          "label": "package.nls.ja.json",
+          "path": "src/package.nls.ja.json"
+        },
+        {
+          "id": "file:src/package.nls.json",
+          "kind": "file",
+          "label": "package.nls.json",
+          "path": "src/package.nls.json"
+        },
+        {
+          "id": "file:src/package.nls.ko.json",
+          "kind": "file",
+          "label": "package.nls.ko.json",
+          "path": "src/package.nls.ko.json"
+        },
+        {
+          "id": "file:src/package.nls.nl.json",
+          "kind": "file",
+          "label": "package.nls.nl.json",
+          "path": "src/package.nls.nl.json"
+        },
+        {
+          "id": "file:src/package.nls.pl.json",
+          "kind": "file",
+          "label": "package.nls.pl.json",
+          "path": "src/package.nls.pl.json"
+        },
+        {
+          "id": "file:src/package.nls.pt-BR.json",
+          "kind": "file",
+          "label": "package.nls.pt-BR.json",
+          "path": "src/package.nls.pt-BR.json"
+        },
+        {
+          "id": "symbol:type:src/package.nls.pt-BR.json:como",
+          "kind": "symbol",
+          "label": "como"
+        },
+        {
+          "id": "file:src/package.nls.ru.json",
+          "kind": "file",
+          "label": "package.nls.ru.json",
+          "path": "src/package.nls.ru.json"
+        },
+        {
+          "id": "file:src/package.nls.tr.json",
+          "kind": "file",
+          "label": "package.nls.tr.json",
+          "path": "src/package.nls.tr.json"
+        },
+        {
+          "id": "file:src/package.nls.vi.json",
+          "kind": "file",
+          "label": "package.nls.vi.json",
+          "path": "src/package.nls.vi.json"
+        },
+        {
+          "id": "file:src/package.nls.zh-CN.json",
+          "kind": "file",
+          "label": "package.nls.zh-CN.json",
+          "path": "src/package.nls.zh-CN.json"
+        },
+        {
+          "id": "file:src/package.nls.zh-TW.json",
+          "kind": "file",
+          "label": "package.nls.zh-TW.json",
+          "path": "src/package.nls.zh-TW.json"
+        },
+        {
+          "id": "file:src/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "src/tsconfig.json"
+        },
+        {
+          "id": "file:src/turbo.json",
+          "kind": "file",
+          "label": "turbo.json",
+          "path": "src/turbo.json"
+        },
+        {
+          "id": "file:tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "tsconfig.json"
+        },
+        {
+          "id": "file:turbo.json",
+          "kind": "file",
+          "label": "turbo.json",
+          "path": "turbo.json"
+        },
+        {
+          "id": "file:webview-ui/components.json",
+          "kind": "file",
+          "label": "components.json",
+          "path": "webview-ui/components.json"
+        },
+        {
+          "id": "file:webview-ui/package.json",
+          "kind": "file",
+          "label": "package.json",
+          "path": "webview-ui/package.json"
+        },
+        {
+          "id": "file:webview-ui/tsconfig.json",
+          "kind": "file",
+          "label": "tsconfig.json",
+          "path": "webview-ui/tsconfig.json"
+        },
+        {
+          "id": "file:webview-ui/turbo.json",
+          "kind": "file",
+          "label": "turbo.json",
+          "path": "webview-ui/turbo.json"
+        }
+      ],
+      "edges": [
+        {
+          "from": "file:docs/archive/old_version.txt",
+          "to": "symbol:type:docs/archive/old_version.txt:SyncCloudProfilesResult",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/archive/old_version.txt",
+          "to": "symbol:type:docs/archive/old_version.txt:ProviderSettingsManager",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor.meta",
+          "to": "file:docs/CustomShadow/Editor",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/CreateProjectorShadow.cs:Create",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/CreateProjectorShadow.cs:CreateProjectorShadow",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/CreateProjectorShadow.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:LauchShadowController",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:InitController",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs:CreateShadowControllerEditor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:LauchShadowControllerV2",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:InitController",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs:CreateShadowControllerV2Editor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:OnInspectorGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawCustomInspector",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawCommandBuffers",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawShadows",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawAdditionalLightDataGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawShadowControllerGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:DrawSpotLightRange",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/LightEditor.cs:OnSceneGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/LightEditor.cs:LightAdvanceEditor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/LightEditor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/LightEditor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:OnEnable",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:CacheSerializedProperties",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:OnInspectorGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawShadowSettings",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawCasterSettings",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawLightSettings",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:AddSelectedRenderers",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:AddRendererIfMissing",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:RemoveNullRenderers",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:GenerateListTitleStyle",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:GenerateTopHintStyles",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawTopHintBanner",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawTopWarningBanner",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawShadowSoftnessLinkSettings",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawMinMaxFloat",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:DrawMinMaxInt",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:BoxGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:ProjectorShadowEditor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ProjectorShadowEditor.cs:Styles",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:OnEnable",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:GenerateListTitleStyle",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:OnInspectorGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:BoxGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawTargetLightGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawShadowSphereGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerEditor.cs:DrawShadowBiasGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ShadowControllerEditor.cs:ShadowControllerEditor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ShadowControllerEditor.cs:Styles",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:OnEnable",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:GenerateListTitleStyle",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:OnInspectorGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:BoxGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawTargetLightGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawShadowSphereGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawShadowBiasGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawPCSSGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:entry:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:DrawProjectorShadowGUI",
+          "kind": "implements",
+          "detail": "Shader or client entry point"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:ShadowControllerV2Editor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "to": "symbol:type:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs:Styles",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta",
+          "to": "file:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Runtime.meta",
+          "to": "file:docs/CustomShadow/Runtime",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:docs/CustomShadow/Runtime/Scripts.meta",
+          "to": "file:docs/CustomShadow/Runtime/Scripts",
+          "kind": "references",
+          "detail": "Resolved Unity asset GUID"
+        },
+        {
+          "from": "file:src/assets/marketplace/modes.yml",
+          "to": "symbol:type:src/assets/marketplace/modes.yml:DataProcessor",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:src/assets/marketplace/modes.yml",
+          "to": "symbol:type:src/assets/marketplace/modes.yml:Recipe",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:src/package.nls.fr.json",
+          "to": "symbol:type:src/package.nls.fr.json:utilisateur",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        },
+        {
+          "from": "file:src/package.nls.pt-BR.json",
+          "to": "symbol:type:src/package.nls.pt-BR.json:como",
+          "kind": "contains",
+          "detail": "Source type symbol"
+        }
+      ]
+    },
+    "similarFeatures": [
+      {
+        "id": "feature:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+        "label": "CreateShadowControllerEditor",
+        "score": 28,
+        "evidence": [
+          "unity-component: Unity client entry point CreateShadowControllerEditor."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+        "label": "CreateShadowControllerV2Editor",
+        "score": 28,
+        "evidence": [
+          "unity-component: Unity client entry point CreateShadowControllerV2Editor."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+        "label": "ProjectorShadowEditor",
+        "score": 28,
+        "evidence": [
+          "lifecycle: Implements Unity lifecycle method OnEnable()."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+        "label": "ShadowControllerEditor",
+        "score": 28,
+        "evidence": [
+          "lifecycle: Implements Unity lifecycle method OnEnable()."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+        "label": "ShadowControllerV2Editor",
+        "score": 28,
+        "evidence": [
+          "lifecycle: Implements Unity lifecycle method OnEnable()."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor.meta",
+        "label": "Editor",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta",
+        "label": "CreateProjectorShadow.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta",
+        "label": "CreateShadowControllerEditor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta",
+        "label": "CreateShadowControllerV2Editor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/LightEditor.cs.meta",
+        "label": "LightEditor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta",
+        "label": "ProjectorShadowEditor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta",
+        "label": "ShadowControllerEditor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta",
+        "label": "ShadowControllerV2Editor.cs",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Runtime.meta",
+        "label": "Runtime",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      },
+      {
+        "id": "feature:docs/CustomShadow/Runtime/Scripts.meta",
+        "label": "Scripts",
+        "score": 25,
+        "evidence": [
+          "asset-importer: Contains Unity importer metadata or importer-specific asset settings."
+        ]
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "path": "docs/CustomShadow/Editor.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/CreateProjectorShadow.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs",
+      "description": "Unity client entry point CreateShadowControllerEditor."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/CreateShadowControllerEditor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs",
+      "description": "Unity client entry point CreateShadowControllerV2Editor."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/CreateShadowControllerV2Editor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/LightEditor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs",
+      "description": "Implements Unity lifecycle method OnEnable()."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ProjectorShadowEditor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs",
+      "description": "Implements Unity lifecycle method OnEnable()."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ShadowControllerEditor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs",
+      "description": "Implements Unity lifecycle method OnEnable()."
+    },
+    {
+      "path": "docs/CustomShadow/Editor/ShadowControllerV2Editor.cs.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Runtime.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    },
+    {
+      "path": "docs/CustomShadow/Runtime/Scripts.meta",
+      "description": "Contains Unity importer metadata or importer-specific asset settings."
+    }
+  ],
+  "warnings": [
+    "Profile scan stopped after 600 files; results may be incomplete."
+  ],
+  "scannedAt": "2026-08-04T04:10:22.772Z"
+}

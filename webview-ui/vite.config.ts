@@ -95,6 +95,10 @@ export default defineConfig(({ mode }) => {
 	]
 
 	return {
+		// The built webview can be hosted below a nested path (for example by
+		// Codex or another embedded host). Absolute /assets URLs then point at
+		// the host root and the entry script never loads.
+		base: mode === "production" || mode === "nightly" ? "./" : "/",
 		plugins,
 		resolve: {
 			alias: mode === "visual-regression" ? { vscode: resolve(__dirname, "src/visual-regression/vscode.ts") } : undefined,

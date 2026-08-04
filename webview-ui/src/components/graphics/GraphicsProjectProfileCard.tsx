@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react"
 
 import type { GraphicsArchitectureCategory, GraphicsProjectProfile } from "@roo-code/types"
 
-import { Button } from "@src/components/ui"
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger } from "@src/components/ui"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 
 interface GraphicsProjectProfileCardProps {
@@ -24,10 +24,12 @@ const ArchitectureFindings = ({
 	if (architectureIndex.findings.length === 0) return null
 
 	const categoryLabel = (category: GraphicsArchitectureCategory) => t(`graphics:profile.categories.${category}`)
+	const visibleFindings = architectureIndex.findings.slice(0, maxVisibleFindings)
+	const remainingCount = Math.max(architectureIndex.findings.length - visibleFindings.length, 0)
 
 	return (
-		<div className="space-y-2" aria-label={t("graphics:profile.architectureFindings")}>
-			<div className="flex items-center justify-between text-xs">
+		<Collapsible className="space-y-1.5" aria-label={t("graphics:profile.architectureFindings")}>
+			<CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-xs hover:bg-vscode-list-hoverBackground">
 				<span className="font-medium text-vscode-foreground">{t("graphics:profile.deepFindings")}</span>
 				<span className="text-vscode-descriptionForeground">
 					{t("graphics:profile.findingCount", {
@@ -35,24 +37,31 @@ const ArchitectureFindings = ({
 						files: architectureIndex.analyzedFileCount,
 					})}
 				</span>
-			</div>
-			<ul className="space-y-1.5 text-xs">
-				{architectureIndex.findings.slice(0, maxVisibleFindings).map((finding) => (
-					<li
-						key={`${finding.category}:${finding.path}:${finding.kind}:${finding.symbol ?? ""}`}
-						className="rounded border border-vscode-panel-border px-2 py-1.5">
-						<div className="flex flex-wrap items-center gap-1.5">
-							<span className="rounded bg-vscode-badge-background px-1.5 py-0.5 text-vscode-badge-foreground">
-								{categoryLabel(finding.category)}
-							</span>
-							<span className="font-medium text-vscode-foreground">{finding.symbol ?? finding.kind}</span>
-						</div>
-						<p className="mt-1 text-vscode-descriptionForeground">{finding.detail}</p>
-						<p className="mt-0.5 text-vscode-descriptionForeground/80">{finding.path}</p>
-					</li>
-				))}
-			</ul>
-		</div>
+			</CollapsibleTrigger>
+			<CollapsibleContent className="space-y-1.5">
+				<ul className="space-y-1 text-xs">
+					{visibleFindings.map((finding) => (
+						<li
+							key={`${finding.category}:${finding.path}:${finding.kind}:${finding.symbol ?? ""}`}
+							className="rounded-md border border-vscode-panel-border/80 bg-vscode-editor-background/35 px-2 py-1.5">
+							<div className="flex min-w-0 items-center gap-1.5">
+								<span className="shrink-0 rounded bg-vscode-badge-background px-1.5 py-0.5 text-[10px] text-vscode-badge-foreground">
+									{categoryLabel(finding.category)}
+								</span>
+								<span className="truncate font-medium text-vscode-foreground">{finding.symbol ?? finding.kind}</span>
+							</div>
+							<p className="mt-0.5 line-clamp-1 text-vscode-descriptionForeground">{finding.detail}</p>
+							<p className="truncate text-[10px] text-vscode-descriptionForeground/70">{finding.path}</p>
+						</li>
+					))}
+				</ul>
+				{remainingCount > 0 && (
+					<p className="px-1 text-[10px] text-vscode-descriptionForeground">
+						+{remainingCount} more findings
+					</p>
+				)}
+			</CollapsibleContent>
+		</Collapsible>
 	)
 }
 
@@ -60,30 +69,30 @@ export const GraphicsProjectProfileCard = ({
 	profile,
 	loading,
 	onRefresh,
-	maxVisibleFindings = 12,
+	maxVisibleFindings = 4,
 }: GraphicsProjectProfileCardProps) => {
 	const { t } = useAppTranslation()
 
 	return (
 		<section
-			className="space-y-3 rounded-lg border border-vscode-panel-border p-4"
+			className="space-y-2.5 rounded-lg border border-vscode-panel-border bg-vscode-editor-background/20 p-3"
 			aria-label={t("graphics:profile.title")}>
-			<div className="flex items-start justify-between gap-3">
-				<div>
-					<h3 className="text-sm font-semibold text-vscode-foreground">{t("graphics:profile.title")}</h3>
-					<p className="mt-1 text-xs text-vscode-descriptionForeground">
+			<div className="flex items-center justify-between gap-2">
+				<div className="min-w-0">
+					<h3 className="truncate text-sm font-semibold text-vscode-foreground">{t("graphics:profile.title")}</h3>
+					<p className="mt-0.5 line-clamp-1 text-[11px] text-vscode-descriptionForeground">
 						{t("graphics:profile.description")}
 					</p>
 				</div>
 				<Button
 					variant="ghost"
 					size="sm"
+					className="size-7 shrink-0 rounded-md p-0"
 					onClick={onRefresh}
 					disabled={loading}
 					aria-label={t("graphics:profile.refreshAria")}
 					type="button">
-					<RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
-					{t("graphics:profile.refresh")}
+					<RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
 				</Button>
 			</div>
 			{loading ? (
@@ -92,7 +101,7 @@ export const GraphicsProjectProfileCard = ({
 				</p>
 			) : profile ? (
 				<>
-					<div className="grid gap-2 text-xs sm:grid-cols-2">
+					<div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
 						<div>
 							<span className="text-vscode-descriptionForeground">{t("graphics:profile.engine")}</span>{" "}
 							{profile.engine}
@@ -127,9 +136,9 @@ export const GraphicsProjectProfileCard = ({
 					)}
 					<ArchitectureFindings profile={profile} maxVisibleFindings={maxVisibleFindings} />
 					{profile.evidence.length > 0 && (
-						<ul className="space-y-1 text-xs text-vscode-descriptionForeground">
-							{profile.evidence.slice(0, 5).map((item) => (
-								<li key={`${item.path}:${item.description}`}>
+						<ul className="space-y-0.5 text-[10px] text-vscode-descriptionForeground">
+							{profile.evidence.slice(0, 2).map((item) => (
+								<li key={`${item.path}:${item.description}`} className="truncate">
 									<span className="text-vscode-foreground">{item.path}</span> — {item.description}
 								</li>
 							))}
