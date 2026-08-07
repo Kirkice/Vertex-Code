@@ -2,7 +2,7 @@
 	"name": "vertex",
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
-	"publisher": "VertexOrganization",
+	"publisher": "Kirkice",
 	"version": "3.56.0",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
@@ -14,7 +14,7 @@
 		"node": "20.20.2"
 	},
 	"author": {
-		"name": "Vertex"
+		"name": "Kirkice"
 	},
 	"repository": {
 		"type": "git",
