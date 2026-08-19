@@ -19,7 +19,8 @@ export interface TuiState {
   thinking: string
   thinkingExpanded: boolean
   tools: TuiToolCard[]
-  approval?: CliStreamEvent["approval"]
+  /** 仅 tool_use/approval_required 事件携带审批详情，避免从联合类型读取不存在的字段。 */
+  approval?: Extract<CliStreamEvent, { type: "tool_use" }>["approval"]
   cost?: CliStreamEvent["cost"]
   notification?: string
 }

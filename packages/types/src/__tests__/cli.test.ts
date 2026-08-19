@@ -77,7 +77,7 @@ describe("CLI types", () => {
 	})
 
 	describe("rooCliStreamEventSchema", () => {
-		it("accepts passthrough fields for forward compatibility", () => {
+		it("rejects unknown fields and incomplete typed events", () => {
 			const result = rooCliStreamEventSchema.safeParse({
 				type: "assistant",
 				id: 42,
@@ -85,7 +85,7 @@ describe("CLI types", () => {
 				customField: "future",
 			})
 
-			expect(result.success).toBe(true)
+			expect(result.success).toBe(false)
 		})
 	})
 

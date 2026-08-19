@@ -23,11 +23,11 @@ describe("CLI renderer", () => {
     const output = createWritableStream()
     const renderer = createRenderer("stream-json", output.stream)
 
-    renderer.emit({ type: "assistant", content: "第一条" })
+    renderer.emit({ type: "assistant", subtype: "delta", content: "第一条" })
     renderer.emit({ type: "result", success: true, done: true })
 
     expect(output.getContent().trim().split("\n").map((line) => JSON.parse(line))).toEqual([
-      { type: "assistant", content: "第一条" },
+      { type: "assistant", subtype: "delta", content: "第一条" },
       { type: "result", success: true, done: true },
     ])
   })
@@ -36,7 +36,7 @@ describe("CLI renderer", () => {
     const output = createWritableStream()
     const renderer = createRenderer("json", output.stream)
 
-    renderer.emit({ type: "assistant", content: "不应输出" })
+    renderer.emit({ type: "assistant", subtype: "delta", content: "不应输出" })
     renderer.finish({ type: "result", success: true, content: "完成", events: [] })
 
     expect(JSON.parse(output.getContent())).toMatchObject({ type: "result", success: true, content: "完成" })

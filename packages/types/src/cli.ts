@@ -186,40 +186,46 @@ export const rooCliCostSchema = z.object({
 
 export type RooCliCost = z.infer<typeof rooCliCostSchema>
 
-export const rooCliStreamEventSchema = z
-	.object({
-		type: rooCliEventTypeSchema.optional(),
-		subtype: z.string().optional(),
-		requestId: z.string().optional(),
-		command: rooCliCommandNameSchema.optional(),
-		taskId: rooCliSessionIdSchema.optional(),
-		sessionId: rooCliSessionIdSchema.optional(),
-		/**
-		 * Canonical runtime error code. Legacy control events may still use a
-		 * command-specific completion code, so strict validation belongs to final
-		 * output and error events rather than this forward-compatible envelope.
-		 */
-		code: z.string().min(1).optional(),
-		content: z.string().optional(),
-		success: z.boolean().optional(),
-		id: z.number().optional(),
-		done: z.boolean().optional(),
-		queueDepth: z.number().optional(),
-		queue: z.array(rooCliQueueItemSchema).optional(),
-		schemaVersion: z.number().optional(),
-		protocol: z.string().optional(),
-		capabilities: z.array(z.string()).optional(),
-		tool_use: rooCliToolUseSchema.optional(),
-		tool_result: rooCliToolResultSchema.optional(),
-		approval: rooCliApprovalRequestSchema.optional(),
-		cost: rooCliCostSchema.optional(),
-		summary: rooCliFinalSummarySchema.optional(),
-	})
-	.passthrough()
+/** 所有 runtime 事件共享的、可序列化字段。禁止透传未知字段以稳定 NDJSON 协议。 */
+const rooCliEventBaseSchema = z.object({
+	subtype: z.string().min(1).optional(),
+	requestId: z.string().min(1).optional(),
+	command: rooCliCommandNameSchema.optional(),
+	taskId: rooCliSessionIdSchema.optional(),
+	sessionId: rooCliSessionIdSchema.optional(),
+	content: z.string().optional(),
+	success: z.boolean().optional(),
+	id: z.number().int().nonnegative().optional(),
+	done: z.boolean().optional(),
+	queueDepth: z.number().int().nonnegative().optional(),
+	queue: z.array(rooCliQueueItemSchema).optional(),
+	schemaVersion: z.number().int().positive().optional(),
+	protocol: z.string().min(1).optional(),
+	capabilities: z.array(z.string().min(1)).optional(),
+	cost: rooCliCostSchema.optional(),
+	summary: rooCliFinalSummarySchema.optional(),
+})
+
+/**
+ * 机器消费协议以 `type` 为判别字段。每种事件只允许其自身的业务字段，
+ * 让 CLI 在输出 NDJSON 前就能发现事件投影错误。
+ */
+export const rooCliStreamEventSchema = z.discriminatedUnion("type", [
+	rooCliEventBaseSchema.extend({ type: z.literal("system") }),
+	rooCliEventBaseSchema.extend({ type: z.literal("control"), subtype: rooCliControlSubtypeSchema, requestId: z.string().min(1) }),
+	rooCliEventBaseSchema.extend({ type: z.literal("queue") }),
+	rooCliEventBaseSchema.extend({ type: z.literal("assistant"), subtype: z.literal("delta"), content: z.string() }),
+	rooCliEventBaseSchema.extend({ type: z.literal("user"), content: z.string() }),
+	rooCliEventBaseSchema.extend({ type: z.literal("thinking"), content: z.string() }),
+	rooCliEventBaseSchema.extend({ type: z.literal("tool_use"), tool_use: rooCliToolUseSchema.optional(), approval: rooCliApprovalRequestSchema.optional() }),
+	rooCliEventBaseSchema.extend({ type: z.literal("tool_result"), tool_result: rooCliToolResultSchema }),
+	rooCliEventBaseSchema.extend({ type: z.literal("error"), code: rooCliErrorCodeSchema, content: z.string().min(1) }),
+	rooCliEventBaseSchema.extend({ type: z.literal("result"), done: z.literal(true), success: z.boolean(), code: rooCliErrorCodeSchema.optional() }),
+])
 
 export type RooCliStreamEvent = z.infer<typeof rooCliStreamEventSchema>
 
-export const rooCliControlEventSchema = rooCliStreamEventSchema.extend({
+export const rooCliControlEventSchema = rooCliEventBaseSchema.extend({
 	type: z.literal("control"),
 	subtype: rooCliControlSubtypeSchema,
 	requestId: z.string().min(1),

@@ -19,14 +19,15 @@ describe("Vertex CLI protocol contract", () => {
     })
 
     const event = rooCliStreamEventSchema.parse({
-      type: "system",
+      type: "tool_use",
       subtype: "approval_required",
       protocol: rooCliProtocol,
       schemaVersion: rooCliSchemaVersion,
       approval,
     })
 
-    expect(event.approval).toEqual(approval)
+    expect(event.type).toBe("tool_use")
+    if (event.type === "tool_use") expect(event.approval).toEqual(approval)
   })
 
   it("validates final output cost, summary, and runtime error code", () => {

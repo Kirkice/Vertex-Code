@@ -9,6 +9,7 @@ import {
 
 import type {
   AgentMessage,
+  AgentMode,
   AgentSessionOptions,
   AgentSessionResult,
   AgentToolCall,
@@ -34,17 +35,25 @@ export class AgentSession {
   constructor(private readonly options: AgentSessionOptions) {
     this.now = options.now ?? (() => new Date())
     this.startedAt = this.now()
-    this.messages = [
-      {
-        role: "system",
-        content:
-          "你是 Vertex 编程助手。需要读取、列出、写入文件或执行命令时，必须调用已提供的工具。完成任务后给出简洁中文总结。",
-      },
-      { role: "user", content: options.prompt },
-    ]
+    this.messages = options.initialMessages
+      ? options.initialMessages.map((message) => ({
+          ...message,
+          toolCalls: message.toolCalls?.map((call) => ({ ...call, input: { ...call.input } })),
+        }))
+      : [
+          {
+            role: "system",
+            content: buildSystemPrompt(options.mode, options.todos),
+          },
+          { role: "user", content: options.prompt },
+        ]
 
     // 外部取消和内部取消共用同一个 signal，确保模型流和子进程能同时中止。
-    options.signal?.addEventListener("abort", () => this.abortController.abort(options.signal?.reason), { once: true })
+    if (options.signal?.aborted) {
+      this.abortController.abort(options.signal.reason)
+    } else {
+      options.signal?.addEventListener("abort", () => this.abortController.abort(options.signal?.reason), { once: true })
+    }
   }
 
   cancel(reason = "用户取消任务"): void {
@@ -132,6 +141,14 @@ export class AgentSession {
 
     for (let turn = 0; turn < maxTurns; turn += 1) {
       this.throwIfAborted()
+      if (this.compactContext()) {
+        yield* this.emit({
+          type: "system",
+          subtype: "context_compacted",
+          sessionId: this.options.sessionId,
+          content: `上下文已压缩为 ${this.messages.length} 条消息。`,
+        })
+      }
       let assistantText = ""
       const calls: AgentToolCall[] = []
 
@@ -175,6 +192,12 @@ export class AgentSession {
     const definition = this.options.tools.definitions().find((item) => item.name === call.name)
     if (!definition) {
       throw new AgentRuntimeError("RUNTIME_ERROR", `模型请求了未注册工具：${call.name}`)
+    }
+    // 模式的工具清单是运行时安全边界，而不仅是给模型的提示词。即便模型忽略
+    // system prompt，也不能借由工具调用越过当前模式的能力范围。
+    const allowedTools = this.options.mode?.allowedTools
+    if (allowedTools?.length && !allowedTools.includes(call.name)) {
+      throw new AgentRuntimeError("APPROVAL_DENIED", `当前模式不允许调用工具：${call.name}`)
     }
 
     this.toolCalls += 1
@@ -243,11 +266,35 @@ export class AgentSession {
     }
   }
 
+  /**
+   * 确定性滑动窗口压缩，保证长会话不会无限增长。
+   * system 消息永远保留；后续可以通过独立摘要 Provider 替换此策略。
+   */
+  private compactContext(): boolean {
+    const limit = this.options.maxContextMessages ?? 80
+    if (this.messages.length <= limit) return false
+    const system = this.messages[0]
+    const recent = this.messages.slice(-(limit - 1))
+    this.messages.splice(0, this.messages.length, ...(system ? [system, ...recent] : recent))
+    return true
+  }
+
   private errorCode(error: unknown): RooCliErrorCode {
     if (error instanceof AgentRuntimeError) return error.code
     if (this.abortController.signal.aborted) return "CANCELLED"
     return "RUNTIME_ERROR"
   }
+}
+
+function buildSystemPrompt(mode: AgentMode | undefined, todos: AgentSessionOptions["todos"]): string {
+  const sections = [
+    mode?.roleDefinition ?? "你是 Vertex 编程助手。",
+    "需要读取、列出、写入文件或执行命令时，必须调用已提供的工具。完成任务后给出简洁中文总结。",
+  ]
+  if (mode?.customInstructions) sections.push(`项目附加指令：\n${mode.customInstructions}`)
+  if (mode?.allowedTools?.length) sections.push(`允许使用的工具：${mode.allowedTools.join(", ")}`)
+  if (todos?.length) sections.push(`当前待办：\n${todos.map((todo) => `- [${todo.status}] ${todo.content}`).join("\n")}`)
+  return sections.join("\n\n")
 }
 
 export class AgentRuntimeError extends Error {

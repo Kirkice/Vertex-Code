@@ -9,6 +9,8 @@ export interface VertexConfig extends Record<string, unknown> {
   customInstructions?: string
   commandExecutionTimeout?: number
   mcpEnabled?: boolean
+  /** 用户显式授予的危险操作 allowlist；仅保存操作名，不保存模型输入。 */
+  alwaysAllowOperations?: string[]
 }
 
 /**

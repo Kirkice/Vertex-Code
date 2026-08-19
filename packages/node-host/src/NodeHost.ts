@@ -21,6 +21,10 @@ import type {
 } from "@vertex/agent-runtime"
 import type { RooCliApprovalDecision, RooCliApprovalRequest, RooCliStreamEvent } from "@roo-code/types"
 
+import { NodeFileSearchHost } from "./search-host.js"
+import { NodeWorkspaceHost } from "./workspace-host.js"
+import { ConfigStore } from "./config-store.js"
+
 const textDecoder = new TextDecoder()
 
 /** 从环境变量构建 OpenAI Chat Completions 兼容配置，不在配置错误时发起网络请求。 */
@@ -108,6 +112,35 @@ export class BatchApprovalPolicy implements ApprovalResolver {
 }
 
 /**
+ * 带持久化 allowlist 的非交互审批策略。
+ * 默认仍然拒绝：只有 `--yolo` 或此前由交互界面显式保存的 operation 才放行。
+ */
+export class PersistentApprovalPolicy implements ApprovalResolver {
+  constructor(
+    private readonly yolo: boolean,
+    private readonly config = new ConfigStore(),
+  ) {}
+
+  async resolve(request: RooCliApprovalRequest, signal: AbortSignal): Promise<RooCliApprovalDecision> {
+    if (signal.aborted) throw new Error("任务已取消。")
+    if (this.yolo) return "approve"
+    const allowed = (await this.config.get()).alwaysAllowOperations ?? []
+    return allowed.includes(request.operation) ? "always_allow" : "deny"
+  }
+
+  /** 由交互式审批面板在用户选择“始终允许”后调用。 */
+  async allow(operation: string): Promise<void> {
+    const current = (await this.config.get()).alwaysAllowOperations ?? []
+    if (!current.includes(operation)) await this.config.set({ alwaysAllowOperations: [...current, operation] })
+  }
+
+  async revoke(operation: string): Promise<void> {
+    const current = (await this.config.get()).alwaysAllowOperations ?? []
+    await this.config.set({ alwaysAllowOperations: current.filter((item) => item !== operation) })
+  }
+}
+
+/**
  * 文件工具只解析工作区内路径。绝对路径、.. 跳出工作区和符号路径混淆都在
  * 统一入口处拒绝，避免每个工具各自实现不一致的安全检查。
  */
@@ -115,6 +148,7 @@ export class NodeToolRegistry implements ToolRegistry {
   constructor(
     private readonly workspace?: import("@vertex/agent-runtime").WorkspaceHost,
     private readonly shell?: import("@vertex/agent-runtime").ShellHost,
+    private readonly integrations: NodeToolIntegrations = {},
   ) {}
 
   definitions(): readonly AgentToolDefinition[] {
@@ -123,6 +157,14 @@ export class NodeToolRegistry implements ToolRegistry {
       { name: "list_directory", description: "列出工作区中的目录项", parameters: objectSchema({ path: stringSchema("相对工作区的目录路径") }), requiresApproval: false, risk: "low" },
       { name: "write_file", description: "写入工作区中的 UTF-8 文本文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径"), content: stringSchema("完整文件内容") }, ["path", "content"]), requiresApproval: true, risk: "medium" },
       { name: "execute_shell", description: "在工作区内执行 shell 命令", parameters: objectSchema({ command: stringSchema("要执行的命令") }), requiresApproval: true, risk: "high" },
+      { name: "search_files", description: "在工作区文本文件中搜索字符串", parameters: objectSchema({ query: stringSchema("要搜索的字符串") }), requiresApproval: false, risk: "low" },
+      { name: "git_status", description: "读取当前 Git 状态", parameters: objectSchema({}), requiresApproval: false, risk: "low" },
+      { name: "git_diff", description: "读取当前 Git diff", parameters: objectSchema({ staged: { type: "boolean", description: "是否读取暂存区 diff" } }, []), requiresApproval: false, risk: "low" },
+      { name: "git_checkpoint", description: "创建 Git checkpoint 提交", parameters: objectSchema({ message: stringSchema("checkpoint 提交说明") }), requiresApproval: true, risk: "high" },
+      { name: "git_restore", description: "将工作区恢复到指定 Git checkpoint", parameters: objectSchema({ checkpoint: stringSchema("要恢复的 checkpoint 引用") }), requiresApproval: true, risk: "high" },
+      { name: "git_worktree", description: "创建隔离的 Git worktree", parameters: objectSchema({ path: stringSchema("相对工作区的 worktree 路径"), ref: { type: "string", description: "起始 Git 引用，默认 HEAD" } }, ["path"]), requiresApproval: true, risk: "high" },
+      { name: "use_mcp_tool", description: "调用已配置的 MCP 工具", parameters: objectSchema({ server: stringSchema("MCP Server 名称"), tool: stringSchema("MCP 工具名称"), input: { type: "object", description: "工具输入参数" } }), requiresApproval: true, risk: "high" },
+      { name: "read_skill", description: "读取本地 Skill 的完整说明", parameters: objectSchema({ name: stringSchema("Skill 名称") }), requiresApproval: false, risk: "low" },
     ]
   }
 
@@ -159,8 +201,69 @@ export class NodeToolRegistry implements ToolRegistry {
       }
       return executeShell(command, context)
     }
+    if (call.name === "search_files") {
+      const query = requiredString(call.input.query, "query")
+      const search = this.integrations.search ?? this.createSearch(context.cwd)
+      const results = await search.search(query)
+      return { output: results.map((item) => `${item.path}:${item.line}:${item.column}: ${item.preview}`).join("\n") || "未找到匹配结果。" }
+    }
+    if (call.name === "git_status") {
+      const git = this.requireIntegration(this.integrations.git, "Git")
+      return { output: JSON.stringify(await git.status(context.cwd), null, 2) }
+    }
+    if (call.name === "git_diff") {
+      const git = this.requireIntegration(this.integrations.git, "Git")
+      return { output: await git.diff(context.cwd, call.input.staged === true) }
+    }
+    if (call.name === "git_checkpoint") {
+      const git = this.requireIntegration(this.integrations.git, "Git")
+      const message = requiredString(call.input.message, "message")
+      return { output: `已创建 checkpoint：${await git.checkpoint(context.cwd, message)}` }
+    }
+    if (call.name === "git_restore") {
+      const git = this.requireIntegration(this.integrations.git, "Git")
+      const checkpoint = requiredString(call.input.checkpoint, "checkpoint")
+      await git.restore(context.cwd, checkpoint)
+      return { output: `已恢复到 checkpoint：${checkpoint}` }
+    }
+    if (call.name === "git_worktree") {
+      const git = this.requireIntegration(this.integrations.git, "Git")
+      const path = requiredString(call.input.path, "path")
+      const worktreePath = resolveWorkspacePath(context.cwd, path)
+      const ref = optionalString(call.input.ref)
+      return { output: `已创建 worktree：${await git.worktree(context.cwd, worktreePath, ref)}` }
+    }
+    if (call.name === "use_mcp_tool") {
+      const mcp = this.requireIntegration(this.integrations.mcp, "MCP")
+      return { output: await mcp.callTool(requiredString(call.input.server, "server"), requiredString(call.input.tool, "tool"), record(call.input.input, "input")) }
+    }
+    if (call.name === "read_skill") {
+      const skills = this.requireIntegration(this.integrations.skills, "Skills")
+      const name = requiredString(call.input.name, "name")
+      const skill = (await skills.discover(context.cwd)).find((item) => item.name === name)
+      if (!skill) throw new Error(`未找到 Skill：${name}`)
+      return { output: await skills.read(skill) }
+    }
     throw new Error(`未注册工具：${call.name}`)
   }
+
+  private createSearch(cwd: string): NodeFileSearchHost {
+    if (this.workspace instanceof NodeWorkspaceHost) return new NodeFileSearchHost(this.workspace)
+    return new NodeFileSearchHost(new NodeWorkspaceHost(cwd))
+  }
+
+  private requireIntegration<T>(value: T | undefined, name: string): T {
+    if (!value) throw new Error(`${name} Host 尚未配置。`)
+    return value
+  }
+}
+
+/** Node 工具所需的可选外部适配器；使核心文件操作不依赖 MCP/Git/Skill。 */
+export interface NodeToolIntegrations {
+  search?: import("@vertex/agent-runtime").WorkspaceSearchHost
+  git?: import("@vertex/agent-runtime").GitHost
+  mcp?: import("@vertex/agent-runtime").McpHost
+  skills?: import("@vertex/agent-runtime").SkillsHost
 }
 
 /** 原子写入会话快照；CLI 崩溃时最多丢失最后一次事件，不留下半截 JSON。 */
@@ -265,6 +368,10 @@ function toOpenAiMessage(message: AgentMessage): Record<string, unknown> {
 function parseToolArguments(value: string): Record<string, unknown> { try { return JSON.parse(value || "{}") as Record<string, unknown> } catch { throw new Error(`模型返回了无效工具参数：${value}`) } }
 function requiredString(value: unknown, name: string): string { if (typeof value !== "string" || !value) throw new Error(`工具参数 ${name} 必须是非空字符串。`); return value }
 function optionalString(value: unknown): string | undefined { return typeof value === "string" ? value : undefined }
+function record(value: unknown, name: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`工具参数 ${name} 必须是对象。`)
+  return value as Record<string, unknown>
+}
 function stringSchema(description: string): Record<string, unknown> { return { type: "string", description } }
 function objectSchema(properties: Record<string, unknown>, required = Object.keys(properties)): Record<string, unknown> { return { type: "object", properties, required, additionalProperties: false } }
 

@@ -2,14 +2,17 @@ import { access } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { pathToFileURL } from "node:url"
+import { randomUUID } from "node:crypto"
 
 import { rooCliExitCodes } from "@roo-code/types"
 import {
   ConfigStore,
+  FileSecretStore,
   FileSessionStore,
   NodeAuthHost,
   NodeMcpHost,
   NodeSkillsHost,
+  ProfileStore,
 } from "@vertex/node-host"
 
 import { CliCommandError, invalidArgument } from "./feature.js"
@@ -32,7 +35,10 @@ const usage = `Vertex CLI ${VERSION}
   vertex run <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--yolo]
   vertex <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--yolo]
   vertex doctor [--output text|json|stream-json]
-  vertex auth|config|mcp|resume [参数]
+  vertex auth [status|profiles|add|set|clear] [参数]
+  vertex config [get|set] [参数]
+  vertex mcp [list|refresh]
+  vertex resume [sessionId]
   vertex --help
   vertex --version
 
@@ -172,18 +178,78 @@ async function runDoctor(cwd: string, format: CliOutputFormat): Promise<number> 
 }
 
 async function runTask(prompt: string, cwd: string, format: CliOutputFormat, yolo: boolean): Promise<number> {
-  const renderer = createRenderer(format, process.stdout)
-  const events = []
+  return runTaskWithOptions({ prompt, cwd, format, yolo })
+}
 
-  for await (const event of runHeadlessSession({ cwd, prompt, yolo })) {
-    const validEvent = validateEvent(event)
-    events.push(validEvent)
-    renderer.emit(validEvent)
+interface TaskRunOptions {
+  prompt: string
+  cwd: string
+  format: CliOutputFormat
+  yolo: boolean
+  sessionId?: string
+  initialMessages?: import("@vertex/agent-runtime").AgentMessage[]
+}
+
+async function runTaskWithOptions(options: TaskRunOptions): Promise<number> {
+  const { prompt, cwd, format, yolo } = options
+  const renderer = createRenderer(format, process.stdout)
+  const events: ReturnType<typeof validateEvent>[] = []
+  const controller = new AbortController()
+
+  // SIGINT 必须同时取消模型流、审批等待和 Shell 子进程。
+  // 这里不直接 process.exit，确保 runtime 有机会写入最终会话快照。
+  const onSigint = () => controller.abort("用户按下 Ctrl+C")
+  process.once("SIGINT", onSigint)
+
+  try {
+    for await (const event of runHeadlessSession({
+      cwd,
+      prompt,
+      yolo,
+      signal: controller.signal,
+      sessionId: options.sessionId,
+      initialMessages: options.initialMessages,
+    })) {
+      const validEvent = validateEvent(event)
+      events.push(validEvent)
+      renderer.emit(validEvent)
+    }
+  } catch (error) {
+    // 配置解析发生在会话创建前，无法由 AgentSession 产生 error 事件；
+    // CLI 仍然必须输出统一的最终结果，而不能让异常污染机器消费协议。
+    const code = controller.signal.aborted ? "CANCELLED" : isConfigurationError(error) ? "CONFIGURATION_ERROR" : "RUNTIME_ERROR"
+    const event = validateEvent({
+      type: "error",
+      code,
+      sessionId: randomUUID(),
+      content: error instanceof Error ? error.message : String(error),
+    })
+    events.push(event)
+    renderer.emit(event)
+    // 即使运行时在创建会话前失败，stream-json 也必须以一个 result 事件收尾。
+    // 这样调用方无需根据“是否收到 error”猜测任务是否已经结束。
+    const result = validateEvent({
+      type: "result",
+      done: true,
+      success: false,
+      code,
+      sessionId: event.sessionId,
+      content: event.content,
+    })
+    events.push(result)
+    renderer.emit(result)
+  } finally {
+    // 无论 renderer 或 runtime 是否抛出异常，都必须移除本次命令注册的信号监听器。
+    process.off("SIGINT", onSigint)
   }
 
   const output = validateFinalOutput(createFinalOutput(events))
   renderer.finish(output)
   return exitCodeForOutput(output)
+}
+
+function isConfigurationError(error: unknown): boolean {
+  return error instanceof Error && /配置|VERTEX_API_KEY|VERTEX_BASE_URL|VERTEX_MODEL/i.test(error.message)
 }
 
 function exitCodeForOutput(output: CliFinalOutput): number {
@@ -197,45 +263,106 @@ function exitCodeForOutput(output: CliFinalOutput): number {
 async function runAuth(prompt: string | undefined, format: CliOutputFormat): Promise<number> {
   const renderer = createRenderer(format, process.stdout)
   const auth = new NodeAuthHost()
-  const status = await auth.status()
-  const event = validateEvent({ type: "system", subtype: "auth_status", success: status.configured, content: JSON.stringify(status) })
+  const profiles = new ProfileStore()
+  const secrets = new FileSecretStore()
+  const config = new ConfigStore()
+  const [action = "status", ...arguments_] = splitCommand(prompt)
+  let content: string
+
+  if (action === "status") {
+    content = JSON.stringify(await auth.status())
+  } else if (action === "profiles") {
+    content = JSON.stringify(await profiles.list())
+  } else if (action === "add") {
+    const [name, baseUrl, model, apiKey] = arguments_
+    if (!name || !baseUrl || !model || !apiKey) invalidArgument("auth add 需要：名称、baseUrl、model、apiKey")
+    const profile = await profiles.upsert({ name, provider: "openai-compatible", baseUrl, model, secretKey: `profile:${name}` })
+    await secrets.set(profile.secretKey, apiKey)
+    await config.set({ currentProfile: profile.id })
+    content = JSON.stringify({ profileId: profile.id, configured: true, selected: true })
+  } else if (action === "set") {
+    const [profileId, apiKey] = arguments_
+    if (!profileId || !apiKey) invalidArgument("auth set 需要：profileId、apiKey")
+    await auth.setApiKey(profileId, apiKey)
+    content = JSON.stringify({ profileId, configured: true })
+  } else if (action === "clear") {
+    const [profileId] = arguments_
+    if (!profileId) invalidArgument("auth clear 需要 profileId")
+    await auth.clear(profileId)
+    content = JSON.stringify({ profileId, configured: false })
+  } else {
+    invalidArgument(`未知 auth 子命令：${action}`)
+  }
+
+  const event = validateEvent({ type: "system", subtype: "auth", success: true, content })
   renderer.emit(event)
-  renderer.finish(validateFinalOutput({ type: "result", success: true, content: prompt ? `auth: ${prompt}` : "auth status", events: [event] }))
+  renderer.finish(validateFinalOutput({ type: "result", success: true, content, events: [event] }))
   return 0
 }
 
 async function runConfig(prompt: string | undefined, format: CliOutputFormat): Promise<number> {
   const renderer = createRenderer(format, process.stdout)
   const store = new ConfigStore()
-  const config = await store.get()
-  const event = validateEvent({ type: "system", subtype: "config", success: true, content: JSON.stringify(config) })
+  const [action = "get", key, ...values] = splitCommand(prompt)
+  let content: string
+  if (action === "get") {
+    const config = await store.get()
+    content = JSON.stringify(key ? { [key]: config[key] } : config)
+  } else if (action === "set") {
+    if (!key || values.length === 0) invalidArgument("config set 需要：键、JSON 值")
+    const raw = values.join(" ")
+    let value: unknown
+    try { value = JSON.parse(raw) } catch { value = raw }
+    content = JSON.stringify(await store.set({ [key]: value }))
+  } else {
+    invalidArgument(`未知 config 子命令：${action}`)
+  }
+  const event = validateEvent({ type: "system", subtype: "config", success: true, content })
   renderer.emit(event)
-  renderer.finish(validateFinalOutput({ type: "result", success: true, content: prompt ? `config: ${prompt}` : "config get", events: [event] }))
+  renderer.finish(validateFinalOutput({ type: "result", success: true, content, events: [event] }))
   return 0
 }
 
 async function runMcp(prompt: string | undefined, format: CliOutputFormat): Promise<number> {
   const renderer = createRenderer(format, process.stdout)
   const host = new NodeMcpHost()
-  const servers = await host.listServers()
+  const [action = "list"] = splitCommand(prompt)
+  if (action !== "list" && action !== "refresh") invalidArgument(`未知 mcp 子命令：${action}`)
+  const servers = action === "refresh" ? await host.refresh() : await host.listServers()
   const event = validateEvent({ type: "system", subtype: "mcp_list", success: true, content: JSON.stringify(servers) })
   renderer.emit(event)
   await host.close()
-  renderer.finish(validateFinalOutput({ type: "result", success: true, content: prompt ? `mcp: ${prompt}` : "mcp list", events: [event] }))
+  renderer.finish(validateFinalOutput({ type: "result", success: true, content: `mcp ${action}`, events: [event] }))
   return 0
 }
 
+/** 简单 shell 风格分词；密钥带空格时必须使用双引号。 */
+function splitCommand(value: string | undefined): string[] {
+  if (!value) return []
+  return value.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((item) => item.replace(/^"|"$/g, "")) ?? []
+}
+
 async function runResume(cwd: string, sessionId: string | undefined, format: CliOutputFormat): Promise<number> {
-  const renderer = createRenderer(format, process.stdout)
   const store = new FileSessionStore()
   const session = sessionId ? await store.read(sessionId) : await store.findLatest(cwd)
-  const content = session
-    ? JSON.stringify({ id: session.id, cwd: session.cwd, prompt: session.prompt, startedAt: session.startedAt, finishedAt: session.finishedAt, success: session.success, code: session.code })
-    : "没有找到可恢复的会话。"
-  const event = validateEvent({ type: "system", subtype: "resume", success: Boolean(session), content })
-  renderer.emit(event)
-  renderer.finish(validateFinalOutput({ type: "result", success: Boolean(session), content, sessionId: session?.id, events: [event] }))
-  return session ? 0 : rooCliExitCodes.RUNTIME_ERROR
+  if (!session) {
+    const renderer = createRenderer(format, process.stdout)
+    const content = "没有找到可恢复的会话。"
+    const event = validateEvent({ type: "system", subtype: "resume", success: false, content })
+    renderer.emit(event)
+    renderer.finish(validateFinalOutput({ type: "result", success: false, code: "RUNTIME_ERROR", content, events: [event] }))
+    return rooCliExitCodes.RUNTIME_ERROR
+  }
+
+  // resume 使用持久化消息继续请求模型，而不是重新拼接原始 prompt。
+  return runTaskWithOptions({
+    prompt: session.prompt,
+    cwd: session.cwd,
+    format,
+    yolo: false,
+    sessionId: session.id,
+    initialMessages: session.messages,
+  })
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {

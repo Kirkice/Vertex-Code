@@ -1,11 +1,12 @@
 export {
   BatchApprovalPolicy,
+  PersistentApprovalPolicy,
   FileSessionStore,
   NodeToolRegistry,
   OpenAiCompatibleProvider,
   readOpenAiCompatibleConfig,
 } from "./NodeHost.js"
-export type { OpenAiCompatibleConfig } from "./NodeHost.js"
+export type { NodeToolIntegrations, OpenAiCompatibleConfig } from "./NodeHost.js"
 
 export { ConfigStore } from "./config-store.js"
 export type { VertexConfig } from "./config-store.js"
@@ -19,4 +20,5 @@ export { NodeSkillsHost } from "./skills-host.js"
 export { NodeAuthHost } from "./auth-host.js"
 export { NodeMcpHost } from "./mcp-host.js"
 export { resolveVertexPaths } from "./paths.js"
+export { createModelProvider, openAiCompatibleProviderKinds } from "./provider-factory.js"
 export type { PathEnvironment, VertexPaths } from "./paths.js"

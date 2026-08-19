@@ -28,6 +28,22 @@ export interface AgentToolDefinition {
   risk: RooCliApprovalRequest["risk"]
 }
 
+/** 任务模式快照：由 CLI/Node Host 解析，runtime 只消费结果。 */
+export interface AgentMode {
+  slug: string
+  name: string
+  roleDefinition: string
+  customInstructions?: string
+  allowedTools?: readonly string[]
+}
+
+/** runtime 持有的任务清单项，不依赖 TUI 的本地状态。 */
+export interface AgentTodoItem {
+  id: string
+  content: string
+  status: "pending" | "in_progress" | "completed"
+}
+
 export interface AgentToolCall {
   id: string
   name: string
@@ -78,6 +94,12 @@ export interface ToolRegistry {
 /** 审批策略既可由交互式 TUI 实现，也可由非交互 batch 策略实现。 */
 export interface ApprovalResolver {
   resolve(request: RooCliApprovalRequest, signal: AbortSignal): Promise<RooCliApprovalDecision>
+}
+
+/** 交互宿主在审批事件到达后提交用户的明确选择。 */
+export interface InteractiveApprovalResolver extends ApprovalResolver {
+  decide(requestId: string, decision: RooCliApprovalDecision): boolean
+  cancelPending(reason?: unknown): void
 }
 
 export interface PersistedSession {
@@ -183,6 +205,14 @@ export interface AgentSessionOptions {
   signal?: AbortSignal
   now?: () => Date
   maxTurns?: number
+  /**
+   * 恢复会话时使用的历史消息。新会话不传此字段；恢复会话则以该消息序列
+   * 作为模型上下文，避免把 resume 降级成重新发送原始提示词。
+   */
+  initialMessages?: readonly AgentMessage[]
+  mode?: AgentMode
+  todos?: readonly AgentTodoItem[]
+  maxContextMessages?: number
 }
 
 export interface AgentSessionResult extends Omit<RooCliFinalOutput, "events"> {

@@ -1,16 +1,21 @@
 import { randomUUID } from "node:crypto"
 
-import { AgentSession, type ModelProvider } from "@vertex/agent-runtime"
+import { AgentSession, type AgentMessage, type ModelProvider } from "@vertex/agent-runtime"
 import {
-  BatchApprovalPolicy,
   ConfigStore,
   FileSecretStore,
   FileSessionStore,
   NodeToolRegistry,
+  NodeFileSearchHost,
+  NodeGitHost,
+  NodeMcpHost,
+  NodeSkillsHost,
   NodeWorkspaceHost,
   NodeProcessHost,
   OpenAiCompatibleProvider,
   ProfileStore,
+  PersistentApprovalPolicy,
+  createModelProvider,
   readOpenAiCompatibleConfig,
 } from "@vertex/node-host"
 
@@ -23,6 +28,8 @@ export interface HeadlessSessionOptions {
   yolo: boolean
   signal?: AbortSignal
   sessionId?: string
+  /** 恢复已有会话时传入完整消息上下文。 */
+  initialMessages?: readonly AgentMessage[]
 }
 
 /**
@@ -36,46 +43,65 @@ export async function* runHeadlessSession(
   const profiles = new ProfileStore()
   const secrets = new FileSecretStore()
   const configured = await resolveProviderConfig(config, profiles, secrets)
-  const provider = options.provider ?? new OpenAiCompatibleProvider(configured ?? readOpenAiCompatibleConfig())
+  const provider = options.provider ?? configured ?? new OpenAiCompatibleProvider(readOpenAiCompatibleConfig())
   const workspace = new NodeWorkspaceHost(options.cwd)
+  const mcp = new NodeMcpHost()
   const session = new AgentSession({
     sessionId: options.sessionId ?? randomUUID(),
     cwd: options.cwd,
     prompt: options.prompt,
     provider,
-    tools: new NodeToolRegistry(workspace, new NodeProcessHost()),
-    approvals: new BatchApprovalPolicy(options.yolo),
+    tools: new NodeToolRegistry(workspace, new NodeProcessHost(), {
+      search: new NodeFileSearchHost(workspace),
+      git: new NodeGitHost(),
+      mcp,
+      skills: new NodeSkillsHost(),
+    }),
+    // batch 默认拒绝危险操作；交互式 UI 以后可在该策略上保存 always allow。
+    approvals: new PersistentApprovalPolicy(options.yolo),
     store: new FileSessionStore(),
     signal: options.signal,
+    initialMessages: options.initialMessages,
   })
 
-  for await (const event of session.run()) {
-    yield event
+  try {
+    for await (const event of session.run()) {
+      yield event
+    }
+  } finally {
+    // MCP stdio 进程归本次会话所有；任务成功、失败或取消均要主动回收。
+    await mcp.close()
   }
 }
+
+/**
+ * 为 CLI 命令统一提供会话装配入口。
+ * resume 与普通 run 共用同一条事件、取消和错误处理链，避免出现两套行为。
+ */
 
 async function resolveProviderConfig(
   config: ConfigStore,
   profiles: ProfileStore,
   secrets: FileSecretStore,
-): Promise<{ apiKey: string; baseUrl: string; model: string } | undefined> {
+): Promise<ModelProvider | undefined> {
   const selectedId = (await config.get()).currentProfile
   if (!selectedId) return undefined
   const profile = await profiles.get(selectedId)
   if (!profile) return undefined
   const apiKey = await secrets.get(profile.secretKey)
   if (!apiKey) return undefined
-  return { apiKey, baseUrl: profile.baseUrl.replace(/\/$/, ""), model: profile.model }
+  return createModelProvider(profile, apiKey)
 }
 
 /** 保留 CLI 层的聚合函数，保证 renderer 不直接依赖 runtime 的内部状态。 */
 export function createFinalOutput(events: CliStreamEvent[]): CliFinalOutput {
   const result = [...events].reverse().find((event) => event.type === "result")
+  const error = [...events].reverse().find((event) => event.type === "error")
   return {
     type: "result",
     success: result?.success ?? false,
-    content: result?.content,
-    code: result?.code as CliFinalOutput["code"],
+    content: result?.content ?? error?.content,
+    code: result?.code as CliFinalOutput["code"] ?? error?.code as CliFinalOutput["code"],
     sessionId: result?.sessionId,
     cost: result?.cost,
     summary: result?.summary,

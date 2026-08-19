@@ -36,7 +36,7 @@ describe("headless CLI session", () => {
   it("keeps final output aggregation schema-compatible", () => {
     const events = [
       validateEvent({ type: "system", subtype: "session_started", sessionId: "00000000-0000-4000-8000-000000000001" }),
-      validateEvent({ type: "result", success: false, code: "APPROVAL_DENIED", sessionId: "00000000-0000-4000-8000-000000000001" }),
+      validateEvent({ type: "result", done: true, success: false, code: "APPROVAL_DENIED", sessionId: "00000000-0000-4000-8000-000000000001" }),
     ]
     expect(validateFinalOutput(createFinalOutput(events))).toMatchObject({ success: false, code: "APPROVAL_DENIED" })
   })

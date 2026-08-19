@@ -1,11 +1,15 @@
 export { AgentRuntimeError, AgentSession } from "./AgentSession.js"
+export { DeferredApprovalResolver } from "./interactive-approval.js"
 export type {
   AgentMessage,
+  AgentMode,
+  AgentTodoItem,
   AgentSessionOptions,
   AgentSessionResult,
   AgentToolCall,
   AgentToolDefinition,
   ApprovalResolver,
+  InteractiveApprovalResolver,
   ModelProvider,
   ModelRequest,
   ModelStreamEvent,
