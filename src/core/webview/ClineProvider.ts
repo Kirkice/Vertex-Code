@@ -2022,8 +2022,14 @@ export class ClineProvider
 		if (!task) {
 			throw new Error(`Task with id ${taskId} not found in stack`)
 		}
-		await task.condenseContext()
-		await this.postMessageToWebview({ type: "condenseTaskContextResponse", text: taskId })
+
+		try {
+			await task.condenseContext()
+		} finally {
+			// The webview disables the chat while a user-triggered condensation runs.
+			// Always release that state, including when the task aborts or the API fails.
+			await this.postMessageToWebview({ type: "condenseTaskContextResponse", text: taskId })
+		}
 	}
 
 	// this function deletes a task from task history, and deletes its checkpoints and delete the task folder

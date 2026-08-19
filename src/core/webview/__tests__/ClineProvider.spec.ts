@@ -676,6 +676,22 @@ describe("ClineProvider", () => {
 		expect(mockPostMessage).toHaveBeenCalledWith(message)
 	})
 
+	test("always notifies the webview when manual context condensation fails", async () => {
+		const task = {
+			taskId: "condense-task",
+			condenseContext: vi.fn().mockRejectedValue(new Error("condense failed")),
+		} as any
+		;(provider as any).clineStack = [task]
+		const postMessageSpy = vi.spyOn(provider, "postMessageToWebview").mockResolvedValue(undefined)
+
+		await expect(provider.condenseTaskContext(task.taskId)).rejects.toThrow("condense failed")
+
+		expect(postMessageSpy).toHaveBeenCalledWith({
+			type: "condenseTaskContextResponse",
+			text: task.taskId,
+		})
+	})
+
 	test("postMessageToWebview does not throw when webview is disposed", async () => {
 		await provider.resolveWebviewView(mockWebviewView)
 
