@@ -1,0 +1,34 @@
+{
+  "name": "@vertex/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "vertex": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "lint": "eslint src --ext=ts --max-warnings=0",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsup",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "@roo-code/types": "workspace:^",
+    "@vertex/agent-runtime": "workspace:^",
+    "@vertex/node-host": "workspace:^"
+  },
+  "devDependencies": {
+    "@roo-code/config-eslint": "workspace:^",
+    "@roo-code/config-typescript": "workspace:^",
+    "@types/node": "^24.1.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3",
+    "vitest": "^3.2.3"
+  }
+}

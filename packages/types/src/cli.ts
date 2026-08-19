@@ -74,11 +74,59 @@ export type RooCliInputCommand = z.infer<typeof rooCliInputCommandSchema>
  * Vertex CLI stream-json output
  */
 
+export const rooCliProtocol = "vertex-cli/1" as const
+export const rooCliSchemaVersion = 1 as const
+
 export const rooCliOutputFormats = ["text", "json", "stream-json"] as const
 
 export const rooCliOutputFormatSchema = z.enum(rooCliOutputFormats)
 
 export type RooCliOutputFormat = z.infer<typeof rooCliOutputFormatSchema>
+
+export const rooCliExitCodes = {
+	SUCCESS: 0,
+	RUNTIME_ERROR: 1,
+	FEATURE_UNAVAILABLE: 2,
+	CANCELLED: 3,
+	CONFIGURATION_ERROR: 4,
+	APPROVAL_DENIED: 5,
+} as const
+
+export const rooCliErrorCodes = [
+	"FEATURE_UNAVAILABLE",
+	"INVALID_ARGUMENT",
+	"CONFIGURATION_ERROR",
+	"CANCELLED",
+	"APPROVAL_DENIED",
+	"RUNTIME_ERROR",
+] as const
+
+export const rooCliErrorCodeSchema = z.enum(rooCliErrorCodes)
+
+export type RooCliErrorCode = z.infer<typeof rooCliErrorCodeSchema>
+
+export const rooCliApprovalDecisionSchema = z.enum(["approve", "deny", "always_allow"])
+
+export type RooCliApprovalDecision = z.infer<typeof rooCliApprovalDecisionSchema>
+
+export const rooCliApprovalRequestSchema = z.object({
+	id: z.string().min(1),
+	operation: z.string().min(1),
+	description: z.string().min(1),
+	cwd: z.string().min(1),
+	risk: z.enum(["low", "medium", "high"]),
+})
+
+export type RooCliApprovalRequest = z.infer<typeof rooCliApprovalRequestSchema>
+
+export const rooCliFinalSummarySchema = z.object({
+	sessionId: z.string().min(1).optional(),
+	durationMs: z.number().nonnegative().optional(),
+	toolCalls: z.number().int().nonnegative().optional(),
+	cancelled: z.boolean().optional(),
+})
+
+export type RooCliFinalSummary = z.infer<typeof rooCliFinalSummarySchema>
 
 export const rooCliEventTypes = [
 	"system",
@@ -144,8 +192,14 @@ export const rooCliStreamEventSchema = z
 		subtype: z.string().optional(),
 		requestId: z.string().optional(),
 		command: rooCliCommandNameSchema.optional(),
-		taskId: z.string().optional(),
-		code: z.string().optional(),
+		taskId: rooCliSessionIdSchema.optional(),
+		sessionId: rooCliSessionIdSchema.optional(),
+		/**
+		 * Canonical runtime error code. Legacy control events may still use a
+		 * command-specific completion code, so strict validation belongs to final
+		 * output and error events rather than this forward-compatible envelope.
+		 */
+		code: z.string().min(1).optional(),
 		content: z.string().optional(),
 		success: z.boolean().optional(),
 		id: z.number().optional(),
@@ -157,7 +211,9 @@ export const rooCliStreamEventSchema = z
 		capabilities: z.array(z.string()).optional(),
 		tool_use: rooCliToolUseSchema.optional(),
 		tool_result: rooCliToolResultSchema.optional(),
+		approval: rooCliApprovalRequestSchema.optional(),
 		cost: rooCliCostSchema.optional(),
+		summary: rooCliFinalSummarySchema.optional(),
 	})
 	.passthrough()
 
@@ -175,7 +231,10 @@ export const rooCliFinalOutputSchema = z.object({
 	type: z.literal("result"),
 	success: z.boolean(),
 	content: z.string().optional(),
+	code: rooCliErrorCodeSchema.optional(),
+	sessionId: rooCliSessionIdSchema.optional(),
 	cost: rooCliCostSchema.optional(),
+	summary: rooCliFinalSummarySchema.optional(),
 	events: z.array(rooCliStreamEventSchema),
 })
 

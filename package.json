@@ -29,6 +29,9 @@
 		"install:vsix:nightly": "pnpm install --frozen-lockfile && pnpm clean && pnpm vsix:nightly && node scripts/install-vsix.js --nightly",
 		"code-server:install": "node scripts/code-server.js",
 		"changeset:version": "cp CHANGELOG.md src/CHANGELOG.md && changeset version && cp -vf src/CHANGELOG.md .",
+		"cli": "pnpm --filter @vertex/cli dev",
+		"cli:build": "pnpm --filter @vertex/cli build",
+		"cli:test": "pnpm --filter @vertex/cli test",
 		"knip": "knip --include files",
 		"npm:publish:types": "pnpm --filter @roo-code/types npm:publish"
 	},
