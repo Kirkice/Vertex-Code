@@ -14,8 +14,9 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
+    "@roo-code/types": "workspace:^",
     "@vertex/agent-runtime": "workspace:^",
-    "@roo-code/types": "workspace:^"
+    "yaml": "2.8.0"
   },
   "devDependencies": {
     "@roo-code/config-eslint": "workspace:^",

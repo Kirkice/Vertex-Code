@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { BatchApprovalPolicy, FileSessionStore, NodeToolRegistry, PersistentApprovalPolicy, readOpenAiCompatibleConfig } from "./NodeHost.js"
 import { ConfigStore } from "./config-store.js"
+import { NodeWorkspaceHost } from "./workspace-host.js"
 
 const temporaryDirectories: string[] = []
 
@@ -107,5 +108,18 @@ describe("Node host", () => {
     await expect(tools.execute({ id: "m", name: "use_mcp_tool", input: { server: "demo", tool: "echo", input: { value: "ok" } } }, context)).resolves.toMatchObject({ output: "mcp output" })
     await expect(tools.execute({ id: "k", name: "read_skill", input: { name: "review" } }, context)).resolves.toMatchObject({ output: "# Skill instructions" })
     expect(calls).toEqual(["demo/echo/ok"])
+  })
+
+  it("supports safe exact edits and rejects ambiguous replacements", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "vertex-edit-"))
+    const workspace = new NodeWorkspaceHost(directory)
+    const tools = new NodeToolRegistry(workspace)
+    const signal = new AbortController().signal
+
+    await tools.execute({ id: "1", name: "write_file", input: { path: "a.txt", content: "one\none\n" } }, { cwd: directory, signal })
+    await expect(tools.execute({ id: "2", name: "edit_file", input: { path: "a.txt", oldText: "one", newText: "two" } }, { cwd: directory, signal })).rejects.toThrow("唯一匹配")
+    const result = await tools.execute({ id: "3", name: "search_replace", input: { path: "a.txt", search: "one", replace: "two", all: true } }, { cwd: directory, signal })
+    expect(result.output).toContain("2 处")
+    await expect(readFile(join(directory, "a.txt"), "utf8")).resolves.toBe("two\ntwo\n")
   })
 })

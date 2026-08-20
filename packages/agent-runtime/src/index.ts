@@ -1,5 +1,6 @@
 export { AgentRuntimeError, AgentSession } from "./AgentSession.js"
 export { DeferredApprovalResolver } from "./interactive-approval.js"
+export { InMemoryMessageQueue } from "./message-queue.js"
 export type {
   AgentMessage,
   AgentMode,
@@ -14,6 +15,7 @@ export type {
   ModelRequest,
   ModelStreamEvent,
   ModelUsage,
+  MessageQueue,
   KeyValueStore,
   PersistedSession,
   ProviderProfile,

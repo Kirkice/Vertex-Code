@@ -91,6 +91,12 @@ export interface ToolRegistry {
   execute(call: AgentToolCall, context: ToolExecutionContext): Promise<ToolExecutionResult>
 }
 
+/** 额外的用户消息在当前模型轮次结束后排队，避免并发改写 messages。 */
+export interface MessageQueue {
+  enqueue(message: AgentMessage): Promise<void> | void
+  drain(): Promise<readonly AgentMessage[]> | readonly AgentMessage[]
+}
+
 /** 审批策略既可由交互式 TUI 实现，也可由非交互 batch 策略实现。 */
 export interface ApprovalResolver {
   resolve(request: RooCliApprovalRequest, signal: AbortSignal): Promise<RooCliApprovalDecision>
@@ -112,13 +118,15 @@ export interface PersistedSession {
   code?: RooCliErrorCode
   events: RooCliStreamEvent[]
   messages: AgentMessage[]
+  /** 任务清单属于会话状态；恢复任务时必须与消息历史一并还原。 */
+  todos?: AgentTodoItem[]
   cost?: RooCliCost
 }
 
 export interface SessionStore {
   create(session: PersistedSession): Promise<void>
   appendEvent(sessionId: string, event: RooCliStreamEvent): Promise<void>
-  complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "cost">): Promise<void>
+  complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "todos" | "cost">): Promise<void>
 }
 
 /**
@@ -210,6 +218,7 @@ export interface AgentSessionOptions {
    * 作为模型上下文，避免把 resume 降级成重新发送原始提示词。
    */
   initialMessages?: readonly AgentMessage[]
+  messageQueue?: MessageQueue
   mode?: AgentMode
   todos?: readonly AgentTodoItem[]
   maxContextMessages?: number

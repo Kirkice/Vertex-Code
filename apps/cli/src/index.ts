@@ -32,8 +32,8 @@ const VERSION = "0.1.0"
 const usage = `Vertex CLI ${VERSION}
 
 用法:
-  vertex run <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--yolo]
-  vertex <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--yolo]
+  vertex run <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--mode <slug>] [--yolo]
+  vertex <任务描述> [--cwd <目录>] [--output text|json|stream-json] [--mode <slug>] [--yolo]
   vertex doctor [--output text|json|stream-json]
   vertex auth [status|profiles|add|set|clear] [参数]
   vertex config [get|set] [参数]
@@ -55,6 +55,7 @@ interface ParsedArguments {
   cwd: string
   format: CliOutputFormat
   prompt?: string
+  mode?: string
   yolo: boolean
 }
 
@@ -66,6 +67,7 @@ export function parseArguments(argv: string[]): ParsedArguments {
   const values: string[] = []
   let cwd = process.cwd()
   let output: string | undefined
+  let mode: string | undefined
   let yolo = false
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -83,6 +85,13 @@ export function parseArguments(argv: string[]): ParsedArguments {
       const value = argv[++index]
       if (!value) fail("--output 需要 text、json 或 stream-json")
       output = value
+      continue
+    }
+
+    if (argument === "--mode") {
+      const value = argv[++index]
+      if (!value) fail("--mode 需要模式 slug")
+      mode = value
       continue
     }
 
@@ -106,22 +115,24 @@ export function parseArguments(argv: string[]): ParsedArguments {
   if (first === "doctor") {
     if (rest.length > 0) fail("doctor 不接受位置参数")
     if (yolo) fail("--yolo 不适用于 doctor")
+    if (mode) fail("--mode 不适用于 doctor")
     return { command: "doctor", cwd, format, yolo }
   }
 
   if (first === "auth" || first === "config" || first === "mcp" || first === "resume") {
     if (yolo) fail(`--yolo 不适用于 ${first}`)
+    if (mode) fail(`--mode 不适用于 ${first}`)
     return { command: first, cwd, format, prompt: rest.join(" ").trim() || undefined, yolo }
   }
 
   if (first === "run") {
     const prompt = rest.join(" ").trim()
     if (!prompt) fail("run 需要任务描述")
-    return { command: "run", cwd, format, prompt, yolo }
+    return { command: "run", cwd, format, prompt, yolo, mode }
   }
 
   if (values.length > 0) {
-    return { command: "run", cwd, format, prompt: values.join(" "), yolo }
+    return { command: "run", cwd, format, prompt: values.join(" "), yolo, mode }
   }
 
   if (yolo) fail("--yolo 需要与任务一起使用")
@@ -177,8 +188,8 @@ async function runDoctor(cwd: string, format: CliOutputFormat): Promise<number> 
   return success ? 0 : 1
 }
 
-async function runTask(prompt: string, cwd: string, format: CliOutputFormat, yolo: boolean): Promise<number> {
-  return runTaskWithOptions({ prompt, cwd, format, yolo })
+async function runTask(prompt: string, cwd: string, format: CliOutputFormat, yolo: boolean, mode?: string): Promise<number> {
+  return runTaskWithOptions({ prompt, cwd, format, yolo, mode })
 }
 
 interface TaskRunOptions {
@@ -186,12 +197,13 @@ interface TaskRunOptions {
   cwd: string
   format: CliOutputFormat
   yolo: boolean
+  mode?: string
   sessionId?: string
   initialMessages?: import("@vertex/agent-runtime").AgentMessage[]
 }
 
 async function runTaskWithOptions(options: TaskRunOptions): Promise<number> {
-  const { prompt, cwd, format, yolo } = options
+  const { prompt, cwd, format, yolo, mode } = options
   const renderer = createRenderer(format, process.stdout)
   const events: ReturnType<typeof validateEvent>[] = []
   const controller = new AbortController()
@@ -209,6 +221,7 @@ async function runTaskWithOptions(options: TaskRunOptions): Promise<number> {
       signal: controller.signal,
       sessionId: options.sessionId,
       initialMessages: options.initialMessages,
+      mode,
     })) {
       const validEvent = validateEvent(event)
       events.push(validEvent)
@@ -233,7 +246,7 @@ async function runTaskWithOptions(options: TaskRunOptions): Promise<number> {
       done: true,
       success: false,
       code,
-      sessionId: event.sessionId,
+      sessionId: event.sessionId ?? randomUUID(),
       content: event.content,
     })
     events.push(result)
@@ -385,7 +398,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 
   if (args.command === "interactive") return runTui(args.cwd)
 
-  return runTask(args.prompt ?? "", args.cwd, args.format, args.yolo)
+  return runTask(args.prompt ?? "", args.cwd, args.format, args.yolo, args.mode)
 }
 
 function isEntrypoint(): boolean {

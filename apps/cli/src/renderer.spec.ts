@@ -24,11 +24,11 @@ describe("CLI renderer", () => {
     const renderer = createRenderer("stream-json", output.stream)
 
     renderer.emit({ type: "assistant", subtype: "delta", content: "第一条" })
-    renderer.emit({ type: "result", success: true, done: true })
+    renderer.emit({ type: "result", success: true, done: true, sessionId: "00000000-0000-4000-8000-000000000010" })
 
     expect(output.getContent().trim().split("\n").map((line) => JSON.parse(line))).toEqual([
       { type: "assistant", subtype: "delta", content: "第一条" },
-      { type: "result", success: true, done: true },
+      { type: "result", success: true, done: true, sessionId: "00000000-0000-4000-8000-000000000010" },
     ])
   })
 

@@ -161,14 +161,14 @@ export const rooCliQueueItemSchema = z.object({
 export type RooCliQueueItem = z.infer<typeof rooCliQueueItemSchema>
 
 export const rooCliToolUseSchema = z.object({
-	name: z.string(),
+	name: z.string().min(1),
 	input: z.record(z.unknown()).optional(),
 })
 
 export type RooCliToolUse = z.infer<typeof rooCliToolUseSchema>
 
 export const rooCliToolResultSchema = z.object({
-	name: z.string(),
+	name: z.string().min(1),
 	output: z.string().optional(),
 	error: z.string().optional(),
 	exitCode: z.number().optional(),
@@ -206,21 +206,35 @@ const rooCliEventBaseSchema = z.object({
 	summary: rooCliFinalSummarySchema.optional(),
 })
 
+/** tool_use 事件必须携带工具调用或审批请求，避免产生无法解释的空事件。 */
+const rooCliToolUseEventSchema = rooCliEventBaseSchema.extend({
+	type: z.literal("tool_use"),
+	tool_use: rooCliToolUseSchema,
+	approval: rooCliApprovalRequestSchema.optional(),
+})
+
+const rooCliApprovalEventSchema = rooCliEventBaseSchema.extend({
+	type: z.literal("tool_use"),
+	approval: rooCliApprovalRequestSchema,
+	tool_use: rooCliToolUseSchema.optional(),
+})
+
 /**
  * 机器消费协议以 `type` 为判别字段。每种事件只允许其自身的业务字段，
  * 让 CLI 在输出 NDJSON 前就能发现事件投影错误。
  */
-export const rooCliStreamEventSchema = z.discriminatedUnion("type", [
+export const rooCliStreamEventSchema = z.union([
 	rooCliEventBaseSchema.extend({ type: z.literal("system") }),
 	rooCliEventBaseSchema.extend({ type: z.literal("control"), subtype: rooCliControlSubtypeSchema, requestId: z.string().min(1) }),
 	rooCliEventBaseSchema.extend({ type: z.literal("queue") }),
 	rooCliEventBaseSchema.extend({ type: z.literal("assistant"), subtype: z.literal("delta"), content: z.string() }),
 	rooCliEventBaseSchema.extend({ type: z.literal("user"), content: z.string() }),
 	rooCliEventBaseSchema.extend({ type: z.literal("thinking"), content: z.string() }),
-	rooCliEventBaseSchema.extend({ type: z.literal("tool_use"), tool_use: rooCliToolUseSchema.optional(), approval: rooCliApprovalRequestSchema.optional() }),
+	rooCliToolUseEventSchema,
+	rooCliApprovalEventSchema,
 	rooCliEventBaseSchema.extend({ type: z.literal("tool_result"), tool_result: rooCliToolResultSchema }),
 	rooCliEventBaseSchema.extend({ type: z.literal("error"), code: rooCliErrorCodeSchema, content: z.string().min(1) }),
-	rooCliEventBaseSchema.extend({ type: z.literal("result"), done: z.literal(true), success: z.boolean(), code: rooCliErrorCodeSchema.optional() }),
+	rooCliEventBaseSchema.extend({ type: z.literal("result"), done: z.literal(true), success: z.boolean(), sessionId: rooCliSessionIdSchema, code: rooCliErrorCodeSchema.optional() }),
 ])
 
 export type RooCliStreamEvent = z.infer<typeof rooCliStreamEventSchema>

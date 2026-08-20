@@ -1,3 +1,6 @@
+import { DeferredApprovalResolver, InMemoryMessageQueue } from "@vertex/agent-runtime"
+import { ConfigStore } from "@vertex/node-host"
+
 import { createPainter } from "./theme.js"
 import { parseInputChunk } from "./input.js"
 import { parseTuiCommand } from "./commands.js"
@@ -17,6 +20,9 @@ export async function runTui(cwd: string): Promise<number> {
   let stopped = false
   let sessionTask: Promise<void> | undefined
   const controller = new AbortController()
+  const approvals = new DeferredApprovalResolver()
+  const messageQueue = new InMemoryMessageQueue()
+  const config = new ConfigStore()
 
   const draw = () => {
     process.stdout.write("\u001b[2J\u001b[H")
@@ -24,12 +30,19 @@ export async function runTui(cwd: string): Promise<number> {
   }
   const startTask = (prompt: string) => {
     state = { ...state, userMessages: [...state.userMessages, prompt], assistantText: "", thinking: "", tools: [], approval: undefined }
-    sessionTask = (async () => {
-      for await (const event of runHeadlessSession({ cwd, prompt, yolo: false, signal: controller.signal })) {
-        state = reduceTuiEvent(state, event)
-        draw()
+    let task!: Promise<void>
+    task = (async () => {
+      try {
+        for await (const event of runHeadlessSession({ cwd, prompt, yolo: false, signal: controller.signal, approvals, messageQueue })) {
+          state = reduceTuiEvent(state, event)
+          draw()
+        }
+      } finally {
+        // Promise 完成后必须清空占用标记，否则同一个 TUI 进程无法提交第二条消息。
+        if (sessionTask === task) sessionTask = undefined
       }
     })()
+    sessionTask = task
   }
   const onData = (chunk: string) => {
     for (const action of parseInputChunk(chunk)) {
@@ -38,7 +51,13 @@ export async function runTui(cwd: string): Promise<number> {
         else stopped = true
       } else if (action.type === "text") input.value += action.value
       else if (action.type === "backspace") input.value = input.value.slice(0, -1)
-      else if (action.type === "approve") input.value = ""
+      else if (action.type === "approve") {
+        const request = state.approval
+        if (!request) state = { ...state, notification: "当前没有待处理的审批请求。" }
+        else if (action.decision === "always_allow") persistAlwaysAllow(config, request.operation, approvals, request.id)
+        else approvals.decide(request.id, action.decision)
+        input.value = ""
+      }
       else if (action.type === "submit") {
         const value = input.value.trim()
         input.value = ""
@@ -47,7 +66,10 @@ export async function runTui(cwd: string): Promise<number> {
           if (command?.type === "exit") stopped = true
           else if (command?.type === "new") state = createInitialTuiState(cwd)
           else state = { ...state, notification: command ? `/${command.type} 已接收` : "未知命令，请输入 /help" }
-        } else if (value && !sessionTask) startTask(value)
+        } else if (value && sessionTask) {
+          messageQueue.enqueue({ role: "user", content: value })
+          state = { ...state, notification: "消息已排队，将在当前模型轮次结束后发送。" }
+        } else if (value) startTask(value)
       }
       draw()
     }
@@ -61,6 +83,7 @@ export async function runTui(cwd: string): Promise<number> {
   draw()
   while (!stopped) await new Promise((resolve) => setTimeout(resolve, 50))
   controller.abort()
+  approvals.cancelPending()
   await sessionTask?.catch(() => undefined)
   process.stdin.off("data", onData)
   process.stdin.setRawMode(false)
@@ -70,4 +93,18 @@ export async function runTui(cwd: string): Promise<number> {
 
 function createInputBuffer(): { value: string } {
   return { value: "" }
+}
+
+/** 用户明确选择“始终允许”后才写入 allowlist，并继续当前工具调用。 */
+function persistAlwaysAllow(
+  config: ConfigStore,
+  operation: string,
+  approvals: DeferredApprovalResolver,
+  requestId: string,
+): void {
+  void (async () => {
+    const current = (await config.get()).alwaysAllowOperations ?? []
+    if (!current.includes(operation)) await config.set({ alwaysAllowOperations: [...current, operation] })
+    approvals.decide(requestId, "always_allow")
+  })()
 }

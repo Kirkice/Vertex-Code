@@ -16,6 +16,15 @@ describe("CLI argument contract", () => {
     expect(() => parseArguments(["auth", "--yolo"])).toThrow(CliCommandError)
   })
 
+  it("forwards an explicit mode slug only to task execution", () => {
+    expect(parseArguments(["run", "检查项目", "--mode", "architect"])).toMatchObject({
+      command: "run",
+      prompt: "检查项目",
+      mode: "architect",
+    })
+    expect(() => parseArguments(["doctor", "--mode", "architect"])).toThrow("--mode 不适用于 doctor")
+  })
+
   it("maps invalid arguments to the documented error code and exit code", () => {
     try {
       parseArguments(["run", "检查项目", "--output", "yaml"])

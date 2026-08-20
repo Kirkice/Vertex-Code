@@ -14,6 +14,7 @@ describe("Vertex Code TUI", () => {
       { type: "approve", decision: "approve" },
       { type: "approve", decision: "deny" },
     ])
+    expect(parseInputChunk("a")).toEqual([{ type: "approve", decision: "always_allow" }])
   })
 
   it("reduces runtime events into tool and approval state", () => {

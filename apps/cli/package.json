@@ -20,7 +20,8 @@
   "dependencies": {
     "@roo-code/types": "workspace:^",
     "@vertex/agent-runtime": "workspace:^",
-    "@vertex/node-host": "workspace:^"
+    "@vertex/node-host": "workspace:^",
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@roo-code/config-eslint": "workspace:^",

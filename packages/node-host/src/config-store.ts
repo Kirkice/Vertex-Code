@@ -6,6 +6,8 @@ import { resolveVertexPaths } from "./paths.js"
 /** CLI 级别的非敏感配置。密钥等机密值不允许写入此对象。 */
 export interface VertexConfig extends Record<string, unknown> {
   currentProfile?: string
+  /** 上次选择的 CLI 模式；命令行 --mode 的优先级更高。 */
+  currentMode?: string
   customInstructions?: string
   commandExecutionTimeout?: number
   mcpEnabled?: boolean

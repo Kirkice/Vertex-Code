@@ -12,6 +12,7 @@ import type {
   AgentMode,
   AgentSessionOptions,
   AgentSessionResult,
+  AgentTodoItem,
   AgentToolCall,
   ModelUsage,
   PersistedSession,
@@ -29,6 +30,8 @@ export class AgentSession {
   private readonly now: () => Date
   private readonly events: RooCliStreamEvent[] = []
   private readonly messages: AgentMessage[]
+  /** 待办是运行时的可变会话状态，禁止由 TUI 直接持有唯一副本。 */
+  private readonly todos: AgentTodoItem[]
   private readonly cost: RooCliCost = {}
   private toolCalls = 0
 
@@ -47,6 +50,7 @@ export class AgentSession {
           },
           { role: "user", content: options.prompt },
         ]
+    this.todos = (options.todos ?? []).map((todo) => ({ ...todo }))
 
     // 外部取消和内部取消共用同一个 signal，确保模型流和子进程能同时中止。
     if (options.signal?.aborted) {
@@ -68,6 +72,7 @@ export class AgentSession {
       startedAt: this.startedAt.toISOString(),
       events: [],
       messages: this.messages,
+      todos: this.todos,
     }
 
     await this.options.store.create(session)
@@ -117,6 +122,7 @@ export class AgentSession {
       success,
       code,
       messages: this.messages,
+      todos: this.todos,
       cost: this.cost,
     })
   }
@@ -141,7 +147,7 @@ export class AgentSession {
 
     for (let turn = 0; turn < maxTurns; turn += 1) {
       this.throwIfAborted()
-      if (this.compactContext()) {
+    if (await this.compactContext()) {
         yield* this.emit({
           type: "system",
           subtype: "context_compacted",
@@ -154,7 +160,7 @@ export class AgentSession {
 
       for await (const event of this.options.provider.stream({
         messages: this.messages,
-        tools: this.options.tools.definitions(),
+        tools: this.definitions(),
         signal: this.abortController.signal,
       })) {
         this.throwIfAborted()
@@ -177,6 +183,11 @@ export class AgentSession {
       }
 
       if (calls.length === 0) {
+        const queued = await this.options.messageQueue?.drain()
+        if (queued?.length) {
+          this.messages.push(...queued)
+          continue
+        }
         return assistantText || "模型未返回可显示的最终回复。"
       }
 
@@ -189,14 +200,14 @@ export class AgentSession {
   }
 
   private async *executeTool(call: AgentToolCall): AsyncGenerator<RooCliStreamEvent> {
-    const definition = this.options.tools.definitions().find((item) => item.name === call.name)
+    const definition = this.definitions().find((item) => item.name === call.name)
     if (!definition) {
       throw new AgentRuntimeError("RUNTIME_ERROR", `模型请求了未注册工具：${call.name}`)
     }
     // 模式的工具清单是运行时安全边界，而不仅是给模型的提示词。即便模型忽略
     // system prompt，也不能借由工具调用越过当前模式的能力范围。
     const allowedTools = this.options.mode?.allowedTools
-    if (allowedTools?.length && !allowedTools.includes(call.name)) {
+    if (allowedTools?.length && call.name !== "update_todo" && !allowedTools.includes(call.name)) {
       throw new AgentRuntimeError("APPROVAL_DENIED", `当前模式不允许调用工具：${call.name}`)
     }
 
@@ -225,10 +236,12 @@ export class AgentSession {
 
     yield* this.emit({ type: "tool_use", subtype: "running", sessionId: this.options.sessionId, tool_use: { name: call.name, input: call.input } })
     try {
-      const execution = await this.options.tools.execute(call, {
-        cwd: this.options.cwd,
-        signal: this.abortController.signal,
-      })
+      const execution: { output: string; exitCode?: number } = call.name === "update_todo"
+        ? this.updateTodo(call)
+        : await this.options.tools.execute(call, {
+            cwd: this.options.cwd,
+            signal: this.abortController.signal,
+          })
       this.messages.push({ role: "tool", name: call.name, toolCallId: call.id, content: execution.output })
       yield* this.emit({
         type: "tool_result",
@@ -260,6 +273,44 @@ export class AgentSession {
     this.cost.totalCost = (this.cost.totalCost ?? 0) + (usage.totalCost ?? 0)
   }
 
+  /** 合并宿主工具和 runtime 内建工具，避免待办能力依附某个具体 Host。 */
+  private definitions() {
+    return [
+      ...this.options.tools.definitions(),
+      {
+        name: "update_todo",
+        description: "创建或更新当前任务的待办项。status 只能为 pending、in_progress 或 completed。",
+        parameters: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "待办稳定标识；已存在时更新该项" },
+            content: { type: "string", description: "待办内容" },
+            status: { type: "string", enum: ["pending", "in_progress", "completed"] },
+          },
+          required: ["id", "content", "status"],
+        },
+        requiresApproval: false,
+        risk: "low" as const,
+      },
+    ]
+  }
+
+  /** 仅接受严格的待办字段，防止模型将任意对象写入可恢复的会话快照。 */
+  private updateTodo(call: AgentToolCall): { output: string } {
+    const id = stringInput(call.input.id, "id")
+    const content = stringInput(call.input.content, "content")
+    const rawStatus = call.input.status
+    if (rawStatus !== "pending" && rawStatus !== "in_progress" && rawStatus !== "completed") {
+      throw new Error("工具参数 status 必须是 pending、in_progress 或 completed。")
+    }
+    const status: AgentTodoItem["status"] = rawStatus
+    const next = { id, content, status }
+    const index = this.todos.findIndex((todo) => todo.id === id)
+    if (index >= 0) this.todos[index] = next
+    else this.todos.push(next)
+    return { output: `待办已更新：${status} ${content}` }
+  }
+
   private throwIfAborted(): void {
     if (this.abortController.signal.aborted) {
       throw new AgentRuntimeError("CANCELLED", "任务已取消。")
@@ -270,12 +321,18 @@ export class AgentSession {
    * 确定性滑动窗口压缩，保证长会话不会无限增长。
    * system 消息永远保留；后续可以通过独立摘要 Provider 替换此策略。
    */
-  private compactContext(): boolean {
+  private async compactContext(): Promise<boolean> {
     const limit = this.options.maxContextMessages ?? 80
     if (this.messages.length <= limit) return false
     const system = this.messages[0]
     const recent = this.messages.slice(-(limit - 1))
-    this.messages.splice(0, this.messages.length, ...(system ? [system, ...recent] : recent))
+    // 先保留系统消息，再把被移出的历史折叠成确定性摘要；摘要不调用模型，
+    // 因而在离线测试、取消和 provider 故障时仍可安全恢复。
+    const dropped = this.messages.length - recent.length - (system ? 1 : 0)
+    const summary = dropped > 0
+      ? { role: "system" as const, content: `历史摘要：已省略 ${dropped} 条较早消息；请以当前上下文为准。` }
+      : undefined
+    this.messages.splice(0, this.messages.length, ...(system ? [system, ...(summary ? [summary] : []), ...recent] : recent))
     return true
   }
 
@@ -295,6 +352,11 @@ function buildSystemPrompt(mode: AgentMode | undefined, todos: AgentSessionOptio
   if (mode?.allowedTools?.length) sections.push(`允许使用的工具：${mode.allowedTools.join(", ")}`)
   if (todos?.length) sections.push(`当前待办：\n${todos.map((todo) => `- [${todo.status}] ${todo.content}`).join("\n")}`)
   return sections.join("\n\n")
+}
+
+function stringInput(value: unknown, name: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) throw new Error(`工具参数 ${name} 必须是非空字符串。`)
+  return value.trim()
 }
 
 export class AgentRuntimeError extends Error {

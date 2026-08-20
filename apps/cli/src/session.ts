@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { AgentSession, type AgentMessage, type ModelProvider } from "@vertex/agent-runtime"
+import { AgentSession, type AgentMessage, type ApprovalResolver, type MessageQueue, type ModelProvider } from "@vertex/agent-runtime"
 import {
   ConfigStore,
   FileSecretStore,
@@ -17,6 +17,7 @@ import {
   PersistentApprovalPolicy,
   createModelProvider,
   readOpenAiCompatibleConfig,
+  resolveWorkspaceMode,
 } from "@vertex/node-host"
 
 import type { CliFinalOutput, CliStreamEvent } from "./protocol.js"
@@ -30,6 +31,12 @@ export interface HeadlessSessionOptions {
   sessionId?: string
   /** 恢复已有会话时传入完整消息上下文。 */
   initialMessages?: readonly AgentMessage[]
+  /** TUI 可传入会话级交互审批器；普通 batch 命令仍采用持久化默认拒绝策略。 */
+  approvals?: ApprovalResolver
+  /** 命令行显式选择的模式；未传时使用持久化模式或默认 code。 */
+  mode?: string
+  /** 交互宿主可注入队列，将当前模型轮次期间的新消息延迟到下一轮。 */
+  messageQueue?: MessageQueue
 }
 
 /**
@@ -45,6 +52,9 @@ export async function* runHeadlessSession(
   const configured = await resolveProviderConfig(config, profiles, secrets)
   const provider = options.provider ?? configured ?? new OpenAiCompatibleProvider(readOpenAiCompatibleConfig())
   const workspace = new NodeWorkspaceHost(options.cwd)
+  const rules = await workspace.loadRules()
+  const settings = await config.get()
+  const mode = await resolveWorkspaceMode(options.cwd, options.mode ?? settings.currentMode, [settings.customInstructions, rules.content].filter(Boolean).join("\n\n") || undefined)
   const mcp = new NodeMcpHost()
   const session = new AgentSession({
     sessionId: options.sessionId ?? randomUUID(),
@@ -57,11 +67,12 @@ export async function* runHeadlessSession(
       mcp,
       skills: new NodeSkillsHost(),
     }),
-    // batch 默认拒绝危险操作；交互式 UI 以后可在该策略上保存 always allow。
-    approvals: new PersistentApprovalPolicy(options.yolo),
+    approvals: options.approvals ?? new PersistentApprovalPolicy(options.yolo),
     store: new FileSessionStore(),
     signal: options.signal,
     initialMessages: options.initialMessages,
+    mode,
+    messageQueue: options.messageQueue,
   })
 
   try {

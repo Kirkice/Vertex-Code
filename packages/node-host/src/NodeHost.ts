@@ -156,6 +156,9 @@ export class NodeToolRegistry implements ToolRegistry {
       { name: "read_file", description: "读取工作区中的 UTF-8 文本文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径") }), requiresApproval: false, risk: "low" },
       { name: "list_directory", description: "列出工作区中的目录项", parameters: objectSchema({ path: stringSchema("相对工作区的目录路径") }), requiresApproval: false, risk: "low" },
       { name: "write_file", description: "写入工作区中的 UTF-8 文本文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径"), content: stringSchema("完整文件内容") }, ["path", "content"]), requiresApproval: true, risk: "medium" },
+      { name: "edit_file", description: "按精确文本替换编辑工作区文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径"), oldText: stringSchema("必须唯一匹配的原文本"), newText: stringSchema("替换后的文本") }, ["path", "oldText", "newText"]), requiresApproval: true, risk: "medium" },
+      { name: "search_replace", description: "在工作区文件中执行精确字符串替换", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径"), search: stringSchema("待搜索文本"), replace: stringSchema("替换文本"), all: { type: "boolean", description: "是否替换所有匹配项" } }, ["path", "search", "replace"]), requiresApproval: true, risk: "medium" },
+      { name: "apply_patch", description: "应用 Vertex unified patch 到工作区文件", parameters: objectSchema({ patch: stringSchema("包含文件路径和上下文的 patch") }, ["patch"]), requiresApproval: true, risk: "medium" },
       { name: "execute_shell", description: "在工作区内执行 shell 命令", parameters: objectSchema({ command: stringSchema("要执行的命令") }), requiresApproval: true, risk: "high" },
       { name: "search_files", description: "在工作区文本文件中搜索字符串", parameters: objectSchema({ query: stringSchema("要搜索的字符串") }), requiresApproval: false, risk: "low" },
       { name: "git_status", description: "读取当前 Git 状态", parameters: objectSchema({}), requiresApproval: false, risk: "low" },
@@ -192,6 +195,25 @@ export class NodeToolRegistry implements ToolRegistry {
         await writeFile(target, content, "utf8")
       }
       return { output: `已写入 ${path}` }
+    }
+    if (call.name === "edit_file" || call.name === "search_replace") {
+      const path = requiredString(call.input.path, "path")
+      const search = requiredString(call.input[call.name === "edit_file" ? "oldText" : "search"], call.name === "edit_file" ? "oldText" : "search")
+      const replacement = requiredString(call.input[call.name === "edit_file" ? "newText" : "replace"], call.name === "edit_file" ? "newText" : "replace")
+      const target = resolveWorkspacePath(context.cwd, path)
+      const content = await readFile(target, "utf8")
+      const count = content.split(search).length - 1
+      if (count === 0) throw new Error(`文件中未找到待替换文本：${path}`)
+      if (call.name === "edit_file" && count !== 1) throw new Error(`编辑文本必须唯一匹配：${path}`)
+      const next = call.name === "search_replace" && call.input.all === true
+        ? content.split(search).join(replacement)
+        : content.replace(search, replacement)
+      await writeFile(target, next, "utf8")
+      return { output: `已编辑 ${path}（${call.name === "search_replace" && call.input.all === true ? count : 1} 处）` }
+    }
+    if (call.name === "apply_patch") {
+      const patch = requiredString(call.input.patch, "patch")
+      return { output: await applyWorkspacePatch(context.cwd, patch) }
     }
     if (call.name === "execute_shell") {
       const command = requiredString(call.input.command, "command")
@@ -280,7 +302,7 @@ export class FileSessionStore implements SessionStore {
     await this.write(session)
   }
 
-  async complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "cost">): Promise<void> {
+  async complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "todos" | "cost">): Promise<void> {
     await this.write({ ...(await this.read(sessionId)), ...patch })
   }
 
@@ -328,6 +350,37 @@ function resolveWorkspacePath(cwd: string, requested: string): string {
   const target = resolve(workspace, requested)
   if (target !== workspace && !target.startsWith(`${workspace}\\`) && !target.startsWith(`${workspace}/`)) throw new Error("工具路径不能离开工作区。")
   return target
+}
+
+/**
+ * 应用简化 unified patch。只接受 `*** Update File:` 块，并复用精确上下文匹配；
+ * 这样模型不能借 patch 路径越出工作区，也不会静默修改错误文件。
+ */
+async function applyWorkspacePatch(cwd: string, patch: string): Promise<string> {
+  const lines = patch.split(/\r?\n/)
+  let changed = 0
+  for (let index = 0; index < lines.length; index += 1) {
+    const header = lines[index]
+    if (!header?.startsWith("*** Update File: ")) continue
+    const relativePath = header.slice("*** Update File: ".length).trim()
+    const target = resolveWorkspacePath(cwd, relativePath)
+    const original = await readFile(target, "utf8")
+    const edits: string[] = []
+    index += 1
+    while (index < lines.length && !lines[index]?.startsWith("*** Update File: ")) {
+      const line = lines[index]
+      if (line && (line.startsWith(" ") || line.startsWith("-") || line.startsWith("+"))) edits.push(line)
+      index += 1
+    }
+    index -= 1
+    const removed = edits.filter((line) => line.startsWith("-")).map((line) => line.slice(1)).join("\n")
+    const added = edits.filter((line) => line.startsWith(" ") || line.startsWith("+")).map((line) => line.slice(1)).join("\n")
+    if (!removed || !original.includes(removed)) throw new Error(`patch 上下文未匹配：${relativePath}`)
+    await writeFile(target, original.replace(removed, added), "utf8")
+    changed += 1
+  }
+  if (changed === 0) throw new Error("patch 不包含可应用的 *** Update File 块")
+  return `已应用 patch（${changed} 个文件）`
 }
 
 function executeShell(command: string, context: ToolExecutionContext): Promise<ToolExecutionResult> {

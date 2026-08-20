@@ -14,7 +14,7 @@ class MemoryStore implements SessionStore {
 
   async create(session: PersistedSession): Promise<void> { this.sessions.set(session.id, structuredClone(session)) }
   async appendEvent(sessionId: string, event: PersistedSession["events"][number]): Promise<void> { this.sessions.get(sessionId)?.events.push(event) }
-  async complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "cost">): Promise<void> {
+  async complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "todos" | "cost">): Promise<void> {
     const session = this.sessions.get(sessionId)
     if (!session) throw new Error(`未知会话：${sessionId}`)
     Object.assign(session, patch)
@@ -205,6 +205,36 @@ describe("AgentSession", () => {
 
     const events = await collectEvents(session)
     expect(events.at(-1)).toMatchObject({ type: "result", success: false, code: "APPROVAL_DENIED" })
+  })
+
+  it("updates and persists todos through the runtime-owned update_todo tool", async () => {
+    const store = new MemoryStore()
+    let requestCount = 0
+    const session = new AgentSession({
+      sessionId: "00000000-0000-4000-8000-000000000007",
+      cwd: "/workspace",
+      prompt: "维护待办",
+      provider: {
+        async *stream() {
+          if (requestCount++ === 0) {
+            yield { type: "tool_call", toolCall: { id: "todo-1", name: "update_todo", input: { id: "review", content: "检查变更", status: "completed" } } }
+            yield { type: "done", finishReason: "tool_calls" }
+            return
+          }
+          yield { type: "text_delta", text: "待办已完成。" }
+          yield { type: "done", finishReason: "stop" }
+        },
+      },
+      tools: toolRegistry(),
+      approvals: { resolve: async () => "deny" },
+      store,
+    })
+
+    const events = await collectEvents(session)
+    expect(events).toContainEqual(expect.objectContaining({ type: "tool_result", tool_result: expect.objectContaining({ output: "待办已更新：completed 检查变更" }) }))
+    expect(store.sessions.get("00000000-0000-4000-8000-000000000007")?.todos).toEqual([
+      { id: "review", content: "检查变更", status: "completed" },
+    ])
   })
 })
 
