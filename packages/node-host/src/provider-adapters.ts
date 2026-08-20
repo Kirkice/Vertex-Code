@@ -12,6 +12,7 @@ import type {
  * 这样每个供应商的认证头、消息结构和流式帧都不会污染通用 OpenAI 适配器。
  */
 export class AnthropicProvider implements ModelProvider {
+  readonly contextWindowTokens = 200_000
   constructor(
     private readonly config: { apiKey: string; baseUrl: string; model: string; maxTokens?: number },
     private readonly fetcher: typeof fetch = fetch,
@@ -59,6 +60,7 @@ export class AnthropicProvider implements ModelProvider {
 }
 
 export class GeminiProvider implements ModelProvider {
+  readonly contextWindowTokens = 1_000_000
   constructor(
     private readonly config: { apiKey: string; baseUrl: string; model: string },
     private readonly fetcher: typeof fetch = fetch,
@@ -97,6 +99,33 @@ export class GeminiProvider implements ModelProvider {
   }
 }
 
+/** AWS Bedrock Converse 流式协议；凭证由环境或 AWS SDK 默认链提供。 */
+export class BedrockProvider implements ModelProvider {
+  readonly contextWindowTokens = 200_000
+
+  constructor(
+    private readonly config: { baseUrl: string; model: string; apiKey?: string },
+    private readonly fetcher: typeof fetch = fetch,
+  ) {}
+
+  async *stream(request: ModelRequest): AsyncIterable<ModelStreamEvent> {
+    const response = await this.fetcher(`${this.config.baseUrl}/model/${encodeURIComponent(this.config.model)}/converse-stream`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(this.config.apiKey ? { authorization: `Bearer ${this.config.apiKey}` } : {}) },
+      signal: request.signal,
+      body: JSON.stringify(toBedrockRequest(request)),
+    })
+    if (!response.ok || !response.body) throw normalizeProviderError("bedrock", response.status, await response.text(), response.headers)
+    for await (const event of readSse(response.body)) {
+      const delta = asRecord(asRecord(event.data.contentBlockDelta).delta)
+      if (typeof delta.text === "string") yield { type: "text_delta", text: delta.text }
+      const usage = asRecord(event.data.metadata)
+      if (usage.inputTokens !== undefined || usage.outputTokens !== undefined) yield { type: "usage", usage: { inputTokens: numberValue(usage.inputTokens), outputTokens: numberValue(usage.outputTokens) } }
+      if (event.data.messageStop) yield { type: "done", finishReason: "stop" }
+    }
+  }
+}
+
 function toAnthropicRequest(model: string, maxTokens: number, request: ModelRequest): Record<string, unknown> {
   const system = request.messages.find((message) => message.role === "system")?.content
   return {
@@ -116,6 +145,20 @@ function toGeminiRequest(request: ModelRequest): Record<string, unknown> {
     contents: request.messages.filter((message) => message.role !== "system").map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] })),
     tools: [{ functionDeclarations: request.tools.map((tool) => ({ name: tool.name, description: tool.description, parameters: tool.parameters })) }],
   }
+}
+
+function toBedrockRequest(request: ModelRequest): Record<string, unknown> {
+  return {
+    messages: request.messages.filter((message) => message.role !== "system").map((message) => ({ role: message.role === "assistant" ? "assistant" : "user", content: [{ text: message.content }] })),
+    system: request.messages.filter((message) => message.role === "system").map((message) => ({ text: message.content })),
+    toolConfig: { tools: request.tools.map((tool) => ({ toolSpec: { name: tool.name, description: tool.description, inputSchema: { json: tool.parameters } } })) },
+  }
+}
+
+function normalizeProviderError(provider: string, status: number, body: string, headers: Headers): Error {
+  const retryAfter = headers.get("retry-after")
+  const suffix = retryAfter ? `；建议 ${retryAfter}s 后重试` : ""
+  return new Error(`${provider} 请求失败（HTTP ${status}）${suffix}：${body}`)
 }
 
 async function* readSse(body: ReadableStream<Uint8Array>): AsyncGenerator<{ event?: string; data: Record<string, unknown> }> {

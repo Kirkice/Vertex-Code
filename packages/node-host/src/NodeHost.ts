@@ -348,7 +348,7 @@ export class FileSessionStore implements SessionStore {
     }
     const sessions: PersistedSession[] = []
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".json")) continue
+      if (!entry.isFile() || !entry.name.endsWith(".json") || entry.name === "index.json") continue
       try {
         sessions.push(JSON.parse(await readFile(join(this.directory, entry.name), "utf8")) as PersistedSession)
       } catch {
@@ -431,34 +431,122 @@ function resolveWorkspacePath(cwd: string, requested: string): string {
 }
 
 /**
- * 应用简化 unified patch。只接受 `*** Update File:` 块，并复用精确上下文匹配；
- * 这样模型不能借 patch 路径越出工作区，也不会静默修改错误文件。
+ * 应用 Vertex patch。解析阶段只读文件并生成内存中的新内容，所有 hunk 都
+ * 校验通过后才写盘；任意写入失败会使用原内容回滚，避免多文件 patch 半成功。
  */
 async function applyWorkspacePatch(cwd: string, patch: string): Promise<string> {
   const lines = patch.split(/\r?\n/)
-  let changed = 0
+  const operations: PatchOperation[] = []
   for (let index = 0; index < lines.length; index += 1) {
     const header = lines[index]
-    if (!header?.startsWith("*** Update File: ")) continue
-    const relativePath = header.slice("*** Update File: ".length).trim()
-    const target = resolveWorkspacePath(cwd, relativePath)
-    const original = await readFile(target, "utf8")
-    const edits: string[] = []
-    index += 1
-    while (index < lines.length && !lines[index]?.startsWith("*** Update File: ")) {
-      const line = lines[index]
-      if (line && (line.startsWith(" ") || line.startsWith("-") || line.startsWith("+"))) edits.push(line)
+    if (!header || header === "*** Begin Patch" || header === "*** End Patch") continue
+    if (header.startsWith("*** Add File: ")) {
+      const path = header.slice("*** Add File: ".length).trim()
+      const content: string[] = []
       index += 1
+      while (index < lines.length && !lines[index]?.startsWith("*** ")) {
+        const line = lines[index++]
+        if (line?.startsWith("+")) content.push(line.slice(1))
+      }
+      index -= 1
+      operations.push({ kind: "add", path, content: content.join("\n") })
+      continue
     }
-    index -= 1
-    const removed = edits.filter((line) => line.startsWith("-")).map((line) => line.slice(1)).join("\n")
-    const added = edits.filter((line) => line.startsWith(" ") || line.startsWith("+")).map((line) => line.slice(1)).join("\n")
-    if (!removed || !original.includes(removed)) throw new Error(`patch 上下文未匹配：${relativePath}`)
-    await writeFile(target, original.replace(removed, added), "utf8")
-    changed += 1
+    if (header.startsWith("*** Delete File: ")) {
+      operations.push({ kind: "delete", path: header.slice("*** Delete File: ".length).trim() })
+      continue
+    }
+    if (!header.startsWith("*** Update File: ")) continue
+    const path = header.slice("*** Update File: ".length).trim()
+    let moveTo: string | undefined
+    if (lines[index + 1]?.startsWith("*** Move to: ")) moveTo = lines[++index]?.slice("*** Move to: ".length).trim()
+    const hunks: PatchHunk[] = []
+    while (index + 1 < lines.length && !lines[index + 1]?.startsWith("*** ")) {
+      index += 1
+      if (!lines[index]?.startsWith("@@")) continue
+      const body: string[] = []
+      while (index + 1 < lines.length && !lines[index + 1]?.startsWith("@@") && !lines[index + 1]?.startsWith("*** ")) body.push(lines[++index] ?? "")
+      hunks.push({ lines: body })
+    }
+    operations.push({ kind: "update", path, moveTo, hunks })
   }
-  if (changed === 0) throw new Error("patch 不包含可应用的 *** Update File 块")
-  return `已应用 patch（${changed} 个文件）`
+  if (operations.length === 0) throw new Error("patch 不包含可应用的文件操作")
+
+  const staged = new Map<string, string | undefined>()
+  const original = new Map<string, string | undefined>()
+  for (const operation of operations) {
+    const target = resolveWorkspacePath(cwd, operation.path)
+    if (!original.has(target)) original.set(target, await readOptionalFile(target))
+    const current = staged.has(target) ? staged.get(target) : original.get(target)
+    if (operation.kind === "add") {
+      if (current !== undefined) throw new Error(`新增文件已存在：${operation.path}`)
+      staged.set(target, operation.content)
+    } else if (operation.kind === "delete") {
+      if (current === undefined) throw new Error(`删除文件不存在：${operation.path}`)
+      staged.set(target, undefined)
+    } else {
+      if (current === undefined) throw new Error(`更新文件不存在：${operation.path}`)
+      staged.set(target, applyHunks(current, operation.hunks, operation.path))
+      if (operation.moveTo) {
+        const destination = resolveWorkspacePath(cwd, operation.moveTo)
+        if (!original.has(destination)) original.set(destination, await readOptionalFile(destination))
+        if (staged.has(destination) ? staged.get(destination) !== undefined : original.get(destination) !== undefined) throw new Error(`重命名目标已存在：${operation.moveTo}`)
+        staged.set(destination, staged.get(target))
+        staged.set(target, undefined)
+      }
+    }
+  }
+
+  const changed = [...staged.entries()]
+  try {
+    for (const [target, content] of changed) {
+      if (content === undefined) await unlink(target)
+      else { await mkdir(dirname(target), { recursive: true }); await writeFile(target, content, "utf8") }
+    }
+  } catch (error) {
+    for (const [target] of changed) {
+      const before = original.get(target)
+      if (before === undefined) await unlink(target).catch(() => undefined)
+      else await writeFile(target, before, "utf8").catch(() => undefined)
+    }
+    throw error
+  }
+  return `已应用 patch（${operations.length} 个文件操作）`
+}
+
+type PatchOperation =
+  | { kind: "add"; path: string; content: string }
+  | { kind: "delete"; path: string }
+  | { kind: "update"; path: string; moveTo?: string; hunks: PatchHunk[] }
+type PatchHunk = { lines: string[] }
+
+async function readOptionalFile(path: string): Promise<string | undefined> {
+  try { return await readFile(path, "utf8") } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined
+    throw error
+  }
+}
+
+function applyHunks(content: string, hunks: readonly PatchHunk[], path: string): string {
+  const source = content.split(/\r?\n/)
+  let offset = 0
+  for (const hunk of hunks) {
+    const context = hunk.lines.filter((line) => line.startsWith(" ") || line.startsWith("-"))
+    const removed = context.filter((line) => line.startsWith(" ") || line.startsWith("-")).map((line) => line.slice(1))
+    const start = findSequence(source, removed, offset)
+    if (start < 0) throw new Error(`patch 上下文未匹配：${path}`)
+    const added = hunk.lines.filter((line) => line.startsWith(" ") || line.startsWith("+")).map((line) => line.slice(1))
+    source.splice(start, removed.length, ...added)
+    offset = start + added.length
+  }
+  return source.join("\n")
+}
+
+function findSequence(source: readonly string[], wanted: readonly string[], from: number): number {
+  for (let index = from; index <= source.length - wanted.length; index += 1) {
+    if (wanted.every((line, offset) => source[index + offset] === line)) return index
+  }
+  return -1
 }
 
 function executeShell(command: string, context: ToolExecutionContext): Promise<ToolExecutionResult> {

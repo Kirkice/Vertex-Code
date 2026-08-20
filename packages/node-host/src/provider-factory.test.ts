@@ -23,7 +23,11 @@ describe("provider factory", () => {
     expect(createModelProvider({ ...profile, provider: "gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta" }, "key").constructor.name).toBe("GeminiProvider")
   })
 
+  it("creates the native Bedrock adapter", () => {
+    expect(createModelProvider({ ...profile, provider: "bedrock" }, "key").constructor.name).toBe("BedrockProvider")
+  })
+
   it("rejects vendor labels without a CLI adapter", () => {
-    expect(() => createModelProvider({ ...profile, provider: "bedrock" }, "key")).toThrow("尚未支持 Provider")
+    expect(() => createModelProvider({ ...profile, provider: "unknown" }, "key")).toThrow("尚未支持 Provider")
   })
 })
