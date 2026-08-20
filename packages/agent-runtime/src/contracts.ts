@@ -74,6 +74,8 @@ export interface ModelRequest {
 
 export interface ModelProvider {
   stream(request: ModelRequest): AsyncIterable<ModelStreamEvent>
+  /** 模型上下文窗口；未提供时由会话选项或默认值兜底。 */
+  contextWindowTokens?: number
 }
 
 export interface ToolExecutionContext {
@@ -222,6 +224,12 @@ export interface AgentSessionOptions {
   mode?: AgentMode
   todos?: readonly AgentTodoItem[]
   maxContextMessages?: number
+  /** 发送给 Provider 的最大输入 token 预算。 */
+  maxContextTokens?: number
+  /** 允许宿主注入更准确的 tokenizer；默认使用保守的 Unicode 估算器。 */
+  estimateTokens?: (text: string) => number
+  /** 为回复和工具结果预留的 token 数，避免把输入预算用尽。 */
+  responseReserveTokens?: number
 }
 
 export interface AgentSessionResult extends Omit<RooCliFinalOutput, "events"> {

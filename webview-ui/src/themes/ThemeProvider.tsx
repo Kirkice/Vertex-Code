@@ -197,6 +197,19 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
+// 旧版设置页测试和若干嵌入式面板会独立渲染子树，不一定经过完整的
+// App ThemeProvider。使用只读的默认上下文可以让这些宿主保持可渲染，
+// 同时真正的应用树仍由 ThemeProvider 提供完整的提交/重置能力。
+const fallbackThemeContext: ThemeContextValue = {
+	themeId: DEFAULT_THEME_ID,
+	pendingThemeId: DEFAULT_THEME_ID,
+	setThemeId: () => undefined,
+	commitTheme: () => undefined,
+	resetPendingTheme: () => undefined,
+	hasPendingThemeChange: false,
+	availableThemes: Object.keys(themes),
+}
+
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 interface ThemeProviderProps {
@@ -265,8 +278,5 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
 export function useTheme(): ThemeContextValue {
 	const ctx = useContext(ThemeContext)
-	if (!ctx) {
-		throw new Error("useTheme must be used within a <ThemeProvider>")
-	}
-	return ctx
+	return ctx ?? fallbackThemeContext
 }

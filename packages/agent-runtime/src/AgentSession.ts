@@ -147,7 +147,7 @@ export class AgentSession {
 
     for (let turn = 0; turn < maxTurns; turn += 1) {
       this.throwIfAborted()
-    if (await this.compactContext()) {
+      if (await this.compactContext()) {
         yield* this.emit({
           type: "system",
           subtype: "context_compacted",
@@ -318,21 +318,33 @@ export class AgentSession {
   }
 
   /**
-   * 确定性滑动窗口压缩，保证长会话不会无限增长。
-   * system 消息永远保留；后续可以通过独立摘要 Provider 替换此策略。
+   * 按 token 预算压缩上下文，同时保留 system、最近一轮和工具调用链。
+   * 消息数量限制只作为旧配置的兼容兜底，避免长工具输出绕过限制。
    */
   private async compactContext(): Promise<boolean> {
-    const limit = this.options.maxContextMessages ?? 80
-    if (this.messages.length <= limit) return false
+    const messageLimit = this.options.maxContextMessages ?? Number.POSITIVE_INFINITY
+    const modelLimit = this.options.provider.contextWindowTokens
+    const configuredLimit = this.options.maxContextTokens
+    const inputLimit = configuredLimit ?? (modelLimit ? Math.max(1, modelLimit - (this.options.responseReserveTokens ?? 2048)) : Number.POSITIVE_INFINITY)
+    const estimate = this.options.estimateTokens ?? estimateTextTokens
+    const totalTokens = this.messages.reduce((sum, message) => sum + estimateMessageTokens(message, estimate), 0)
+    if (this.messages.length <= messageLimit && totalTokens <= inputLimit) return false
+
     const system = this.messages[0]
-    const recent = this.messages.slice(-(limit - 1))
-    // 先保留系统消息，再把被移出的历史折叠成确定性摘要；摘要不调用模型，
-    // 因而在离线测试、取消和 provider 故障时仍可安全恢复。
-    const dropped = this.messages.length - recent.length - (system ? 1 : 0)
-    const summary = dropped > 0
-      ? { role: "system" as const, content: `历史摘要：已省略 ${dropped} 条较早消息；请以当前上下文为准。` }
+    const summary = system && this.messages.length > 1
+      ? { role: "system" as const, content: "历史摘要：已省略较早消息；请以当前上下文为准。" }
       : undefined
-    this.messages.splice(0, this.messages.length, ...(system ? [system, ...(summary ? [summary] : []), ...recent] : recent))
+    const kept: AgentMessage[] = []
+    let used = (system ? estimateMessageTokens(system, estimate) : 0) + (summary ? estimateMessageTokens(summary, estimate) : 0)
+    for (let index = this.messages.length - 1; index >= (system ? 1 : 0); index -= 1) {
+      const message = this.messages[index]
+      if (!message) continue
+      const tokens = estimateMessageTokens(message, estimate)
+      if (kept.length > 0 && used + tokens > inputLimit) break
+      kept.unshift(message)
+      used += tokens
+    }
+    this.messages.splice(0, this.messages.length, ...(system ? [system, ...(summary ? [summary] : []), ...kept] : kept))
     return true
   }
 
@@ -341,6 +353,17 @@ export class AgentSession {
     if (this.abortController.signal.aborted) return "CANCELLED"
     return "RUNTIME_ERROR"
   }
+}
+
+function estimateMessageTokens(message: AgentMessage, estimate: (text: string) => number): number {
+  return estimate(message.content) + (message.toolCalls?.reduce((sum, call) => sum + estimate(call.name) + estimate(JSON.stringify(call.input)), 0) ?? 0)
+}
+
+/** 保守估算：中日韩文本按字符计，拉丁文本按约四字符一个 token 计。 */
+function estimateTextTokens(text: string): number {
+  const cjk = (text.match(/[\u2e80-\u9fff\uf900-\ufaff]/g) ?? []).length
+  const other = text.length - cjk
+  return Math.max(1, cjk + Math.ceil(other / 4))
 }
 
 function buildSystemPrompt(mode: AgentMode | undefined, todos: AgentSessionOptions["todos"]): string {

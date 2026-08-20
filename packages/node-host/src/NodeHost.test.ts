@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -49,9 +49,19 @@ describe("Node host", () => {
       expect((await store.list()).map((session) => session.id)).toEqual(["new", "old"])
       expect((await store.findLatest(directory))?.id).toBe("new")
       expect((await store.read("old")).prompt).toBe("old")
+      expect((await store.readIndex()).map((session) => session.id)).toEqual(["new", "old"])
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
+  })
+
+  it("rebuilds the history index after a corrupted index file", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "vertex-session-recovery-"))
+    temporaryDirectories.push(directory)
+    const store = new FileSessionStore(directory)
+    await store.create({ id: "recover", cwd: directory, prompt: "recover", startedAt: "2025-01-03T00:00:00.000Z", events: [], messages: [] })
+    await writeFile(join(directory, "index.json"), "{broken", "utf8")
+    expect((await store.readIndex()).map((session) => session.id)).toEqual(["recover"])
   })
 
   it("denies risky operations by default and approves them only in yolo mode", async () => {

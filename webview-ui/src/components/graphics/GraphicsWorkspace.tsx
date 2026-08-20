@@ -1087,7 +1087,6 @@ const RuntimeInvestigation = () => {
 export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 	const { t } = useAppTranslation()
 	const [section, setSection] = useState<GraphicsWorkspaceSection>("feature")
-	const [runtimeEnabled, setRuntimeEnabled] = useState(false)
 	const [isMinimized, setIsMinimized] = useState(false)
 	const [providerSummary, setProviderSummary] = useState<GraphicsProviderStatusPayload | null>(null)
 
@@ -1097,15 +1096,17 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 			const payload = event.data.values as GraphicsProviderStatusPayload | undefined
 			if (!payload) return
 			setProviderSummary(payload)
-			const enabled = payload.providers.some((provider) => provider.status === "available" || provider.status === "no-capture")
-			setRuntimeEnabled(enabled)
-			if (!enabled) setSection((current) => (current === "runtime" ? "feature" : current))
 		}
 
 		window.addEventListener("message", onMessage)
-		vscode.postMessage({ type: "requestGraphicsProviderStatus" })
 		return () => window.removeEventListener("message", onMessage)
 	}, [])
+
+	useEffect(() => {
+		if (section === "runtime") {
+			vscode.postMessage({ type: "requestGraphicsProviderStatus" })
+		}
+	}, [section])
 	const sectionIcon = useMemo(() => ({ feature: FileCode2, assets: Box, runtime: Puzzle })[section], [section])
 	const SectionIcon = sectionIcon
 	const selectedProvider = providerSummary?.providers.find((provider) => provider.providerId === providerSummary.selectedProviderId)
@@ -1201,19 +1202,17 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 						}>
 						{t("graphics:workspace.tabs.assets")}
 					</TabTrigger>
-					{runtimeEnabled && (
-						<TabTrigger
-							id="tab-runtime"
-							value="runtime"
-							className="rounded-md px-2.5 py-1 text-[11px]"
-							style={
-								section === "runtime"
-									? { background: "var(--vscode-list-activeSelectionBackground)" }
-									: undefined
-							}>
-							{t("graphics:workspace.tabs.runtime")}
-						</TabTrigger>
-					)}
+					<TabTrigger
+						id="tab-runtime"
+						value="runtime"
+						className="rounded-md px-2.5 py-1 text-[11px]"
+						style={
+							section === "runtime"
+								? { background: "var(--vscode-list-activeSelectionBackground)" }
+								: undefined
+						}>
+						{t("graphics:workspace.tabs.runtime")}
+					</TabTrigger>
 				</TabList>
 			</TabHeader>
 			<TabContent>
@@ -1233,16 +1232,14 @@ export const GraphicsWorkspace = ({ onDone }: GraphicsWorkspaceProps) => {
 					hidden={section !== "assets"}>
 					{section === "assets" && <AssetValidation />}
 				</div>
-				{runtimeEnabled && (
-					<div
-						id="tab-runtime-panel"
-						role="tabpanel"
-						tabIndex={0}
-						aria-labelledby="tab-runtime"
-						hidden={section !== "runtime"}>
-						{section === "runtime" && <RuntimeInvestigation />}
-					</div>
-				)}
+				<div
+					id="tab-runtime-panel"
+					role="tabpanel"
+					tabIndex={0}
+					aria-labelledby="tab-runtime"
+					hidden={section !== "runtime"}>
+					{section === "runtime" && <RuntimeInvestigation />}
+				</div>
 			</TabContent>
 		</Tab>
 	)

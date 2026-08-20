@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir, rename, writeFile, open, unlink } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import { spawn } from "node:child_process"
 
@@ -149,10 +149,11 @@ export class NodeToolRegistry implements ToolRegistry {
     private readonly workspace?: import("@vertex/agent-runtime").WorkspaceHost,
     private readonly shell?: import("@vertex/agent-runtime").ShellHost,
     private readonly integrations: NodeToolIntegrations = {},
+    private readonly dynamicMcpTools: readonly DynamicMcpTool[] = [],
   ) {}
 
   definitions(): readonly AgentToolDefinition[] {
-    return [
+    const native: AgentToolDefinition[] = [
       { name: "read_file", description: "读取工作区中的 UTF-8 文本文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径") }), requiresApproval: false, risk: "low" },
       { name: "list_directory", description: "列出工作区中的目录项", parameters: objectSchema({ path: stringSchema("相对工作区的目录路径") }), requiresApproval: false, risk: "low" },
       { name: "write_file", description: "写入工作区中的 UTF-8 文本文件", parameters: objectSchema({ path: stringSchema("相对工作区的文件路径"), content: stringSchema("完整文件内容") }, ["path", "content"]), requiresApproval: true, risk: "medium" },
@@ -169,9 +170,21 @@ export class NodeToolRegistry implements ToolRegistry {
       { name: "use_mcp_tool", description: "调用已配置的 MCP 工具", parameters: objectSchema({ server: stringSchema("MCP Server 名称"), tool: stringSchema("MCP 工具名称"), input: { type: "object", description: "工具输入参数" } }), requiresApproval: true, risk: "high" },
       { name: "read_skill", description: "读取本地 Skill 的完整说明", parameters: objectSchema({ name: stringSchema("Skill 名称") }), requiresApproval: false, risk: "low" },
     ]
+    return [...native, ...this.dynamicMcpTools.map((tool): AgentToolDefinition => ({
+      name: tool.name,
+      description: `[MCP ${tool.server}] ${tool.description ?? tool.tool}`,
+      parameters: tool.inputSchema ?? { type: "object", properties: {} },
+      requiresApproval: true,
+      risk: "high" as const,
+    }))]
   }
 
   async execute(call: AgentToolCall, context: ToolExecutionContext): Promise<ToolExecutionResult> {
+    const dynamic = this.dynamicMcpTools.find((tool) => tool.name === call.name)
+    if (dynamic) {
+      const mcp = this.requireIntegration(this.integrations.mcp, "MCP")
+      return { output: await mcp.callTool(dynamic.server, dynamic.tool, call.input) }
+    }
     if (call.name === "read_file") {
       const path = requiredString(call.input.path, "path")
       return { output: this.workspace ? await this.workspace.readText(path) : await readFile(resolveWorkspacePath(context.cwd, path), "utf8") }
@@ -288,12 +301,25 @@ export interface NodeToolIntegrations {
   skills?: import("@vertex/agent-runtime").SkillsHost
 }
 
+export interface DynamicMcpTool {
+  name: string
+  server: string
+  tool: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+}
+
 /** 原子写入会话快照；CLI 崩溃时最多丢失最后一次事件，不留下半截 JSON。 */
 export class FileSessionStore implements SessionStore {
+  private readonly indexVersion = 1
+
   constructor(private readonly directory = join(resolveVertexPaths().sessions)) {}
+
+  private get indexPath(): string { return join(this.directory, "index.json") }
 
   async create(session: PersistedSession): Promise<void> {
     await this.write(session)
+    await this.updateIndex(session)
   }
 
   async appendEvent(sessionId: string, event: RooCliStreamEvent): Promise<void> {
@@ -303,7 +329,9 @@ export class FileSessionStore implements SessionStore {
   }
 
   async complete(sessionId: string, patch: Pick<PersistedSession, "finishedAt" | "success" | "code" | "messages" | "todos" | "cost">): Promise<void> {
-    await this.write({ ...(await this.read(sessionId)), ...patch })
+    const session = { ...(await this.read(sessionId)), ...patch }
+    await this.write(session)
+    await this.updateIndex(session)
   }
 
   async read(sessionId: string): Promise<PersistedSession> {
@@ -330,11 +358,61 @@ export class FileSessionStore implements SessionStore {
     return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))
   }
 
+  /** 读取轻量索引；损坏或旧版本索引会自动从快照重建。 */
+  async readIndex(): Promise<readonly Pick<PersistedSession, "id" | "cwd" | "prompt" | "startedAt" | "finishedAt" | "success">[]> {
+    try {
+      const parsed = JSON.parse(await readFile(this.indexPath, "utf8")) as { version?: number; sessions?: unknown }
+      if (parsed.version === this.indexVersion && Array.isArray(parsed.sessions)) return parsed.sessions as never
+    } catch {
+      // 下方的重建路径会跳过损坏快照，保证单个文件损坏不阻塞历史列表。
+    }
+    const sessions = await this.list()
+    await this.writeIndex(sessions)
+    return this.toIndexEntries(sessions)
+  }
+
+  /** 构建按工作区和启动时间排序的轻量索引，避免调用方反复扫描正文。 */
+  async index(cwd?: string): Promise<readonly Pick<PersistedSession, "id" | "cwd" | "prompt" | "startedAt" | "finishedAt" | "success">[]> {
+    return (await this.list())
+      .filter((session) => !cwd || session.cwd === cwd)
+      .map(({ id, cwd: sessionCwd, prompt, startedAt, finishedAt, success }) => ({ id, cwd: sessionCwd, prompt, startedAt, finishedAt, success }))
+  }
+
+  /** 同一 session 的写入锁；CLI 并发恢复时拒绝第二个持有者，避免覆盖快照。 */
+  async withLock<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
+    await mkdir(this.directory, { recursive: true })
+    const lockPath = `${this.path(sessionId)}.lock`
+    let handle
+    try {
+      handle = await open(lockPath, "wx")
+      return await task()
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "EEXIST") throw new Error(`会话正在运行：${sessionId}`)
+      throw error
+    } finally {
+      await handle?.close().catch(() => undefined)
+      await unlink(lockPath).catch(() => undefined)
+    }
+  }
+
   async findLatest(cwd: string): Promise<PersistedSession | undefined> {
     return (await this.list()).find((session) => session.cwd === cwd)
   }
 
   private path(sessionId: string): string { return join(this.directory, `${sessionId}.json`) }
+  private toIndexEntries(sessions: readonly PersistedSession[]) {
+    return sessions.map(({ id, cwd, prompt, startedAt, finishedAt, success }) => ({ id, cwd, prompt, startedAt, finishedAt, success }))
+  }
+  private async updateIndex(session: PersistedSession): Promise<void> {
+    const entries = (await this.readIndex()).filter((item) => item.id !== session.id)
+    await this.writeIndex([...entries, ...this.toIndexEntries([session])].sort((a, b) => b.startedAt.localeCompare(a.startedAt)))
+  }
+  private async writeIndex(sessions: readonly PersistedSession[] | readonly Pick<PersistedSession, "id" | "cwd" | "prompt" | "startedAt" | "finishedAt" | "success">[]): Promise<void> {
+    await mkdir(this.directory, { recursive: true })
+    const temporary = `${this.indexPath}.${randomUUID()}.tmp`
+    await writeFile(temporary, JSON.stringify({ version: this.indexVersion, sessions: sessions.map((session) => ({ id: session.id, cwd: session.cwd, prompt: session.prompt, startedAt: session.startedAt, finishedAt: session.finishedAt, success: session.success })) }, null, 2), "utf8")
+    await rename(temporary, this.indexPath)
+  }
   private async write(session: PersistedSession): Promise<void> {
     await mkdir(this.directory, { recursive: true })
     const target = this.path(session.id)

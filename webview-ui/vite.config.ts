@@ -108,6 +108,11 @@ export default defineConfig(({ mode }) => {
 			globals: true,
 			environment: "jsdom",
 			setupFiles: ["./src/test/setup.ts"],
+			// Playwright browser suites live beside the Vitest suites but are
+			// executed by the dedicated `test:visual` command. Excluding them here
+			// keeps the workspace test command deterministic and prevents Vitest
+			// from trying to load Playwright's browser-only imports in jsdom.
+			exclude: ["node_modules/**", "visual-regression/**"],
 		},
 		build: {
 			outDir,

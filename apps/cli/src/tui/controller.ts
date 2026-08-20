@@ -30,8 +30,9 @@ export async function runTui(cwd: string): Promise<number> {
   }
   const startTask = (prompt: string) => {
     state = { ...state, userMessages: [...state.userMessages, prompt], assistantText: "", thinking: "", tools: [], approval: undefined }
-    let task!: Promise<void>
-    task = (async () => {
+    // 使用可变引用保存 Promise，既能在 finally 中比较自身，又保持任务变量为 const。
+    const taskRef: { current?: Promise<void> } = {}
+    const task = (async () => {
       try {
         for await (const event of runHeadlessSession({ cwd, prompt, yolo: false, signal: controller.signal, approvals, messageQueue })) {
           state = reduceTuiEvent(state, event)
@@ -39,9 +40,10 @@ export async function runTui(cwd: string): Promise<number> {
         }
       } finally {
         // Promise 完成后必须清空占用标记，否则同一个 TUI 进程无法提交第二条消息。
-        if (sessionTask === task) sessionTask = undefined
+        if (sessionTask === taskRef.current) sessionTask = undefined
       }
     })()
+    taskRef.current = task
     sessionTask = task
   }
   const onData = (chunk: string) => {

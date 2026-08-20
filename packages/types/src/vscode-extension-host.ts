@@ -505,10 +505,9 @@ export type ExtensionState = Pick<
   autoCondenseContext: boolean;
   autoCondenseContextPercent: number;
   marketplaceItems?: MarketplaceItem[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  marketplaceInstalledMetadata?: {
-    project: Record<string, any>;
-    global: Record<string, any>;
+	marketplaceInstalledMetadata?: {
+		project: Record<string, { type: string }>;
+		global: Record<string, { type: string }>;
   };
   profileThresholds: Record<string, number>;
   hasOpenedModeSelector: boolean;

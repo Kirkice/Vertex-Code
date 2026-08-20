@@ -183,6 +183,40 @@ describe("AgentSession", () => {
     expect(systemPrompt).toContain("[pending] 检查变更")
   })
 
+  it("compacts by token budget while retaining the system prompt and newest message", async () => {
+    const requests: Array<ReadonlyArray<{ role: string; content: string }>> = []
+    const session = new AgentSession({
+      sessionId: "00000000-0000-4000-8000-000000000008",
+      cwd: "/workspace",
+      prompt: "继续",
+      initialMessages: [
+        { role: "system", content: "系统" },
+        { role: "user", content: "旧消息一" },
+        { role: "assistant", content: "旧回复二" },
+        { role: "user", content: "最新消息" },
+      ],
+      maxContextTokens: 10,
+      estimateTokens: (text) => text.length,
+      provider: {
+        async *stream(request) {
+          requests.push(request.messages)
+          yield { type: "text_delta", text: "完成" }
+          yield { type: "done", finishReason: "stop" }
+        },
+      },
+      tools: toolRegistry(),
+      approvals: { resolve: async () => "deny" },
+      store: new MemoryStore(),
+    })
+
+    const events = await collectEvents(session)
+    expect(requests[0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: "system", content: "系统" }),
+      expect.objectContaining({ role: "user", content: "最新消息" }),
+    ]))
+    expect(events).toContainEqual(expect.objectContaining({ type: "system", subtype: "context_compacted" }))
+  })
+
   it("enforces the mode tool allowlist instead of treating it as prompt-only guidance", async () => {
     const session = new AgentSession({
       sessionId: "00000000-0000-4000-8000-000000000006",

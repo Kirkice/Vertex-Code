@@ -1,6 +1,7 @@
 import type { ModelProvider, ProviderProfile } from "@vertex/agent-runtime"
 
 import { OpenAiCompatibleProvider, type OpenAiCompatibleConfig } from "./NodeHost.js"
+import { AnthropicProvider, GeminiProvider } from "./provider-adapters.js"
 
 /**
  * CLI 统一使用 OpenAI Chat Completions 工具调用协议作为供应商传输层。
@@ -17,8 +18,12 @@ export const openAiCompatibleProviderKinds = new Set([
   "vertex-gateway",
 ])
 
+export const nativeProviderKinds = new Set(["anthropic", "gemini"])
+
 export function createModelProvider(profile: ProviderProfile, apiKey: string): ModelProvider {
   const provider = profile.provider.trim().toLowerCase()
+  if (provider === "anthropic") return new AnthropicProvider({ apiKey, baseUrl: profile.baseUrl.replace(/\/$/, ""), model: profile.model })
+  if (provider === "gemini" || provider === "google-gemini") return new GeminiProvider({ apiKey, baseUrl: profile.baseUrl.replace(/\/$/, ""), model: profile.model })
   if (!openAiCompatibleProviderKinds.has(provider)) {
     throw new Error(`CLI 尚未支持 Provider：${profile.provider}。请使用 OpenAI 兼容 Provider 或配置 VERTEX_* 环境变量。`)
   }

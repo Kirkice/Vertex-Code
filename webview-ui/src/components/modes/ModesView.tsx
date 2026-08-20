@@ -426,7 +426,6 @@ const ModesView = () => {
 		switchMode(newModeSlug)
 		setIsCreateModeDialogOpen(false)
 		resetFormState()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		newModeName,
 		newModeSlug,

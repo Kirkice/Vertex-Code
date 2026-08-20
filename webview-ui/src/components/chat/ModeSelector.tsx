@@ -95,7 +95,6 @@ export const ModeSelector = ({
 			lastNotifiedInvalidModeRef.current = value
 			onChange(fallbackMode.slug as Mode)
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- onChange omitted to prevent loops when parent doesn't memoize
 	}, [modes, value])
 
 	// Memoize searchable items for fuzzy search with separate name and

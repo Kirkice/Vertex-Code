@@ -111,6 +111,8 @@ function getPreviousTodos(messages: ClineMessage[], currentMessageTs: number): a
 
 interface ChatRowProps {
 	message: ClineMessage
+	/** Model used by the latest API request visible before this row. */
+	apiReqModelId?: string
 	lastModifiedMessage?: ClineMessage
 	isExpanded: boolean
 	isLast: boolean

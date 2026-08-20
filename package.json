@@ -32,6 +32,7 @@
 		"cli": "pnpm --filter @vertex/cli dev",
 		"cli:build": "pnpm --filter @vertex/cli build",
 		"cli:test": "pnpm --filter @vertex/cli test",
+		"cli:pack-smoke": "pnpm --dir apps/cli pack --pack-destination ../../.artifacts && node scripts/cli-tarball-smoke.mjs",
 		"knip": "knip --include files",
 		"npm:publish:types": "pnpm --filter @roo-code/types npm:publish"
 	},

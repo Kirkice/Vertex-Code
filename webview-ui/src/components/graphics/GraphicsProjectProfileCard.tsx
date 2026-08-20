@@ -28,7 +28,7 @@ const ArchitectureFindings = ({
 	const remainingCount = Math.max(architectureIndex.findings.length - visibleFindings.length, 0)
 
 	return (
-		<Collapsible className="space-y-1.5" aria-label={t("graphics:profile.architectureFindings")}>
+		<Collapsible defaultOpen className="space-y-1.5" aria-label={t("graphics:profile.architectureFindings")}>
 			<CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-xs hover:bg-vscode-list-hoverBackground">
 				<span className="font-medium text-vscode-foreground">{t("graphics:profile.deepFindings")}</span>
 				<span className="text-vscode-descriptionForeground">

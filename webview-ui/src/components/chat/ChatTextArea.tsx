@@ -405,7 +405,6 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					}, 0)
 				}
 			},
-			// eslint-disable-next-line react-hooks/exhaustive-deps
 			[setInputValue, cursorPosition],
 		)
 
@@ -941,12 +940,9 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		}, [])
 
 		const handleToggleLockApiConfig = useCallback(() => {
-			// Mode-Level LLM Routing: 锁图标语义反转。
-			// lockApiConfigAcrossModes=true（锁定全局）⇔ modeLevelLlmRoutingEnabled=false
-			// lockApiConfigAcrossModes=false（按 Mode 切换）⇔ modeLevelLlmRoutingEnabled=true
-			// 点击锁图标切换：当前锁定 → 解锁并开启 Mode 路由；当前解锁 → 锁定全局
-			const routingEnabled = lockApiConfigAcrossModes // 当前是否锁定？锁定则切换后开启路由
-			vscode.postMessage({ type: "setModeLevelLlmRoutingEnabled", bool: routingEnabled })
+			// 锁定状态由扩展状态统一持久化；这里发送语义明确的切换消息，
+			// 避免让 Webview 反向推导另一个设置项的值。
+			vscode.postMessage({ type: "lockApiConfigAcrossModes", bool: !lockApiConfigAcrossModes })
 		}, [lockApiConfigAcrossModes])
 
 		return (

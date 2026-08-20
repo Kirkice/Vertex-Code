@@ -199,8 +199,6 @@ export function consolidateMultiModelUsage(messages: ClineMessage[]): MultiModel
 
 			const mode = message.modeAtRequest ?? "unknown"
 			const profile = message.providerProfileAtRequest ?? "unknown"
-			const modelId = message.modelId ?? "unknown"
-
 			// 聚合 byMode
 			const modeItem = byModeMap.get(mode) ?? {
 				mode,

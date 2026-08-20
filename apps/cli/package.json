@@ -1,7 +1,7 @@
 {
   "name": "@vertex/cli",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "bin": {
     "vertex": "./dist/index.js"
@@ -18,9 +18,6 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
-    "@roo-code/types": "workspace:^",
-    "@vertex/agent-runtime": "workspace:^",
-    "@vertex/node-host": "workspace:^",
     "yaml": "^2.8.0"
   },
   "devDependencies": {

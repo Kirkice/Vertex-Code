@@ -171,7 +171,7 @@ describe("consolidateMultiModelUsage", () => {
 				ts: 2000,
 				type: "say",
 				say: "condense_context",
-				contextCondense: { cost: 0.005, newContextTokens: 50 } as any,
+				contextCondense: { cost: 0.005, newContextTokens: 50 } as unknown as ClineMessage["contextCondense"],
 			},
 		]
 		const result = consolidateMultiModelUsage(messages)

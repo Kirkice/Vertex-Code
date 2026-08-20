@@ -18,7 +18,12 @@ describe("provider factory", () => {
     expect(createModelProvider(profile, "unused-local-key")).toBeDefined()
   })
 
-  it("rejects vendor labels without a compatible CLI adapter", () => {
-    expect(() => createModelProvider({ ...profile, provider: "anthropic" }, "key")).toThrow("尚未支持 Provider")
+  it("creates native Anthropic and Gemini adapters", () => {
+    expect(createModelProvider({ ...profile, provider: "anthropic", baseUrl: "https://api.anthropic.com/v1" }, "key").constructor.name).toBe("AnthropicProvider")
+    expect(createModelProvider({ ...profile, provider: "gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta" }, "key").constructor.name).toBe("GeminiProvider")
+  })
+
+  it("rejects vendor labels without a CLI adapter", () => {
+    expect(() => createModelProvider({ ...profile, provider: "bedrock" }, "key")).toThrow("尚未支持 Provider")
   })
 })

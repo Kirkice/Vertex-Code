@@ -107,6 +107,18 @@ export class NodeMcpHost implements McpHost {
     return JSON.stringify(response.result ?? {})
   }
 
+  /** 将 MCP tools/list 的实时结果投影给 NodeToolRegistry，供模型直接选择动态工具。 */
+  async listDynamicTools(): Promise<readonly { name: string; server: string; tool: string; description?: string; inputSchema?: Record<string, unknown> }[]> {
+    const servers = await this.listServers()
+    return servers.flatMap((server) => (server.tools ?? []).map((tool) => ({
+      name: `mcp_${server.name}_${tool.name}`.replace(/[^a-zA-Z0-9_]/g, "_"),
+      server: server.name,
+      tool: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema as Record<string, unknown> | undefined,
+    })))
+  }
+
   async close(): Promise<void> {
     const processes = [...this.processes.values()]
     this.processes.clear()

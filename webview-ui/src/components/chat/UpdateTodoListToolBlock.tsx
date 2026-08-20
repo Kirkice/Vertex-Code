@@ -77,7 +77,6 @@ const UpdateTodoListToolBlock: React.FC<UpdateTodoListToolBlockProps> = ({
 			)
 		}
 		// Only check once on mount
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	// Sync when external props.todos changes

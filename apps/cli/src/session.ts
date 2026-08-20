@@ -56,6 +56,7 @@ export async function* runHeadlessSession(
   const settings = await config.get()
   const mode = await resolveWorkspaceMode(options.cwd, options.mode ?? settings.currentMode, [settings.customInstructions, rules.content].filter(Boolean).join("\n\n") || undefined)
   const mcp = new NodeMcpHost()
+  const dynamicMcpTools = await mcp.listDynamicTools()
   const session = new AgentSession({
     sessionId: options.sessionId ?? randomUUID(),
     cwd: options.cwd,
@@ -66,7 +67,7 @@ export async function* runHeadlessSession(
       git: new NodeGitHost(),
       mcp,
       skills: new NodeSkillsHost(),
-    }),
+    }, dynamicMcpTools),
     approvals: options.approvals ?? new PersistentApprovalPolicy(options.yolo),
     store: new FileSessionStore(),
     signal: options.signal,

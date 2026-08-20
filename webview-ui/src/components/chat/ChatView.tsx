@@ -1433,12 +1433,26 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const itemContent = useCallback(
 		(index: number, messageOrGroup: ClineMessage) => {
 			const hasCheckpoint = modifiedMessages.some((message) => message.say === "checkpoint_saved")
+			let modelId: string | undefined
+			for (let messageIndex = index; messageIndex >= 0; messageIndex -= 1) {
+				const candidate = groupedMessages[messageIndex]
+				if (candidate.say !== "api_req_started" || !candidate.text) continue
+				try {
+					const parsed = JSON.parse(candidate.text) as { modelId?: unknown }
+					if (typeof parsed.modelId === "string") modelId = parsed.modelId
+				} catch {
+					// Malformed telemetry must not prevent the chat row from rendering.
+				}
+				break
+			}
+			const rowMessage = modelId && messageOrGroup.say === "text" ? { ...messageOrGroup, modelId } : messageOrGroup
 
 			// regular message
 			return (
 				<ChatRow
 					key={messageOrGroup.ts}
-					message={messageOrGroup}
+					message={rowMessage}
+					apiReqModelId={modelId}
 					isExpanded={expandedRows[messageOrGroup.ts] || false}
 					onToggleExpand={toggleRowExpansion} // This was already stabilized
 					lastModifiedMessage={modifiedMessages.at(-1)} // Original direct access
