@@ -1,8 +1,6 @@
 // Returns true when a string is shaped like a filesystem path (Windows
 // drive-letter, POSIX absolute, POSIX home, POSIX relative). Pure and
-// dependency-free so it can be shared between the extension runtime (e.g.
-// parseVertexJsonCredentials) and the webview UI (e.g. the Vertex settings
-// warning), guaranteeing both surfaces agree on what "looks like a path"
+// dependency-free so every CLI component agrees on what "looks like a path"
 // means.
 //
 // Returns false for nullish, empty, and whitespace-only input — neither

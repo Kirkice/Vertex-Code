@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 **/node_modules/
-webview-ui/node_modules/
 
 # Build output
 dist/
@@ -10,13 +9,7 @@ build/
 **/dist/
 **/out/
 **/build/
-webview-ui/dist/
 *.tgz
-
-# VS Code extension
-*.vsix
-.vscode-test/
-.vsixmanifest
 
 # TypeScript build info
 *.tsbuildinfo
@@ -33,7 +26,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor directories and files
-.vscode/
 .idea/
 *.suo
 *.ntvs*
@@ -69,10 +61,6 @@ tmp/
 temp/
 .cache/
 
-# Old static files (superseded by React/Vite)
-webview-ui/main.js
-webview-ui/style.css
-
 # Python
 __pycache__/
 *.py[cod]
@@ -88,9 +76,6 @@ venv/
 *.swp
 *.tmp
 *~
-
-# Webview build artifacts (copied to src/ for packaging)
-src/webview-ui/build/
 
 # Plan documents (optional: remove this line if you want to track plans)
 # plans/

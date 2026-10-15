@@ -48,8 +48,6 @@ export interface TaskProviderLike {
 		listener: (...args: TaskProviderEvents[K]) => void | Promise<void>,
 	): this
 
-	// @TODO: Find a better way to do this.
-	postStateToWebview(): Promise<void>
 }
 
 export type TaskProviderEvents = {

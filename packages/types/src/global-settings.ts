@@ -14,7 +14,35 @@ import { telemetrySettingsSchema } from "./telemetry.js"
 import { modeConfigSchema } from "./mode.js"
 import { customModePromptsSchema, customSupportPromptsSchema } from "./mode.js"
 import { toolNamesSchema } from "./tool.js"
-import { languagesSchema } from "./vscode.js"
+
+/**
+ * CLI 的界面与配置语言列表。
+ *
+ * 该契约属于可持久化配置，而非编辑器 API；在移除扩展应用后保留它可以让
+ * 已有 profile 与用户配置继续被 Node Host 读取。
+ */
+const languages = [
+	"ca",
+	"de",
+	"en",
+	"es",
+	"fr",
+	"hi",
+	"id",
+	"it",
+	"ja",
+	"ko",
+	"nl",
+	"pl",
+	"pt-BR",
+	"ru",
+	"tr",
+	"vi",
+	"zh-CN",
+	"zh-TW",
+] as const
+
+const languagesSchema = z.enum(languages)
 
 /**
  * Default delay in milliseconds after writes to allow diagnostics to detect potential problems.
@@ -219,11 +247,6 @@ export const globalSettingsSchema = z.object({
 	includeTaskHistoryInEnhance: z.boolean().optional(),
 	historyPreviewCollapsed: z.boolean().optional(),
 	reasoningBlockCollapsed: z.boolean().optional(),
-	/**
-	 * Font size (in pixels) for the Vertex chat/webview UI.
-	 * When unset (or `null`), the webview inherits VS Code's `--vscode-font-size`.
-	 */
-	chatFontSize: z.number().int().min(8).max(32).nullish(),
 	/**
 	 * Controls the keyboard behavior for sending messages in the chat input.
 	 * - "send": Enter sends message, Shift+Enter creates newline (default)

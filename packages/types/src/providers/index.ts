@@ -19,7 +19,6 @@ export * from "./requesty.js"
 export * from "./sambanova.js"
 export * from "./unbound.js"
 export * from "./vertex.js"
-export * from "./vscode-llm.js"
 export * from "./xai.js"
 export * from "./vercel-ai-gateway.js"
 export * from "./opencode-go.js"
@@ -45,7 +44,6 @@ import { requestyDefaultModelId } from "./requesty.js"
 import { sambaNovaDefaultModelId } from "./sambanova.js"
 import { unboundDefaultModelId } from "./unbound.js"
 import { vertexDefaultModelId } from "./vertex.js"
-import { vscodeLlmDefaultModelId } from "./vscode-llm.js"
 import { xaiDefaultModelId } from "./xai.js"
 import { vercelAiGatewayDefaultModelId } from "./vercel-ai-gateway.js"
 import { opencodeGoDefaultModelId } from "./opencode-go.js"
@@ -105,8 +103,6 @@ export function getProviderDefaultModelId(
 			return "" // Ollama uses dynamic model selection
 		case "lmstudio":
 			return "" // LMStudio uses dynamic model selection
-		case "vscode-lm":
-			return vscodeLlmDefaultModelId
 		case "sambanova":
 			return sambaNovaDefaultModelId
 		case "fireworks":

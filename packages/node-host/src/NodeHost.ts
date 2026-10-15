@@ -213,15 +213,19 @@ export class NodeToolRegistry implements ToolRegistry {
       const path = requiredString(call.input.path, "path")
       const search = requiredString(call.input[call.name === "edit_file" ? "oldText" : "search"], call.name === "edit_file" ? "oldText" : "search")
       const replacement = requiredString(call.input[call.name === "edit_file" ? "newText" : "replace"], call.name === "edit_file" ? "newText" : "replace")
-      const target = resolveWorkspacePath(context.cwd, path)
-      const content = await readFile(target, "utf8")
+      // 统一复用 WorkspaceHost 的安全边界；不能因为编辑工具走了另一条
+      // 路径，就绕过相对路径、越界和符号链接检查。
+      const content = this.workspace
+        ? await this.workspace.readText(path)
+        : await readFile(resolveWorkspacePath(context.cwd, path), "utf8")
       const count = content.split(search).length - 1
       if (count === 0) throw new Error(`文件中未找到待替换文本：${path}`)
       if (call.name === "edit_file" && count !== 1) throw new Error(`编辑文本必须唯一匹配：${path}`)
       const next = call.name === "search_replace" && call.input.all === true
         ? content.split(search).join(replacement)
         : content.replace(search, replacement)
-      await writeFile(target, next, "utf8")
+      if (this.workspace) await this.workspace.writeText(path, next)
+      else await writeFile(resolveWorkspacePath(context.cwd, path), next, "utf8")
       return { output: `已编辑 ${path}（${call.name === "search_replace" && call.input.all === true ? count : 1} 处）` }
     }
     if (call.name === "apply_patch") {

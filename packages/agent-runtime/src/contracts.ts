@@ -221,6 +221,12 @@ export interface AgentSessionOptions {
    */
   initialMessages?: readonly AgentMessage[]
   messageQueue?: MessageQueue
+  /** 宿主提供的系统提示词构建器；未提供时使用 runtime 的简化提示词。 */
+  buildSystemPrompt?: (context: {
+    cwd: string
+    mode?: AgentMode
+    todos: readonly AgentTodoItem[]
+  }) => Promise<string> | string
   mode?: AgentMode
   todos?: readonly AgentTodoItem[]
   maxContextMessages?: number

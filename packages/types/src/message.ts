@@ -238,7 +238,7 @@ export type ContextTruncation = z.infer<typeof contextTruncationSchema>
 /**
  * ClineMessage
  *
- * The main message type used for communication between the extension and webview.
+ * The main message type used for agent interaction streams.
  * Messages can either be "ask" (requiring user response) or "say" (informational).
  *
  * Context Management Fields:

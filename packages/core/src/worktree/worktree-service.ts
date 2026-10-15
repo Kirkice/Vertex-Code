@@ -2,7 +2,7 @@
  * WorktreeService
  *
  * Platform-agnostic service for git worktree operations.
- * Uses simple-git and native CLI commands - no VSCode dependencies.
+ * Uses simple-git and native CLI commands.
  */
 
 import { exec, execFile } from "child_process"
@@ -16,7 +16,7 @@ const execFileAsync = promisify(execFile)
 
 /**
  * Service for managing git worktrees.
- * All methods are platform-agnostic and don't depend on VSCode APIs.
+ * All methods are platform-agnostic.
  */
 export class WorktreeService {
 	/**

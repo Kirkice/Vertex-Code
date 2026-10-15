@@ -34,7 +34,7 @@ const execFileAsync = promisify(execFile)
 
 /**
  * Service for managing .worktreeinclude files and copying files to new worktrees.
- * All methods are platform-agnostic and don't depend on VSCode APIs.
+ * All methods are platform-agnostic.
  */
 export class WorktreeIncludeService {
 	/**

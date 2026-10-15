@@ -1,5 +1,10 @@
+# CLI-only workspace。
 packages:
-    - "src" # Should be apps/vscode
-    - "webview-ui" # Should be apps/vscode-webview
-    - "apps/*"
-    - "packages/*"
+  - "apps/*"
+  - "packages/agent-runtime"
+  - "packages/config-eslint"
+  - "packages/config-typescript"
+  - "packages/core"
+  - "packages/ipc"
+  - "packages/node-host"
+  - "packages/types"

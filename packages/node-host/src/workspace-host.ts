@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir, writeFile, lstat } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
 
 import type { WorkspaceEntry, WorkspaceHost, WorkspaceRules } from "@vertex/agent-runtime"
@@ -62,6 +62,18 @@ export class NodeWorkspaceHost implements WorkspaceHost {
     const target = resolve(root, requested)
     if (target !== root && !target.startsWith(`${root}\\`) && !target.startsWith(`${root}/`)) {
       throw new Error("工作区路径不能离开工作区。")
+    }
+    return target
+  }
+
+  /** 防止通过工作区内的符号链接间接访问工作区外路径。 */
+  async assertSafePath(requested: string): Promise<string> {
+    const target = this.path(requested)
+    try {
+      const stat = await lstat(target)
+      if (stat.isSymbolicLink()) throw new Error("工作区路径不能使用符号链接绕过安全边界。")
+    } catch (error) {
+      if (!isFileNotFound(error)) throw error
     }
     return target
   }

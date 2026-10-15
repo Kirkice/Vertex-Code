@@ -46,6 +46,8 @@ export class AgentSession {
       : [
           {
             role: "system",
+            // 异步宿主提示词在 run() 中完成初始化；这里先放置稳定的
+            // runtime 默认提示词，避免构造函数变成异步 API。
             content: buildSystemPrompt(options.mode, options.todos),
           },
           { role: "user", content: options.prompt },
@@ -65,6 +67,7 @@ export class AgentSession {
   }
 
   async *run(): AsyncGenerator<RooCliStreamEvent> {
+    await this.initializeSystemPrompt()
     const session: PersistedSession = {
       id: this.options.sessionId,
       cwd: this.options.cwd,
@@ -125,6 +128,17 @@ export class AgentSession {
       todos: this.todos,
       cost: this.cost,
     })
+  }
+
+  private async initializeSystemPrompt(): Promise<void> {
+    if (!this.options.buildSystemPrompt || this.options.initialMessages) return
+    const system = await this.options.buildSystemPrompt({
+      cwd: this.options.cwd,
+      mode: this.options.mode,
+      todos: this.todos,
+    })
+    const systemMessage = this.messages.find((message) => message.role === "system")
+    if (systemMessage) systemMessage.content = system
   }
 
   /** 为 JSON 输出模式提供已收集的最终输出。必须在 run() 完成后调用。 */

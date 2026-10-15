@@ -14,6 +14,11 @@ export class JsonFileStore<T> {
     private readonly initialValue: T,
   ) {}
 
+  /** 供需要调整文件权限的敏感存储复用实际路径。 */
+  path(): string {
+    return this.filePath
+  }
+
   async read(): Promise<T> {
     try {
       return JSON.parse(await readFile(this.filePath, "utf8")) as T

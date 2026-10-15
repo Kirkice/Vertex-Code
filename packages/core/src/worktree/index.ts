@@ -2,7 +2,7 @@
  * Worktree Module
  *
  * Platform-agnostic git worktree management functionality.
- * These exports are decoupled from VSCode and can be used by any consumer.
+ * These exports can be used by any consumer.
  */
 
 // Types

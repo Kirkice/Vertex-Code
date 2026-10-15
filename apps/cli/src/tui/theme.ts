@@ -1,8 +1,7 @@
 /**
  * Vertex Code JellyFish 终端主题。
  *
- * 颜色令牌与 Webview 的 JellyFish 主题保持同源，但 TUI 只依赖 ANSI，
- * 不把 React、Tailwind 或 VS Code CSS 变量带入 CLI。
+ * TUI 仅依赖 ANSI 颜色码，不引入任何图形界面运行时或 CSS 变量。
  */
 export const jellyFish = {
   background: "#000000",

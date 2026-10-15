@@ -1,52 +1,27 @@
-# Vertex API
+# Vertex 类型包
 
-The Vertex extension exposes an API that can be used by other extensions.
+`@roo-code/types` 提供 Vertex CLI 及其 Node.js 运行时共享的 TypeScript 类型与运行时校验 schema。
 
-> Note: The npm package and exported API type names intentionally retain the
-> legacy `@roo-code` and `RooCodeAPI` names for backward compatibility after the
-> extension rebrand to Vertex.
+> 包名和部分导出类型保留 `@roo-code` / `RooCodeAPI` 的历史名称，以避免破坏已有的类型级集成；CLI 运行时不提供编辑器扩展 API。
 
-To use this API in your extension:
+## 安装
 
-1. Install `@roo-code/types` with npm, pnpm, or yarn.
-2. Import the `RooCodeAPI` type.
-3. Load the extension API.
+```bash
+npm install @roo-code/types
+```
+
+## 使用
 
 ```typescript
-import { RooCodeAPI } from "@roo-code/types"
+import {
+  rooCliFinalOutputSchema,
+  rooCliStreamEventSchema,
+  type RooCliFinalOutput,
+  type RooCliStreamEvent,
+} from "@roo-code/types"
 
-const extension = vscode.extensions.getExtension<RooCodeAPI>("learner.vertex")
-
-if (!extension?.isActive) {
-	throw new Error("Extension is not activated")
-}
-
-const api = extension.exports
-
-if (!api) {
-	throw new Error("API is not available")
-}
-
-// Start a new task with an initial message.
-await api.startNewTask("Hello, Vertex API! Let's make a new project...")
-
-// Start a new task with an initial message and images.
-await api.startNewTask("Use this design language", ["data:image/webp;base64,..."])
-
-// Send a message to the current task.
-await api.sendMessage("Can you fix the @problems?")
-
-// Simulate pressing the primary button in the chat interface (e.g. 'Save' or 'Proceed While Running').
-await api.pressPrimaryButton()
-
-// Simulate pressing the secondary button in the chat interface (e.g. 'Reject').
-await api.pressSecondaryButton()
+const event: RooCliStreamEvent = rooCliStreamEventSchema.parse(input)
+const result: RooCliFinalOutput = rooCliFinalOutputSchema.parse(output)
 ```
 
-**NOTE:** To ensure that the `learner.vertex` extension is activated before your extension, add it to the `extensionDependencies` in your `package.json`:
-
-```json
-"extensionDependencies": ["learner.vertex"]
-```
-
-For detailed information on the available methods and their usage, refer to the generated declarations in `dist/index.d.ts` or the source types in `packages/types/src/index.ts`.
+可用的导出声明请参阅 [`packages/types/src/index.ts`](../src/index.ts)，CLI 协议定义位于 [`packages/types/src/cli.ts`](../src/cli.ts)。

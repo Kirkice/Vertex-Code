@@ -404,7 +404,7 @@ export interface GraphicsWorkflowRequest {
   timeoutMs?: number;
   /** Optional cancellation signal for host-side workflow execution. */
   signal?: AbortSignal;
-  /** Correlates the workflow with a webview request. */
+  /** Correlates the workflow with its initiating request. */
   requestId?: string;
 }
 
@@ -823,18 +823,6 @@ export interface GraphicsFeatureTaskStatusUpdate {
   status: GraphicsFeatureTaskStatus;
   statusNote?: string;
   expectedRevision?: number;
-}
-
-/** Graphics data persisted in VS Code's webview state for reload-safe draft recovery. */
-export interface GraphicsWorkspacePersistedState {
-  featureBrief?: GraphicsFeatureBrief;
-  featurePlan?: GraphicsFeaturePlan;
-}
-
-/** Shared envelope used to merge graphics drafts without replacing unrelated webview state. */
-export interface GraphicsWebviewPersistedState {
-  graphicsWorkspace?: GraphicsWorkspacePersistedState;
-  [key: string]: unknown;
 }
 
 /** Provider-independent sections exposed by the Graphics Workspace. */

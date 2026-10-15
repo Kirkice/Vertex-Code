@@ -22,6 +22,17 @@ import {
 
 import type { CliFinalOutput, CliStreamEvent } from "./protocol.js"
 
+/** Node host 生成的系统提示词装配器；避免 AgentSession 依赖旧扩展 Task。 */
+function buildNodeSystemPrompt(mode: import("@vertex/agent-runtime").AgentMode | undefined, cwd: string, todos: readonly import("@vertex/agent-runtime").AgentTodoItem[]): string {
+  return [
+    "You are Vertex, a headless coding agent.",
+    `Workspace: ${cwd}`,
+    mode ? `Mode: ${mode.slug}` : "Mode: code",
+    todos.length ? `Open todos: ${todos.filter((todo) => todo.status !== "completed").map((todo) => todo.content).join("; ")}` : "",
+    "Use the provided tools for workspace changes and report concise, verifiable results.",
+  ].filter(Boolean).join("\n")
+}
+
 export interface HeadlessSessionOptions {
   cwd: string
   prompt: string
@@ -74,6 +85,7 @@ export async function* runHeadlessSession(
     initialMessages: options.initialMessages,
     mode,
     messageQueue: options.messageQueue,
+    buildSystemPrompt: ({ cwd: promptCwd, mode: promptMode, todos }) => buildNodeSystemPrompt(promptMode, promptCwd, todos),
   })
 
   try {

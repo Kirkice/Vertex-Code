@@ -84,9 +84,7 @@ export const staticAppPropertiesSchema = z.object({
 	appName: z.string(),
 	appVersion: z.string(),
 	releaseChannel: z.string().optional(),
-	vscodeVersion: z.string(),
 	platform: z.string(),
-	editorName: z.string(),
 	hostname: z.string().optional(),
 })
 
